@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getAdapter } from "@/lib/adapters/registry";
+import { buildManualAffiliateUrl } from "@/lib/adapters/manual";
 import { netPayoutCents } from "@/lib/margin";
 import { shortId } from "@/lib/short-id";
 
@@ -41,16 +42,25 @@ export async function POST(req: NextRequest) {
   // Load the offer + its network
   const { data: offer } = await supabase
     .from("offers")
-    .select("id, cta_url, upstream_payout_cents, margin_bps, network_id, status, networks!inner(adapter_key)")
+    .select("id, cta_url, upstream_payout_cents, margin_bps, network_id, status, networks!inner(slug, adapter_key)")
     .eq("id", offerId)
     .maybeSingle();
   if (!offer || offer.status !== "active") return NextResponse.json({ error: "offer unavailable" }, { status: 404 });
 
   // Generate a unique token and the upstream URL with sub-id baked in
   const token = shortId(8);
-  const adapterKey = (offer.networks as unknown as { adapter_key: string }).adapter_key;
-  const adapter = getAdapter(adapterKey);
-  const destination = adapter.buildAffiliateUrl({ ctaUrlTemplate: offer.cta_url, subId: token });
+  const network = offer.networks as unknown as { slug: string; adapter_key: string };
+  const destination =
+    network.adapter_key === "manual"
+      ? buildManualAffiliateUrl({
+          ctaUrlTemplate: offer.cta_url,
+          subId: token,
+          networkSlug: network.slug
+        })
+      : getAdapter(network.adapter_key).buildAffiliateUrl({
+          ctaUrlTemplate: offer.cta_url,
+          subId: token
+        });
 
   const { data: link, error } = await supabase
     .from("tracking_links")

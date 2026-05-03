@@ -2,11 +2,13 @@ import type { NetworkAdapter } from "./types";
 import { mockAdapter } from "./mock";
 import { everflowAdapter } from "./everflow";
 import { scaleoAdapter } from "./scaleo";
+import { manualAdapter } from "./manual";
 
 const ADAPTERS: Record<string, NetworkAdapter> = {
   mock:     mockAdapter,
   everflow: everflowAdapter,
-  scaleo:   scaleoAdapter
+  scaleo:   scaleoAdapter,
+  manual:   manualAdapter
 };
 
 export function getAdapter(key: string): NetworkAdapter {
