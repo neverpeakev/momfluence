@@ -57,7 +57,7 @@ export default async function Dashboard() {
       <div className="card">
         <h3 className="text-lg">Next steps</h3>
         <ul className="mt-3 space-y-2 text-sm">
-          <li>→ <Link href="/offers">Browse this week's offers</Link></li>
+          <li>→ <Link href="/catalog">Browse the catalog</Link></li>
           <li>→ <Link href="/profile">Set your payout method</Link>{profile?.payout_method && profile.payout_method !== "unset" ? " ✓" : ""}</li>
           <li>→ <Link href="/agreements">Review program agreements</Link>{unsigned.length === 0 ? " ✓" : ""}</li>
         </ul>

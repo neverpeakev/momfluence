@@ -44,7 +44,7 @@ export default async function LinksPage() {
 
       {(rows ?? []).length === 0 ? (
         <div className="card text-sm text-navy-600">
-          You haven't generated any tracking links yet. Head to <a href="/offers">Offers</a> to grab one.
+          You haven't generated any tracking links yet. Head to <a href="/catalog">Catalog</a> to grab one.
         </div>
       ) : (
         <div className="card overflow-x-auto">
