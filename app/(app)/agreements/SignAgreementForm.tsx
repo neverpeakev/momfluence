@@ -10,36 +10,83 @@ export default function SignAgreementForm({ agreementId }: { agreementId: string
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const trimmedName = name.trim();
+  const canSubmit = agreed && trimmedName.length >= 3 && !busy;
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!agreed) return setErr("Please confirm you've read and agree.");
+    if (!canSubmit) return;
     setBusy(true);
     setErr(null);
-    const r = await fetch("/api/agreements/sign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ agreementId, signatureText: name })
-    });
-    const j = await r.json();
-    setBusy(false);
-    if (!r.ok) return setErr(j.error || "failed");
-    router.refresh();
+    try {
+      const r = await fetch("/api/agreements/sign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agreementId, signatureText: trimmedName })
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        if (r.status === 409) {
+          setErr("You've already signed this agreement. Redirecting…");
+          setTimeout(() => router.replace("/agreements"), 1500);
+          return;
+        }
+        throw new Error(j.error || `request failed (${r.status})`);
+      }
+      // router.replace so the back button doesn't return to a stale form.
+      router.replace("/agreements");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "failed");
+      setBusy(false);
+    }
   }
 
   return (
-    <form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-[1fr,1fr,auto] md:items-end">
-      <div>
-        <label className="label">Type your full legal name</label>
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} required minLength={3} />
-      </div>
-      <label className="text-sm flex items-center gap-2 mt-2 md:mt-0">
-        <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-        I've read and agree.
+    <form onSubmit={submit} className="space-y-4">
+      <p className="text-sm text-navy-600">
+        By typing your full legal name and clicking Sign below, you electronically sign this
+        agreement.
+      </p>
+
+      <label className="flex items-start gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          className="mt-1"
+        />
+        <span className="text-sm text-navy-700">
+          I have read and agree to this agreement.
+        </span>
       </label>
-      <button disabled={busy || !agreed || name.length < 3} className="btn-primary">
-        {busy ? "Signing…" : "Sign"}
-      </button>
-      {err && <p className="md:col-span-3 text-sm text-coral-700">{err}</p>}
+
+      <div>
+        <label className="label" htmlFor={`signature-name-${agreementId}`}>
+          Type your full legal name
+        </label>
+        <input
+          id={`signature-name-${agreementId}`}
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          minLength={3}
+          maxLength={120}
+          autoComplete="off"
+          className="input"
+        />
+      </div>
+
+      <div>
+        <button type="submit" disabled={!canSubmit} className="btn-primary">
+          {busy ? "Signing…" : "Sign agreement"}
+        </button>
+      </div>
+
+      <p className="text-xs text-navy-500">
+        Your IP address and timestamp will be recorded as part of the signature.
+      </p>
+
+      {err && <p className="text-sm text-coral-700">{err}</p>}
     </form>
   );
 }

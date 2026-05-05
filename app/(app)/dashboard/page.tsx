@@ -38,12 +38,15 @@ export default async function Dashboard() {
       </div>
 
       {unsigned.length > 0 && (
-        <div className="card border-l-4 border-coral-500">
-          <h3 className="text-lg">Sign your agreements before generating links</h3>
+        <div className="card border-l-4 border-amber-500">
+          <h3 className="text-lg">Sign your agreements to start earning</h3>
           <p className="mt-1 text-sm text-navy-600">
-            You have {unsigned.length} required agreement{unsigned.length > 1 ? "s" : ""} to sign.
+            <strong>{unsigned.length}</strong> of{" "}
+            <strong>{(requiredAgreements ?? []).length}</strong> required agreements{" "}
+            {unsigned.length === 1 ? "needs" : "need"} your signature before you can generate
+            tracking links.
           </p>
-          <Link href="/agreements" className="btn-primary mt-4">Review &amp; sign</Link>
+          <Link href="/agreements" className="btn-primary mt-4">Review agreements</Link>
         </div>
       )}
 
