@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatCents, netPayoutCents } from "@/lib/margin";
-import GetLinkButton from "./GetLinkButton";
-import CopyLinkButton from "./CopyLinkButton";
+import OfferCta, { type ApplicationStatus } from "./OfferCta";
 
 export const dynamic = "force-dynamic";
 
@@ -77,6 +75,14 @@ export default async function CatalogPage() {
     (linkRows ?? []).map((l) => [l.offer_id, l as LinkRow])
   );
 
+  // RLS auto-filters offer_applications to the caller's own rows.
+  const { data: appRows } = await supabase
+    .from("offer_applications")
+    .select("offer_id, status");
+  const appStatusByOffer = new Map<string, ApplicationStatus>(
+    (appRows ?? []).map((a) => [a.offer_id as string, a.status as ApplicationStatus])
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -128,16 +134,13 @@ export default async function CatalogPage() {
               {payout && <p className="text-sm font-semibold text-coral-600">{payout}</p>}
 
               <div>
-                {o.access_model === "application_required" ? (
-                  // TODO Session 2: build /catalog/[offerSlug]/apply route
-                  <Link href={`/catalog/${o.slug}/apply`} className="btn-primary w-full">
-                    Apply
-                  </Link>
-                ) : existing ? (
-                  <CopyLinkButton destinationUrl={existing.destination_url} />
-                ) : (
-                  <GetLinkButton offerId={o.id} />
-                )}
+                <OfferCta
+                  offerId={o.id}
+                  offerSlug={o.slug}
+                  accessModel={o.access_model}
+                  destinationUrl={existing?.destination_url ?? null}
+                  applicationStatus={appStatusByOffer.get(o.id) ?? null}
+                />
               </div>
             </div>
           );
