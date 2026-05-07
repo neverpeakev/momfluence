@@ -4,7 +4,7 @@ import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "MomFluence Platform",
-  description: "The MomFluence creator dashboard — find local offers, share links, get paid.",
+  description: "MomFluence - The curated brand partnership platform for Moms with friends. Share links to hand-picked brands and earn commissions.",
   icons: { icon: "/favicon.svg" }
 };
 

@@ -4,10 +4,9 @@ export default function PublicLanding() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
       <p className="text-sm uppercase tracking-widest text-coral-600 font-semibold">MomFluence Creator Hub</p>
-      <h1 className="mt-3 text-5xl text-navy-900">Find local offers. Share your link. Get paid.</h1>
+      <h1 className="mt-3 text-5xl text-navy-900">Curated brand partnerships. Share your link. Get paid.</h1>
       <p className="mt-6 text-lg text-navy-600">
-        Welcome back to the MomFluence creator dashboard. Sign in to browse this week's offers in your area,
-        generate your tracking link, and check your earnings.
+        Curated brand partnerships for Moms. No applications or interviews. No wait periods. Share your link. Get paid for every conversion.
       </p>
       <div className="mt-10 flex gap-4">
         <Link href="/login" className="btn-primary">Sign in</Link>
@@ -17,7 +16,7 @@ export default function PublicLanding() {
       <div className="mt-16 grid gap-6 sm:grid-cols-3">
         <div className="card">
           <h3 className="text-lg">Browse offers</h3>
-          <p className="mt-2 text-sm text-navy-600">Local brands in your category, pre-vetted by us. Each listing shows what you'll earn per conversion — no math.</p>
+          <p className="mt-2 text-sm text-navy-600">Hand-picked, top paying brands, pre-vetted by us. Each listing shows what you'll earn per conversion — no math.</p>
         </div>
         <div className="card">
           <h3 className="text-lg">Get your link</h3>
