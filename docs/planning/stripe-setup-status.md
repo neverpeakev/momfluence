@@ -133,3 +133,19 @@ Not yet configured. Session 4 will create:
 | Payment methods enabled | ⏳ Kevin to verify in dashboard |
 | Webhook endpoint configured | ⏳ Session 4 |
 | Vault entries seeded | ⏳ Kevin to add 6 entries |
+
+## Custom Domain (added May 7, 2026)
+
+Stripe Custom Domains feature ($10/mo) enabled. Checkout renders at `checkout.momfluence.app` instead of `checkout.stripe.com`.
+
+**Status:** DNS records added and verified by Stripe. Currently in Stripe's 3-hour stability check window. Stripe will email when fully active.
+
+**Implications:**
+- All Checkout sessions automatically use `checkout.momfluence.app` (account-level setting, no per-session config)
+- Customer Portal links use the same custom domain
+- Email receipts use the custom domain
+- Cleaner Meta pixel tracking (no cross-domain attribution loss between momfluence.app → checkout.momfluence.app → momfluence.app/welcome)
+
+**Outstanding (deferred, not blocking Session 4):**
+- Once stability check passes, verify checkout.momfluence.app actually resolves and serves Stripe Checkout (test by creating a test Checkout Session in Stripe Dashboard)
+- Consider setting up a separate subdomain for Stripe Connect Express onboarding flow (Session 7) — likely `connect.momfluence.app` if Stripe supports a 2nd custom domain or via Stripe-hosted with custom branding only
