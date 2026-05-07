@@ -149,3 +149,66 @@ Stripe Custom Domains feature ($10/mo) enabled. Checkout renders at `checkout.mo
 **Outstanding (deferred, not blocking Session 4):**
 - Once stability check passes, verify checkout.momfluence.app actually resolves and serves Stripe Checkout (test by creating a test Checkout Session in Stripe Dashboard)
 - Consider setting up a separate subdomain for Stripe Connect Express onboarding flow (Session 7) — likely `connect.momfluence.app` if Stripe supports a 2nd custom domain or via Stripe-hosted with custom branding only
+
+## Customer Portal configuration (May 7, 2026 — blocked at MCP, must be done via Dashboard)
+
+**MCP automation attempted, blocked.** The Stripe MCP's `stripe_api_execute` tool surface does not include the `/v1/billing_portal/configurations` endpoints (read or write). These admin/configuration endpoints are scoped out of the MCP. Kevin must configure the Customer Portal manually via the Stripe Dashboard.
+
+**Dashboard path:** https://dashboard.stripe.com/settings/billing/portal
+
+**Required settings (mirror these exactly when configuring in dashboard):**
+
+- **Business profile:**
+  - Headline: `Manage your MomFluence membership`
+  - Privacy policy URL: `https://momfluence.app/privacy` (page doesn't exist yet — Stripe accepts forward-references)
+  - Terms of service URL: `https://momfluence.app/terms` (page doesn't exist yet — same)
+  - If Stripe rejects unreachable URLs at save time, omit both URL fields and add a note for Session 6 prep to revisit.
+- **Customer information** (`customer_update`): allow updates to **email**, **address**, **phone**, **tax_id**
+- **Invoice history**: ENABLED
+- **Payment methods**: ENABLED (customers can update their default payment method)
+- **Subscription cancellation** (`subscription_cancel`):
+  - ENABLED
+  - Mode: **Cancel at period end** (`at_period_end`) — member retains access until end of paid period
+  - Proration behavior: **None**
+  - Capture cancellation reason: ENABLED
+  - Reason options: `too_expensive`, `missing_features`, `switched_service`, `unused`, `customer_service`, `too_complex`, `low_quality`, `other`
+- **Subscription pause** (`subscription_pause`): DISABLED — no pause feature for v2 launch
+- **Subscription update / plan switching** (`subscription_update`): DISABLED — we only have one plan
+- **Default return URL**: `https://momfluence.app/dashboard`
+- **Set as account default**: YES (this config will be used by `/api/stripe/portal-session` in Session 6)
+
+After configuring in dashboard, capture the configuration ID (`bpc_xxx`) here for Session 6 reference.
+
+## Payment methods at Checkout (May 7, 2026 — blocked at MCP, must be done via Dashboard)
+
+**MCP automation attempted, blocked.** The Stripe MCP's `stripe_api_execute` tool surface does not include the `/v1/payment_method_configurations` or `/v1/apple_pay/domains` endpoints. Kevin must enable payment methods manually via the Stripe Dashboard.
+
+**Dashboard path:** https://dashboard.stripe.com/settings/payment_methods
+
+**Target state — enable in live mode:**
+
+| Method | Action | Notes / Dashboard sub-path |
+|---|---|---|
+| Card | Verify on (default) | Should already be enabled — confirm only |
+| Apple Pay | Enable + register domain | https://dashboard.stripe.com/settings/payment_methods/apple_pay → register `momfluence.app` AND `checkout.momfluence.app`. Each requires uploading the `.well-known/apple-developer-merchantid-domain-association` file Stripe provides. May need to wait for Custom Domain stability check to complete before `checkout.momfluence.app` can be registered. |
+| Google Pay | Verify on | Typically auto-enabled when Card is on; no separate action needed |
+| Link | Enable | One-click toggle in Dashboard payment methods page |
+| Klarna | Enable | One-click toggle; region-restricted to US — confirm enabled for US only |
+| PayPal | Enable + connect | Requires Stripe→PayPal merchant account connect via OAuth (a few clicks). Note: this is PayPal-as-Checkout-payment-method, NOT for outbound creator payouts (those are blocked by PayPal's denial of Live Payouts and have been pivoted to Stripe Connect Express for Session 7). |
+
+After enabling, return to this doc and update the table with confirmed states.
+
+## Outstanding Kevin tasks (post-MCP automation, May 7, 2026)
+
+These items were attempted via MCP but blocked because the Stripe MCP scope excludes admin/configuration endpoints. Kevin must complete via Stripe Dashboard:
+
+1. **Customer Portal configuration** — https://dashboard.stripe.com/settings/billing/portal (full spec in section above; mirror exactly)
+2. **Payment methods activation** — https://dashboard.stripe.com/settings/payment_methods (table in section above)
+3. **Apple Pay domain registration** — https://dashboard.stripe.com/settings/payment_methods/apple_pay (register both `momfluence.app` and `checkout.momfluence.app`)
+4. **Connect Express enablement** — https://dashboard.stripe.com/settings/connect (already on the existing outstanding-tasks list; required for Session 7 payouts)
+
+**Vercel canonical domain swap** — separately blocked because the Vercel CLI is not installed locally:
+- Dashboard: Project → Settings → Domains
+- Action: uncheck "Redirect to this domain" on `momfluence.app`; check it on `www.momfluence.app` with target `momfluence.app`
+- After: `momfluence.app` → 200 OK, `www.momfluence.app` → 308 to apex
+- Optional: install Vercel CLI (`npm i -g vercel`) to unlock future automation
