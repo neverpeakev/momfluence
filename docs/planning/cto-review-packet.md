@@ -105,13 +105,13 @@ Ordered roughly by user-facing impact:
 - **Synthetic agreement signatures: 3 of 4 existing signatures are seeded directly from SQL during testing** rather than via the real signature UI. Only Kevin's sub-affiliate agreement signature was created through the production UI flow.
 - **7 refunded paying members** from v1 (March 2026 static HTML signup); refunds processed through PayPal directly. No legacy data to migrate to v2.
 - **Two prior credential leaks during build** (FlexOffers in URL path; Impact creds in similar context). Both rotated. pg_net history purged. `makeRedactor` defense added in sync functions to prevent recurrence.
-- **Two Meta Pixels were in use during v1**: 764587569626622 (SPA shells) and 1407633647209853 (content pages). Pixel 1407633647209853 holds the 7 historical Purchase events and will be inherited by v2 via Conversions API in Session 4 (see `docs/planning/session-4-meta-tracking.md` for full plan).
+- **Three Meta Pixels in v2 architecture.** Two legacy v1 pixels (1407633647209853 and 764587569626622) remain on-site for audience signal preservation only — they fire PageView only and don't receive CAPI events. A new v2 primary pixel (1468831514190648, in a fresh Meta Ads Account 3553164818168199 under MomFluence Business Manager 747377658306568) fires all value events (Purchase, etc.) and is the only pixel connected to Conversions API. This architecture keeps v2 reporting clean while preserving v1 audience signal for potential future retargeting. See `docs/planning/session-4-meta-tracking.md`.
 
 ---
 
 ## Session 4 launch requirements (non-negotiable)
 
-- Meta browser pixel + Conversions API (CAPI) wired in dual mode with event deduplication. Inherits pixel history from v1 deployment (pixel ID 1407633647209853). Required for ad-campaign learning continuity from v1's 7 historical Purchase conversions.
+- Meta tracking implementation: new v2 primary pixel `1468831514190648` (not the legacy v1 pixels) wires CAPI dual-mode with event deduplication. Two legacy v1 pixels remain on-site for PageView-only audience signal. Pixel ID `1468831514190648` lives in Meta Ads Account `3553164818168199` under Business Manager `747377658306568`. See `docs/planning/session-4-meta-tracking.md` for the full firing strategy.
 - Stripe Checkout in production mode with Apple Pay, Google Pay, PayPal, Link, Klarna enabled
 - Server-side Stripe webhook for subscription lifecycle (created, payment_failed, deleted, paid)
 - DNS cutover from legacy momfluence Vercel project to momfluence-platform Vercel project
