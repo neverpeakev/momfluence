@@ -11,7 +11,7 @@ What I'd value most:
 - Gate stack robustness on the API endpoints (especially `/api/links/create` — there's a known defense-in-depth gap)
 - Anything you spot that should block launch
 
-Live URL: https://momfluence-platform.vercel.app
+Live URL: https://momfluence.app
 Repo: https://github.com/neverpeakev/momfluence (commit b02cf3c on main)
 Full review packet: docs/planning/cto-review-packet.md in the repo
 

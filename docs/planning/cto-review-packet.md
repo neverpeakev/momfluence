@@ -2,7 +2,7 @@
 
 **Repo:** https://github.com/neverpeakev/momfluence
 **Current HEAD:** b02cf3c (Exclude supabase/functions from Next.js typecheck)
-**Live URL for review: https://momfluence-platform.vercel.app**
+**Live URL for review: https://momfluence.app**
 
 ## TL;DR
 
@@ -76,16 +76,16 @@ Today's commit `797fd31` ("Fix margin_cents generated-column bug in sync functio
 
 ---
 
-## Known live issue — momfluence.app 500
+## Known live issue — momfluence.app 500 (RESOLVED May 7, 2026)
 
-The custom domain momfluence.app currently serves a 500 (MIDDLEWARE_INVOCATION_FAILED). This domain is owned by a SEPARATE legacy Vercel project named `momfluence` (not the `momfluence-platform` project that hosts the v2 platform code).
+The momfluence.app 500 issue is RESOLVED. The DNS cutover that was originally scoped for Session 4 was performed today by Kevin. The momfluence.app domain now points to the momfluence-platform Vercel project (the v2 platform code). The legacy `momfluence` Vercel project no longer serves any active domain and can be archived.
 
-Diagnostic findings:
-- The legacy `momfluence` Vercel project's Framework Preset was changed to "Other" sometime after April 27, 2026, causing all subsequent GitHub-triggered builds to fail at build time
-- The currently-live deployment on that project is from April 27 (commit 35ae1b1) under the previous Next.js framework setting; that build is now throwing at runtime, likely due to env var rotation since deploy
-- The platform deploy at `momfluence-platform.vercel.app` is fully healthy and serves the latest v2 code (commit b02cf3c at time of writing)
+Original diagnostic for historical reference: the legacy `momfluence` Vercel project's Framework Preset had been changed to "Other" sometime after April 27, 2026, causing all subsequent GitHub-triggered builds to fail. The Apr 27 deployment that was serving momfluence.app started returning runtime 500s, likely due to env var rotation. Cutover to momfluence-platform resolved this.
 
-Plan: Session 4 will repoint momfluence.app at the `momfluence-platform` Vercel project as part of the marketing-migration + signup-funnel work. The legacy `momfluence` project will be archived but preserved for deploy-history reference (it has 7 historical Purchase events on Meta Pixel 1407633647209853 that will be inherited by v2). No fix is needed before Session 4 — no real users currently use momfluence.app.
+Current state:
+- Production: https://momfluence.app (canonical, served by momfluence-platform Vercel project)
+- Stripe Checkout: https://checkout.momfluence.app (DNS verified May 7, 2026, in 3-hour stability check)
+- Fallback: https://momfluence-platform.vercel.app still resolves
 
 ---
 
@@ -105,17 +105,17 @@ Ordered roughly by user-facing impact:
 - **Synthetic agreement signatures: 3 of 4 existing signatures are seeded directly from SQL during testing** rather than via the real signature UI. Only Kevin's sub-affiliate agreement signature was created through the production UI flow.
 - **7 refunded paying members** from v1 (March 2026 static HTML signup); refunds processed through PayPal directly. No legacy data to migrate to v2.
 - **Two prior credential leaks during build** (FlexOffers in URL path; Impact creds in similar context). Both rotated. pg_net history purged. `makeRedactor` defense added in sync functions to prevent recurrence.
-- **Three Meta Pixels in v2 architecture.** Two legacy v1 pixels (1407633647209853 and 764587569626622) remain on-site for audience signal preservation only — they fire PageView only and don't receive CAPI events. A new v2 primary pixel (1468831514190648, in a fresh Meta Ads Account 3553164818168199 under MomFluence Business Manager 747377658306568) fires all value events (Purchase, etc.) and is the only pixel connected to Conversions API. This architecture keeps v2 reporting clean while preserving v1 audience signal for potential future retargeting. See `docs/planning/session-4-meta-tracking.md`.
+- **Three Meta Pixels in v2 architecture.** Two legacy v1 pixels (1407633647209853 and 764587569626622) remain on-site for audience signal preservation only — they fire PageView only and don't receive CAPI events. A new v2 primary pixel (1468831514190648, in a fresh Meta Ads Account 3553164818168199 under MomFluence Business Manager 747377658306568) fires all value events and is the only pixel connected to Conversions API. CAPI is implemented via Stape's hosted CAPIG gateway ($10/mo) — Stape proxies browser pixel events to Meta CAPI server-to-server, so we don't have a CAPI endpoint in our codebase. This architecture keeps v2 reporting clean while preserving v1 audience signal for potential future retargeting. See `docs/planning/session-4-meta-tracking.md`.
 
 ---
 
 ## Session 4 launch requirements (non-negotiable)
 
-- Meta tracking implementation: new v2 primary pixel `1468831514190648` (not the legacy v1 pixels) wires CAPI dual-mode with event deduplication. Two legacy v1 pixels remain on-site for PageView-only audience signal. Pixel ID `1468831514190648` lives in Meta Ads Account `3553164818168199` under Business Manager `747377658306568`. See `docs/planning/session-4-meta-tracking.md` for the full firing strategy.
-- Stripe Checkout in production mode with Apple Pay, Google Pay, PayPal, Link, Klarna enabled
-- Server-side Stripe webhook for subscription lifecycle (created, payment_failed, deleted, paid)
-- DNS cutover from legacy momfluence Vercel project to momfluence-platform Vercel project
-- Auth migration from magic link to email + password
+- **Meta tracking implementation**: new v2 primary pixel `1468831514190648` (NOT legacy v1 pixels) wires browser pixel via standard `fbq()` calls in `app/layout.tsx`. Server-side CAPI is handled automatically by Stape's hosted CAPIG ($10/mo, https://capig.stape.vip) — Stape proxies browser pixel events to Meta CAPI server-to-server with automatic event_id deduplication and credential management. No backend CAPI code needed in our system. Two legacy v1 pixels (1407633647209853, 764587569626622) remain on-site for PageView-only audience signal. v2 pixel lives in Meta Ads Account `3553164818168199` under Business Manager `747377658306568`. See `docs/planning/session-4-meta-tracking.md`.
+- **Stripe Checkout** in production mode at `checkout.momfluence.app` (Stripe Custom Domain enabled May 7, 2026 at $10/mo, DNS verified, in 3-hour stability check window). Apple Pay, Google Pay, PayPal-as-payment-method, Link, Klarna enabled. Price ID `price_1TUVt2ANPjxV4rVaQ4hgCXvr` ($5/mo recurring USD).
+- **Server-side Stripe webhook** for subscription lifecycle (`created`, `payment_failed`, `deleted`, `paid`) at `momfluence.app/api/stripe/webhook`.
+- ~~DNS cutover from legacy momfluence Vercel project to momfluence-platform Vercel project~~ **COMPLETED May 7, 2026** — momfluence.app now points to momfluence-platform Vercel project.
+- **Auth migration** from magic link to email + password.
 - **Creator payouts in Session 7 use Stripe Connect Express, not PayPal Mass Pay.** PayPal Live Payouts API was Denied for Kevin's Business account on May 6, 2026. Stripe Connect chosen for instant approval, better fees (0.25% + $0.25 vs PayPal's 2%), stronger KYC, and industry-standard creator payout rails. PayPal appeal will be pursued separately as low-priority background work.
 
 ---
