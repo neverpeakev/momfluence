@@ -1,11 +1,34 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Script from "next/script";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "MomFluence Platform",
-  description: "MomFluence - The curated brand partnership platform for Moms with friends. Share links to hand-picked brands and earn commissions.",
-  icons: { icon: "/favicon.svg" }
+  metadataBase: new URL("https://momfluence.app"),
+  title: {
+    default: "Moms: have $5 + friends? — MomFluence.app",
+    template: "%s — MomFluence.app"
+  },
+  description:
+    "Get paid for the stuff you're already sharing. Real brands, real commissions, paid right to your phone. $5/mo, cancel anytime.",
+  icons: { icon: "/favicon.svg" },
+  openGraph: {
+    type: "website",
+    siteName: "MomFluence",
+    title: "Moms: have $5 + friends? — MomFluence.app",
+    description:
+      "Get paid for the stuff you're already sharing. Real brands, real commissions, paid right to your phone.",
+    url: "https://momfluence.app",
+    images: ["/og-default.png"]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Moms: have $5 + friends? — MomFluence.app",
+    description:
+      "Get paid for the stuff you're already sharing. Real brands, real commissions.",
+    images: ["/og-default.png"]
+  }
 };
 
 const GA = process.env.NEXT_PUBLIC_GA4_ID;
@@ -47,7 +70,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           `}</Script>
         )}
       </head>
-      <body>{children}</body>
+      <body className="flex min-h-screen flex-col">
+        <Header />
+        <div className="flex-1">{children}</div>
+        <Footer />
+      </body>
     </html>
   );
 }
