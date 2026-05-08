@@ -234,21 +234,27 @@ Meta optimization phases (expected):
 
 Note: 14.3% CVR is computed from 49 clicks (small sample). 95% CI on this rate is roughly 6%–25%, so real v2 CVR could vary. Recompute target CPCs once v2 has ~100+ clicks.
 
-## Payout rails: Stripe Connect Express, not PayPal
+## Payout rails: deferred manual payouts + instant-payout perk (revised May 8, 2026)
 
-Session 7 (creator payouts) was originally scoped against PayPal Mass Pay API. That has been pivoted to Stripe Connect Express because PayPal Live Payouts was Denied for Kevin's account on May 6, 2026.
+Session 7 was originally scoped against Stripe Connect Express after PayPal Mass Pay was denied on May 6, 2026. As of May 8, scope has been simplified further:
 
-Implications for Session 4 (signup funnel) — what changes:
+- **Launch with manual payouts.** Kevin manually pays each member via their preferred method (PayPal email, Venmo handle, etc.) until volume justifies automation. Catt CC'd on payout request notifications.
+- **Payout setup is deferred** — not collected at signup. Member only sets up payout when they click "Withdraw."
+- **W-9 collection is deferred** to $600 cumulative earnings (IRS 1099-NEC threshold).
+- **Payout-method-agnostic UX** — collection form supports PayPal, Venmo, Bank ACH (deferred placeholder), and "Skip for now". Schema designed so swapping in any automated provider later (Stripe Connect, PayPal Mass Pay, Tipalti, etc.) requires no UX migration.
+- **Instant-payout token (psychological hook):** each member gets ONE lifetime instant-payout token, available in first 90 days from signup. Lower threshold ($25 vs standard $50). Capped at $25 max payout amount during first 30 days from signup (chargeback protection). After token use OR 90 days expiry → gone forever, member on standard $50/2x-monthly track.
+- **Standard payout rules:** $50 minimum, max 2 withdrawal requests per calendar month.
 
-- **Onboarding step 2 ("payout destination")** no longer collects PayPal email or Venmo handle. Instead, redirects the new member to a Stripe Connect Express onboarding flow (~2 min hosted by Stripe; collects KYC + bank account or debit card)
-- After Connect onboarding completes, Stripe redirects back to `/onboarding/profile` with a `stripe_connect_account_id` to save on the momfluencer row
-- DB schema: replace `payout_method` (paypal|venmo) and `payout_destination` with a single `stripe_connect_account_id` (text, nullable until onboarding complete)
-- Vault entries to add for Session 7 (NOT Session 4): `stripe_connect_client_id` (the Connect platform's published client ID, used by Express onboarding redirect URLs)
+Implications for Session 4 (signup funnel) — what changes from prior plan:
+
+- **Onboarding step 2 ("payout destination") is REMOVED.** Post-Stripe-Checkout flow goes: Checkout success → Profile setup (display name, bio) → Dashboard. No payout info collected.
+- **Payout collection moves to Phase 5 (Manual payout infrastructure)** — see session-4-punchlist.md.
+- **DB schema:** drop the prior `stripe_connect_account_id` plan. New schema in punchlist Phase 5: `signup_at`, `payout_status`, `payout_method`, `payout_paypal_email`, `payout_venmo_handle`, `payout_venmo_phone`, `cumulative_earnings_cents`, `instant_payout_used_at`.
 
 What does NOT change:
 - Stripe Checkout for inbound $5/mo membership payments — same plan
 - Meta pixel + CAPI implementation — same plan
-- $50 minimum payout threshold, 1st-and-15th auto-disbursement schedule — same plan (just runs on Stripe Connect transfers instead of PayPal Mass Pay)
+- 1099-NEC compliance — handled at $600 threshold via deferred W-9 collection
 
 ## Site readiness gaps identified May 7, 2026 (audit findings)
 

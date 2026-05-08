@@ -117,7 +117,7 @@ Ordered roughly by user-facing impact:
 - **Server-side Stripe webhook** for subscription lifecycle (`created`, `payment_failed`, `deleted`, `paid`) at `momfluence.app/api/stripe/webhook`.
 - ~~DNS cutover from legacy momfluence Vercel project to momfluence-platform Vercel project~~ **COMPLETED May 7, 2026** — momfluence.app now points to momfluence-platform Vercel project.
 - **Auth migration** from magic link to email + password.
-- **Creator payouts in Session 7 use Stripe Connect Express, not PayPal Mass Pay.** PayPal Live Payouts API was Denied for Kevin's Business account on May 6, 2026. Stripe Connect chosen for instant approval, better fees (0.25% + $0.25 vs PayPal's 2%), stronger KYC, and industry-standard creator payout rails. PayPal appeal will be pursued separately as low-priority background work.
+- **Creator payouts: deferred manual model + instant-payout perk for launch.** Stripe Connect Express activation deferred indefinitely (Kevin opted out of platform terms acceptance for v2 launch). Launch model: manual payouts processed by Kevin via PayPal/Venmo per member preference (Catt CC'd on notifications). Payout setup is deferred-collected (only when member clicks Withdraw). W-9 deferred-collected (only when cumulative earnings hit $600 IRS threshold). Each member gets a one-time lifetime instant-payout token in their first 90 days at $25 threshold, capped at $25 during first 30 days for chargeback protection. Standard threshold after: $50, max 2x per month. Schema is payout-method-agnostic so any future automated provider (Stripe Connect, PayPal Mass Pay, Tipalti) can swap in without UX migration. Full implementation details in `docs/planning/session-4-punchlist.md` Phase 5.
 
 ---
 
