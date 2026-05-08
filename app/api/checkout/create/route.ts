@@ -21,10 +21,20 @@ export async function POST() {
     );
   }
 
+  // Defense-in-depth: strip any whitespace/newlines from env var paste artifacts.
+  const cleanSecret = secret.trim();
+  const cleanPriceId = priceId.trim();
+
   // Diagnostic-only fingerprint of the secret (never log the secret itself).
-  const secretPrefix = secret.slice(0, 7); // e.g. "sk_live" or "sk_test"
+  const secretPrefix = cleanSecret.slice(0, 7); // e.g. "sk_live" or "sk_test"
   const secretLen = secret.length;
-  const priceIdTrimmedSame = priceId === priceId.trim();
+  const secretTrimmedLen = cleanSecret.length;
+  const secretWasModified = secret !== cleanSecret;
+  const secretContainsNewline = secret.includes("\n");
+  const secretContainsSpace = / /.test(secret);
+  const secretContainsCR = secret.includes("\r");
+  const secretSkLiveCount = (secret.match(/sk_live_/g) || []).length;
+  const priceIdTrimmedSame = priceId === cleanPriceId;
 
   const supabase = await createClient();
   const {
@@ -36,7 +46,7 @@ export async function POST() {
   }
 
   // Disable retries so the underlying error surfaces on the first failure.
-  const stripe = new Stripe(secret, {
+  const stripe = new Stripe(cleanSecret, {
     maxNetworkRetries: 0,
     timeout: 15000
   });
@@ -44,7 +54,7 @@ export async function POST() {
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: cleanPriceId, quantity: 1 }],
       customer_email: user.email ?? undefined,
       client_reference_id: user.id,
       success_url: "https://momfluence.app/welcome?session_id={CHECKOUT_SESSION_ID}",
@@ -96,7 +106,13 @@ export async function POST() {
       causeHostname: e.cause?.hostname,
       secretPrefix,
       secretLen,
-      priceId,
+      secretTrimmedLen,
+      secretWasModified,
+      secretContainsNewline,
+      secretContainsSpace,
+      secretContainsCR,
+      secretSkLiveCount,
+      priceId: cleanPriceId,
       priceIdTrimmedSame
     };
 
