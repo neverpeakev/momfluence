@@ -128,9 +128,11 @@ Not yet configured. Session 4 will create:
 | Account identity verified | ✓ Neverpeakmarketing (correct account) |
 | Live $5/mo Product created | ✓ `prod_UTSoRC6ZHFObLw` |
 | Live $5/mo Price created | ✓ `price_1TUVt2ANPjxV4rVaQ4hgCXvr` |
-| Connect Express enabled | ⏳ Kevin to verify in dashboard |
-| Customer Portal configured | ⏳ Kevin to verify in dashboard |
-| Payment methods enabled | ⏳ Kevin to verify in dashboard |
+| Connect Express enabled | ⏳ Kevin to activate in dashboard (deferred to Session 7 prep) |
+| Customer Portal configured | ⏳ Kevin to configure in dashboard (deferred to Session 6 prep) |
+| Payment methods enabled | ✓ pmc_1RdyMnANPjxV4rVatIeIt1Vg (Card, Apple Pay, Cash App Pay, Link, Bancontact, EPS, Google Pay, Klarna, Affirm) |
+| Apple Pay domains registered | ✓ momfluence.app (pmd_1TUfvmANPjxV4rVaLpM3pJRl) + checkout.momfluence.app (pmd_1TUfvyANPjxV4rVaAe9urcqA) |
+| Custom Domain stability check | ✓ Active (checkout.momfluence.app) |
 | Webhook endpoint configured | ⏳ Session 4 |
 | Vault entries seeded | ⏳ Kevin to add 6 entries |
 
@@ -138,7 +140,7 @@ Not yet configured. Session 4 will create:
 
 Stripe Custom Domains feature ($10/mo) enabled. Checkout renders at `checkout.momfluence.app` instead of `checkout.stripe.com`.
 
-**Status:** DNS records added and verified by Stripe. Currently in Stripe's 3-hour stability check window. Stripe will email when fully active.
+**Status:** ✅ ACTIVE as of May 7, 2026 evening. Stability check completed. `checkout.momfluence.app` is now Active for Checkout, Payment Links, AND Customer Portal endpoints (validated via dashboard).
 
 **Implications:**
 - All Checkout sessions automatically use `checkout.momfluence.app` (account-level setting, no per-session config)
@@ -147,7 +149,7 @@ Stripe Custom Domains feature ($10/mo) enabled. Checkout renders at `checkout.mo
 - Cleaner Meta pixel tracking (no cross-domain attribution loss between momfluence.app → checkout.momfluence.app → momfluence.app/welcome)
 
 **Outstanding (deferred, not blocking Session 4):**
-- Once stability check passes, verify checkout.momfluence.app actually resolves and serves Stripe Checkout (test by creating a test Checkout Session in Stripe Dashboard)
+- ~~Once stability check passes, verify checkout.momfluence.app actually resolves and serves Stripe Checkout~~ **DONE — Active May 7, 2026 evening, validated via dashboard for Checkout + Payment Links + Customer Portal endpoints.**
 - Consider setting up a separate subdomain for Stripe Connect Express onboarding flow (Session 7) — likely `connect.momfluence.app` if Stripe supports a 2nd custom domain or via Stripe-hosted with custom branding only
 
 ## Customer Portal configuration (May 7, 2026 — blocked at MCP, must be done via Dashboard)
@@ -198,14 +200,34 @@ After configuring in dashboard, capture the configuration ID (`bpc_xxx`) here fo
 
 After enabling, return to this doc and update the table with confirmed states.
 
+### ✅ COMPLETED via dashboard May 7, 2026 (evening)
+
+**Payment Method Configuration:** `pmc_1RdyMnANPjxV4rVatIeIt1Vg` (the "Your account" config). This is the active config for Checkout / Payment Intents on this account.
+
+Two other Payment Method Configurations exist on the account but are SCOPED to other integrations and should be ignored for v2 Checkout work:
+- `pmc_1NvO4vANPjxV4rVaKhyVwDK5` — FreshBooks integration config
+- `pmc_1TUeO8ANPjxV4rVahMo3XZQx` — Meta Conversions App config
+
+**Methods enabled in `pmc_1RdyMnANPjxV4rVatIeIt1Vg`:** Cards, Apple Pay, Cash App Pay, Link, Bancontact, EPS, Google Pay, Klarna, Affirm.
+
+Notes vs. original target:
+- **Cash App Pay, Bancontact, EPS, Affirm** are bonus methods Kevin enabled beyond the original Session 4 target list (Card, Apple Pay, Google Pay, Link, Klarna, PayPal). Bancontact + EPS are EU-region methods — useful if any EU traffic comes in, no harm if it doesn't. Cash App Pay + Affirm broaden BNPL coverage.
+- **PayPal-as-Checkout-payment-method** is NOT in this list — confirm whether it was intentionally skipped or needs follow-up. Defer decision; not blocking for Session 4 launch.
+
+**Apple Pay domain registrations (both Enabled):**
+- `momfluence.app` — Domain ID `pmd_1TUfvmANPjxV4rVaLpM3pJRl`
+- `checkout.momfluence.app` — Domain ID `pmd_1TUfvyANPjxV4rVaAe9urcqA`
+
+This unblocks Apple Pay on both the marketing-page CTAs (momfluence.app) and the Stripe Checkout flow (checkout.momfluence.app). The `.well-known/apple-developer-merchantid-domain-association` file Stripe generated is hosted automatically by Stripe for Custom-Domain-served pages — no manual `public/.well-known/` upload needed for the Checkout subdomain. Confirm whether the apex (momfluence.app) needs the file dropped in `public/.well-known/` for Vercel to serve, or if Stripe handles that too. (Test on staging deploy of Session 4.)
+
 ## Outstanding Kevin tasks (post-MCP automation, May 7, 2026)
 
-These items were attempted via MCP but blocked because the Stripe MCP scope excludes admin/configuration endpoints. Kevin must complete via Stripe Dashboard:
+These items were attempted via MCP but blocked because the Stripe MCP scope excludes admin/configuration endpoints. Status as of May 7, 2026 evening:
 
-1. **Customer Portal configuration** — https://dashboard.stripe.com/settings/billing/portal (full spec in section above; mirror exactly)
-2. **Payment methods activation** — https://dashboard.stripe.com/settings/payment_methods (table in section above)
-3. **Apple Pay domain registration** — https://dashboard.stripe.com/settings/payment_methods/apple_pay (register both `momfluence.app` and `checkout.momfluence.app`)
-4. **Connect Express enablement** — https://dashboard.stripe.com/settings/connect (already on the existing outstanding-tasks list; required for Session 7 payouts)
+1. ~~**Payment methods activation**~~ ✅ **DONE** — `pmc_1RdyMnANPjxV4rVatIeIt1Vg` with Card, Apple Pay, Cash App Pay, Link, Bancontact, EPS, Google Pay, Klarna, Affirm.
+2. ~~**Apple Pay domain registration**~~ ✅ **DONE** — both `momfluence.app` (`pmd_1TUfvmANPjxV4rVaLpM3pJRl`) and `checkout.momfluence.app` (`pmd_1TUfvyANPjxV4rVaAe9urcqA`) Enabled.
+3. **Customer Portal configuration** — https://dashboard.stripe.com/settings/billing/portal (full spec in section above; mirror exactly). **Deferred to Session 6 prep.**
+4. **Connect Express enablement** — https://dashboard.stripe.com/settings/connect (required for Session 7 payouts). **Deferred to Session 7 prep.** Confirmed NOT yet enabled (no Connect entry in dashboard sidebar).
 
 **Vercel canonical domain swap** — separately blocked because the Vercel CLI is not installed locally:
 - Dashboard: Project → Settings → Domains
