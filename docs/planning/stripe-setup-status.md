@@ -52,15 +52,14 @@ This is the price ID Session 4's Stripe Checkout flow will reference. Add to Vau
 
 The connected Stripe MCP tool surface does not expose Connect, Customer Portal, or payment method settings. Verify the following manually before Session 4:
 
-### 1. Stripe Connect Express enablement
+### 1. Stripe Connect Express enablement — ⛔ DEFERRED indefinitely (May 8, 2026)
 
+Kevin opted out of Stripe Connect Express activation for v2 launch. Manual payout model with deferred setup + instant-payout token perk adopted instead (see `docs/planning/session-4-punchlist.md` Phase 5). Connect activation can be revisited if/when launch volume justifies automated payouts.
+
+Original plan preserved for audit trail:
 - Dashboard path: https://dashboard.stripe.com/settings/connect
-- Need to confirm:
-  - Connect platform is enabled
-  - Express account type is enabled (not Standard or Custom)
-  - Branding (logo, business name, support email) is set on the Connect onboarding flow
-  - `stripe_connect_client_id` (the platform's published client ID for OAuth/onboarding redirect URLs) is captured for Vault
-- This is the rail Session 7 will use for creator payouts (replacing the denied PayPal Live Payouts plan).
+- Was to enable: Connect platform, Express account type, branding, capture `stripe_connect_client_id` for Vault
+- Was the rail for Session 7 creator payouts (replacing the denied PayPal Live Payouts plan).
 
 ### 2. Customer Portal configuration
 
@@ -128,7 +127,7 @@ Not yet configured. Session 4 will create:
 | Account identity verified | ✓ Neverpeakmarketing (correct account) |
 | Live $5/mo Product created | ✓ `prod_UTSoRC6ZHFObLw` |
 | Live $5/mo Price created | ✓ `price_1TUVt2ANPjxV4rVaQ4hgCXvr` |
-| Connect Express enabled | ⏳ Kevin to activate in dashboard (deferred to Session 7 prep) |
+| Connect Express enabled | ⛔ DEFERRED indefinitely (Kevin opted out for v2 launch — manual payout model adopted instead) |
 | Customer Portal configured | ✓ bpc_1TUsmZANPjxV4rVar9d9HTcM (May 8, 2026) |
 | Payment methods enabled | ✓ pmc_1RdyMnANPjxV4rVatIeIt1Vg (Card, Apple Pay, Cash App Pay, Link, Bancontact, EPS, Google Pay, Klarna, Affirm) |
 | Apple Pay domains registered | ✓ momfluence.app (pmd_1TUfvmANPjxV4rVaLpM3pJRl) + checkout.momfluence.app (pmd_1TUfvyANPjxV4rVaAe9urcqA) |
@@ -238,7 +237,7 @@ These items were attempted via MCP but blocked because the Stripe MCP scope excl
 1. ~~**Payment methods activation**~~ ✅ **DONE** — `pmc_1RdyMnANPjxV4rVatIeIt1Vg` with Card, Apple Pay, Cash App Pay, Link, Bancontact, EPS, Google Pay, Klarna, Affirm.
 2. ~~**Apple Pay domain registration**~~ ✅ **DONE** — both `momfluence.app` (`pmd_1TUfvmANPjxV4rVaLpM3pJRl`) and `checkout.momfluence.app` (`pmd_1TUfvyANPjxV4rVaAe9urcqA`) Enabled.
 3. ~~**Customer Portal configuration**~~ ✅ **DONE May 8, 2026** — `bpc_1TUsmZANPjxV4rVar9d9HTcM`, set as account default, hosted at `checkout.momfluence.app/p/...`.
-4. **Connect Express enablement** — https://dashboard.stripe.com/settings/connect (required for Session 7 payouts). **Deferred to Session 7 prep.** Confirmed NOT yet enabled (no Connect entry in dashboard sidebar). **This is now the only remaining post-MCP dashboard task.**
+4. ⛔ ~~**Connect Express enablement**~~ **DEFERRED indefinitely** — Kevin opted out of Stripe Connect Express activation for v2 launch. Manual payout model with deferred setup + instant-payout token perk adopted instead. Connect activation can be revisited if/when launch volume justifies automated payouts. See `docs/planning/session-4-punchlist.md` Phase 5 for the manual payout model.
 
 **Vercel canonical domain swap** — separately blocked because the Vercel CLI is not installed locally:
 - Dashboard: Project → Settings → Domains
