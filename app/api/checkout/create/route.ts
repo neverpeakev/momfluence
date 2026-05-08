@@ -69,10 +69,17 @@ export async function POST() {
       statusCode?: number;
       requestId?: string;
       raw?: { message?: string; code?: string; type?: string };
-      cause?: { message?: string; code?: string; errno?: number; syscall?: string };
+      cause?: {
+        message?: string;
+        code?: string;
+        errno?: number;
+        syscall?: string;
+        hostname?: string;
+        name?: string;
+      };
     };
 
-    console.error("[/api/checkout/create] stripe-call-failed", {
+    const diag = {
       message: e.message,
       type: e.type,
       code: e.code,
@@ -81,18 +88,35 @@ export async function POST() {
       rawMessage: e.raw?.message,
       rawCode: e.raw?.code,
       rawType: e.raw?.type,
+      causeName: e.cause?.name,
       causeMessage: e.cause?.message,
       causeCode: e.cause?.code,
       causeErrno: e.cause?.errno,
       causeSyscall: e.cause?.syscall,
+      causeHostname: e.cause?.hostname,
       secretPrefix,
       secretLen,
       priceId,
       priceIdTrimmedSame
-    });
+    };
+
+    // Multi-line console output — short lines avoid log-viewer truncation.
+    console.error("[checkout-debug] message:", diag.message);
+    console.error("[checkout-debug] type:", diag.type);
+    console.error("[checkout-debug] code:", diag.code);
+    console.error("[checkout-debug] statusCode:", diag.statusCode);
+    console.error("[checkout-debug] causeName:", diag.causeName);
+    console.error("[checkout-debug] causeMessage:", diag.causeMessage);
+    console.error("[checkout-debug] causeCode:", diag.causeCode);
+    console.error("[checkout-debug] causeErrno:", diag.causeErrno);
+    console.error("[checkout-debug] causeSyscall:", diag.causeSyscall);
+    console.error("[checkout-debug] causeHostname:", diag.causeHostname);
+    console.error("[checkout-debug] secretPrefix:", diag.secretPrefix);
+    console.error("[checkout-debug] secretLen:", diag.secretLen);
+    console.error("[checkout-debug] priceIdTrimmedSame:", diag.priceIdTrimmedSame);
 
     return NextResponse.json(
-      { error: e.message || "Checkout creation failed." },
+      { error: e.message || "Checkout creation failed.", diagnostic: diag },
       { status: 500 }
     );
   }
