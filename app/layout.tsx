@@ -3,13 +3,32 @@ import type { Metadata } from "next";
 import Script from "next/script";
 
 export const metadata: Metadata = {
-  title: "MomFluence Platform",
-  description: "MomFluence - The curated brand partnership platform for Moms with friends. Share links to hand-picked brands and earn commissions.",
-  icons: { icon: "/favicon.svg" }
+  metadataBase: new URL("https://momfluence.app"),
+  title: {
+    default: "MomFluence — Curated brand partnerships for Moms",
+    template: "%s | MomFluence",
+  },
+  description:
+    "MomFluence is a curated brand partnership platform for Moms. Hand-picked, pre-vetted offers. Share your link. Get paid NET-30 by direct deposit.",
+  icons: { icon: "/favicon.svg" },
+  openGraph: {
+    type: "website",
+    siteName: "MomFluence",
+    url: "https://momfluence.app",
+    title: "MomFluence — Curated brand partnerships for Moms",
+    description: "Hand-picked, pre-vetted offers. Share your link. Get paid.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MomFluence — Curated brand partnerships for Moms",
+    description: "Hand-picked, pre-vetted offers. Share your link. Get paid.",
+  },
 };
 
 const GA = process.env.NEXT_PUBLIC_GA4_ID;
-const PIXEL = process.env.NEXT_PUBLIC_META_PIXEL;
+const PIXEL_PRIMARY = "1468831514190648";
+const PIXEL_LEGACY_CONTENT = "1407633647209853";
+const PIXEL_LEGACY_SPA = "764587569626622";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -32,20 +51,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `}</Script>
           </>
         )}
-        {PIXEL && (
-          <Script id="meta-pixel" strategy="afterInteractive">{`
-            !function(f,b,e,v,n,t,s)
-            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-            n.queue=[];t=b.createElement(e);t.async=!0;
-            t.src=v;s=b.getElementsByTagName(e)[0];
-            s.parentNode.insertBefore(t,s)}(window, document,'script',
-            'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${PIXEL}');
-            fbq('track', 'PageView');
-          `}</Script>
-        )}
+        <Script id="meta-pixel" strategy="afterInteractive">{`
+          !function(f,b,e,v,n,t,s)
+          {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+          n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+          n.queue=[];t=b.createElement(e);t.async=!0;
+          t.src=v;s=b.getElementsByTagName(e)[0];
+          s.parentNode.insertBefore(t,s)}(window, document,'script',
+          'https://connect.facebook.net/en_US/fbevents.js');
+          fbq('init', '${PIXEL_PRIMARY}');
+          fbq('init', '${PIXEL_LEGACY_CONTENT}');
+          fbq('init', '${PIXEL_LEGACY_SPA}');
+          fbq('track', 'PageView');
+        `}</Script>
+        <noscript>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img height="1" width="1" style={{ display: "none" }} alt=""
+            src={`https://www.facebook.com/tr?id=${PIXEL_PRIMARY}&ev=PageView&noscript=1`} />
+        </noscript>
       </head>
       <body>{children}</body>
     </html>

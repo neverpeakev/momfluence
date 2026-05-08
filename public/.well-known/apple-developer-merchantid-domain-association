@@ -1,0 +1,5 @@
+PLACEHOLDER — replace this file's contents with the value Stripe provides at
+Dashboard → Settings → Payment methods → Apple Pay → "Add a new domain".
+File must be served as text at:
+  https://momfluence.app/.well-known/apple-developer-merchantid-domain-association
+Do not commit the real value to git if your repo is public.
