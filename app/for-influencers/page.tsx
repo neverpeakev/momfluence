@@ -26,7 +26,7 @@ export default function ForInfluencers() {
           paid right to your phone.
         </p>
         <div className="mt-10">
-          <Link href="/pricing" className="btn-primary no-underline">
+          <Link href="/signup" className="btn-primary no-underline">
             Join MomFluence — $5/mo
           </Link>
         </div>
@@ -192,7 +192,7 @@ export default function ForInfluencers() {
           Ready to get paid for what you&apos;re already doing?
         </h2>
         <div className="mt-8">
-          <Link href="/pricing" className="btn-primary no-underline">
+          <Link href="/signup" className="btn-primary no-underline">
             Join MomFluence — $5/mo
           </Link>
         </div>

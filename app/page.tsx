@@ -15,7 +15,7 @@ export default function PublicLanding() {
         Real brands. Real commissions. Right to your phone.
       </p>
       <div className="mt-10 flex flex-wrap gap-4">
-        <Link href="/pricing" className="btn-primary no-underline">
+        <Link href="/signup" className="btn-primary no-underline">
           Join $5/mo
         </Link>
         <Link href="/how-it-works" className="btn-ghost no-underline">

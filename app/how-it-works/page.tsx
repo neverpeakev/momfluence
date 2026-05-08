@@ -23,7 +23,7 @@ export default function HowItWorks() {
           If you can text a friend a link, you can do this.
         </p>
         <div className="mt-10">
-          <Link href="/pricing" className="btn-primary no-underline">
+          <Link href="/signup" className="btn-primary no-underline">
             Get started — $5/mo
           </Link>
         </div>
@@ -123,7 +123,7 @@ export default function HowItWorks() {
       <section className="mt-20 text-center">
         <h2 className="text-3xl text-navy-900">Ready to start?</h2>
         <div className="mt-8">
-          <Link href="/pricing" className="btn-primary no-underline">
+          <Link href="/signup" className="btn-primary no-underline">
             Join now — $5/mo
           </Link>
         </div>

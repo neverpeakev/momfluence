@@ -47,7 +47,7 @@ export default function Pricing() {
           No upsells. No kits to buy. No &lsquo;leadership levels.&rsquo;
         </p>
         <div className="mt-10">
-          <Link href="/login" className="btn-primary no-underline">
+          <Link href="/signup" className="btn-primary no-underline">
             Join now — $5/month
           </Link>
         </div>
@@ -205,7 +205,7 @@ export default function Pricing() {
       <section className="mt-20 text-center">
         <h2 className="text-3xl text-navy-900">$5. Cancel anytime.</h2>
         <div className="mt-8">
-          <Link href="/login" className="btn-primary no-underline">
+          <Link href="/signup" className="btn-primary no-underline">
             Join MomFluence
           </Link>
         </div>
