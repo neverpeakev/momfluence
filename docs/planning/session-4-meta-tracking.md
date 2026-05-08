@@ -250,6 +250,30 @@ What does NOT change:
 - Meta pixel + CAPI implementation — same plan
 - $50 minimum payout threshold, 1st-and-15th auto-disbursement schedule — same plan (just runs on Stripe Connect transfers instead of PayPal Mass Pay)
 
+## Site readiness gaps identified May 7, 2026 (audit findings)
+
+A site audit at https://momfluence.app at commit b02cf3c surfaced these specific Session 4 implementation requirements:
+
+**Missing pages that MUST exist before paid traffic:**
+- `/for-influencers` — currently 404s; this is the target of the primary homepage CTA "New here? Apply →"
+- `/privacy` — currently 404s; Meta Ads policy blocker, also needed for Apple Pay domain verification + Stripe Customer Portal forward reference
+- `/terms` — currently 404s; Meta Ads policy blocker
+- `/pricing` (recommended) — currently 404s; helps conversion rate by setting expectations on $5/mo before CTA click
+- `/signup` or `/apply` — currently 404s; the actual paid signup funnel
+
+**Pixel installation confirmed missing:**
+- New v2 pixel `1468831514190648` NOT installed in `app/layout.tsx` — only the legacy `764587569626622` is firing currently
+- Legacy `1407633647209853` (the one with v1 Purchase history) also NOT installed
+- Session 4 must install all 3 pixels per the architecture documented above in this doc
+
+**Site-chrome gaps:**
+- No header navigation on homepage
+- No footer with privacy/terms/contact/legal links
+- These hurt Meta Ads quality score and increase CPC
+
+**Stale copy on homepage:**
+- "Get paid NET-30" card says "PayPal, Venmo, ACH" — contradicts Stripe Connect Express pivot for Session 7. Update to neutral language like "Direct deposit" or "Bank transfer".
+
 ## References
 
 - Meta CAPI docs: https://developers.facebook.com/docs/marketing-api/conversions-api
