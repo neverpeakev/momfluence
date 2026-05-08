@@ -3,28 +3,47 @@ import Link from "next/link";
 export default function PublicLanding() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
-      <p className="text-sm uppercase tracking-widest text-coral-600 font-semibold">MomFluence Creator Hub</p>
-      <h1 className="mt-3 text-5xl text-navy-900">Curated brand partnerships. Share your link. Get paid.</h1>
-      <p className="mt-6 text-lg text-navy-600">
-        Curated brand partnerships for Moms. No applications or interviews. No wait periods. Share your link. Get paid for every conversion.
+      <p className="text-sm uppercase tracking-widest text-coral-600 font-semibold">
+        MomFluence.app
       </p>
-      <div className="mt-10 flex gap-4">
-        <Link href="/login" className="btn-primary">Sign in</Link>
-        <a href="https://momfluence.app/for-influencers" className="btn-ghost">New here? Apply →</a>
+      <h1 className="mt-3 text-5xl text-navy-900">
+        Moms: have $5 + friends (or ChatGPT)?
+      </h1>
+      <p className="mt-6 text-lg text-navy-600">
+        Get paid for the stuff you&apos;re already sharing.
+        <br />
+        Real brands. Real commissions. Right to your phone.
+      </p>
+      <div className="mt-10 flex flex-wrap gap-4">
+        <Link href="/pricing" className="btn-primary no-underline">
+          Join $5/mo
+        </Link>
+        <Link href="/how-it-works" className="btn-ghost no-underline">
+          How it works →
+        </Link>
       </div>
 
       <div className="mt-16 grid gap-6 sm:grid-cols-3">
         <div className="card">
-          <h3 className="text-lg">Browse offers</h3>
-          <p className="mt-2 text-sm text-navy-600">Hand-picked, top paying brands, pre-vetted by us. Each listing shows what you'll earn per conversion — no math.</p>
+          <h3 className="text-lg">Browse curated brands</h3>
+          <p className="mt-2 text-sm text-navy-600">
+            Real brands you already know. Sephora, Target, Walmart, the works. We&apos;ve
+            vetted 50+ partnership programs so you don&apos;t waste time on duds.
+          </p>
         </div>
         <div className="card">
-          <h3 className="text-lg">Get your link</h3>
-          <p className="mt-2 text-sm text-navy-600">One click and you have a tracked short link tagged to your account. Drop it in your bio or caption.</p>
+          <h3 className="text-lg">Generate your link</h3>
+          <p className="mt-2 text-sm text-navy-600">
+            One click. You get a tracked link that works in any post, story, bio, or group
+            chat. ChatGPT can help you scale if that&apos;s your move.
+          </p>
         </div>
         <div className="card">
-          <h3 className="text-lg">Get paid NET-30</h3>
-          <p className="mt-2 text-sm text-navy-600">Approved conversions clear in 30 days. PayPal, Venmo, ACH. $50 minimum.</p>
+          <h3 className="text-lg">Get paid fast</h3>
+          <p className="mt-2 text-sm text-navy-600">
+            Your first payout can land within your first 90 days for as little as $25. After
+            that: $50 minimum, max 2 cashouts per month. PayPal, Venmo, or bank transfer.
+          </p>
         </div>
       </div>
     </main>
