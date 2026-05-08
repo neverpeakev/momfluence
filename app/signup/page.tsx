@@ -1,0 +1,166 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { fireMetaEvent } from "@/lib/meta-pixel";
+
+export default function SignupPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [agreed, setAgreed] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
+
+    if (!email || !password) {
+      setErr("Email and password are required.");
+      return;
+    }
+    if (password.length < 8) {
+      setErr("Password must be at least 8 characters.");
+      return;
+    }
+    if (password !== confirm) {
+      setErr("Passwords don't match.");
+      return;
+    }
+    if (!agreed) {
+      setErr("Please agree to the Terms and Privacy Policy.");
+      return;
+    }
+
+    setLoading(true);
+    const supabase = createClient();
+
+    // 1. Create the Supabase Auth user
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password
+    });
+
+    if (signUpError) {
+      setLoading(false);
+      const msg = signUpError.message.toLowerCase();
+      if (msg.includes("already") || msg.includes("registered") || msg.includes("exists")) {
+        setErr(
+          "You already have an account with that email. Try signing in instead."
+        );
+      } else {
+        setErr(signUpError.message);
+      }
+      return;
+    }
+
+    // 2. Fire Meta SignupStarted event (scoped to v2 pixel; Stape mirrors server-side)
+    fireMetaEvent("SignupStarted", { content_name: "MomFluence Membership" });
+
+    // 3. Create Stripe Checkout Session and redirect
+    try {
+      const res = await fetch("/api/checkout/create", { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Checkout failed (${res.status})`);
+      }
+      const { url } = await res.json();
+      if (!url) throw new Error("Checkout URL missing");
+      window.location.href = url;
+    } catch (e) {
+      setLoading(false);
+      const message = e instanceof Error ? e.message : "Could not start checkout.";
+      setErr(`${message} Your account was created — try signing in and starting checkout from there.`);
+    }
+  }
+
+  return (
+    <main className="mx-auto max-w-md px-6 py-20">
+      <h1 className="text-3xl">Join MomFluence — $5/mo</h1>
+      <p className="mt-2 text-navy-600">
+        Create your account, then complete checkout. You can cancel anytime.
+      </p>
+
+      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+        <div>
+          <label className="label" htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="input"
+            placeholder="you@example.com"
+          />
+        </div>
+
+        <div>
+          <label className="label" htmlFor="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            required
+            minLength={8}
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input"
+            placeholder="At least 8 characters"
+          />
+        </div>
+
+        <div>
+          <label className="label" htmlFor="confirm">Confirm password</label>
+          <input
+            id="confirm"
+            type="password"
+            required
+            minLength={8}
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            className="input"
+            placeholder="Type it again"
+          />
+        </div>
+
+        <label className="flex items-start gap-2 text-sm text-navy-700">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-1"
+          />
+          <span>
+            I agree to the{" "}
+            <Link href="/terms" className="text-coral-600 hover:text-coral-700">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-coral-600 hover:text-coral-700">
+              Privacy Policy
+            </Link>
+            .
+          </span>
+        </label>
+
+        {err && <p className="text-sm text-coral-700">{err}</p>}
+
+        <button type="submit" disabled={loading} className="btn-primary w-full no-underline">
+          {loading ? "Creating account…" : "Continue to checkout"}
+        </button>
+      </form>
+
+      <p className="mt-10 text-sm text-navy-600">
+        Already have an account?{" "}
+        <Link href="/login" className="text-coral-600 hover:text-coral-700">
+          Sign in
+        </Link>
+      </p>
+    </main>
+  );
+}
