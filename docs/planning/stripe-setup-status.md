@@ -129,7 +129,7 @@ Not yet configured. Session 4 will create:
 | Live $5/mo Product created | ✓ `prod_UTSoRC6ZHFObLw` |
 | Live $5/mo Price created | ✓ `price_1TUVt2ANPjxV4rVaQ4hgCXvr` |
 | Connect Express enabled | ⏳ Kevin to activate in dashboard (deferred to Session 7 prep) |
-| Customer Portal configured | ⏳ Kevin to configure in dashboard (deferred to Session 6 prep) |
+| Customer Portal configured | ✓ bpc_1TUsmZANPjxV4rVar9d9HTcM (May 8, 2026) |
 | Payment methods enabled | ✓ pmc_1RdyMnANPjxV4rVatIeIt1Vg (Card, Apple Pay, Cash App Pay, Link, Bancontact, EPS, Google Pay, Klarna, Affirm) |
 | Apple Pay domains registered | ✓ momfluence.app (pmd_1TUfvmANPjxV4rVaLpM3pJRl) + checkout.momfluence.app (pmd_1TUfvyANPjxV4rVaAe9urcqA) |
 | Custom Domain stability check | ✓ Active (checkout.momfluence.app) |
@@ -152,9 +152,20 @@ Stripe Custom Domains feature ($10/mo) enabled. Checkout renders at `checkout.mo
 - ~~Once stability check passes, verify checkout.momfluence.app actually resolves and serves Stripe Checkout~~ **DONE — Active May 7, 2026 evening, validated via dashboard for Checkout + Payment Links + Customer Portal endpoints.**
 - Consider setting up a separate subdomain for Stripe Connect Express onboarding flow (Session 7) — likely `connect.momfluence.app` if Stripe supports a 2nd custom domain or via Stripe-hosted with custom branding only
 
-## Customer Portal configuration (May 7, 2026 — blocked at MCP, must be done via Dashboard)
+## Customer Portal configuration ✅ DONE May 8, 2026
 
-**MCP automation attempted, blocked.** The Stripe MCP's `stripe_api_execute` tool surface does not include the `/v1/billing_portal/configurations` endpoints (read or write). These admin/configuration endpoints are scoped out of the MCP. Kevin must configure the Customer Portal manually via the Stripe Dashboard.
+**Configuration ID for Session 6 reference:** `bpc_1TUsmZANPjxV4rVar9d9HTcM`
+
+**Default return URL:** `https://momfluence.app/dashboard`
+**Portal hosted at:** `checkout.momfluence.app/p/...` (Custom Domain Active per May 7, 2026 confirmation)
+
+Settings configured per the spec below (mirrored exactly from the requirements). This is now the account default — `/api/stripe/portal-session` in Session 6 will use it automatically when no `configuration` param is passed.
+
+---
+
+**Original spec (preserved for audit trail; MCP was blocked, dashboard completion happened May 8, 2026):**
+
+The Stripe MCP's `stripe_api_execute` tool surface does not include the `/v1/billing_portal/configurations` endpoints (read or write). These admin/configuration endpoints are scoped out of the MCP, so Kevin completed configuration manually via the Stripe Dashboard.
 
 **Dashboard path:** https://dashboard.stripe.com/settings/billing/portal
 
@@ -226,8 +237,8 @@ These items were attempted via MCP but blocked because the Stripe MCP scope excl
 
 1. ~~**Payment methods activation**~~ ✅ **DONE** — `pmc_1RdyMnANPjxV4rVatIeIt1Vg` with Card, Apple Pay, Cash App Pay, Link, Bancontact, EPS, Google Pay, Klarna, Affirm.
 2. ~~**Apple Pay domain registration**~~ ✅ **DONE** — both `momfluence.app` (`pmd_1TUfvmANPjxV4rVaLpM3pJRl`) and `checkout.momfluence.app` (`pmd_1TUfvyANPjxV4rVaAe9urcqA`) Enabled.
-3. **Customer Portal configuration** — https://dashboard.stripe.com/settings/billing/portal (full spec in section above; mirror exactly). **Deferred to Session 6 prep.**
-4. **Connect Express enablement** — https://dashboard.stripe.com/settings/connect (required for Session 7 payouts). **Deferred to Session 7 prep.** Confirmed NOT yet enabled (no Connect entry in dashboard sidebar).
+3. ~~**Customer Portal configuration**~~ ✅ **DONE May 8, 2026** — `bpc_1TUsmZANPjxV4rVar9d9HTcM`, set as account default, hosted at `checkout.momfluence.app/p/...`.
+4. **Connect Express enablement** — https://dashboard.stripe.com/settings/connect (required for Session 7 payouts). **Deferred to Session 7 prep.** Confirmed NOT yet enabled (no Connect entry in dashboard sidebar). **This is now the only remaining post-MCP dashboard task.**
 
 **Vercel canonical domain swap** — separately blocked because the Vercel CLI is not installed locally:
 - Dashboard: Project → Settings → Domains
