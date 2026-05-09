@@ -67,8 +67,8 @@ export default function WelcomeInner() {
         <div className="card">
           <h3 className="text-lg">Your first $25</h3>
           <p className="mt-2 text-sm text-navy-600">
-            Every new member gets one fast-track payout in their first 90 days. Earn $25 and
-            you can cash out.
+            Every new member gets a fast-track payout — available day one.
+            Earn $25 and you can cash out.
           </p>
         </div>
         <div className="card">
