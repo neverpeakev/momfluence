@@ -83,6 +83,15 @@ export default function SignupPage() {
         Create your account, then complete checkout. You can cancel anytime.
       </p>
 
+      <div className="mt-6 rounded-xl bg-coral-50 px-4 py-3 ring-1 ring-coral-200">
+        <p className="text-sm text-navy-800">
+          <span className="font-semibold text-coral-700">Heads up:</span> an
+          active <span className="font-semibold">$5/mo membership</span> is
+          required to earn commissions on your tracked links. If your membership
+          lapses, earnings pause until you reactivate. Cancel anytime.
+        </p>
+      </div>
+
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
         <div>
           <label className="label" htmlFor="email">Email</label>

@@ -38,6 +38,15 @@ export default function WelcomeInner() {
         tagging links to you.
       </p>
 
+      <div className="mt-6 rounded-xl bg-coral-50 px-4 py-3 ring-1 ring-coral-200">
+        <p className="text-sm text-navy-800">
+          <span className="font-semibold text-coral-700">Quick reminder:</span> an
+          active <span className="font-semibold">$5/mo membership</span> is
+          required to earn commissions on your tracked links. If you ever cancel
+          or your card fails, earnings pause until you reactivate.
+        </p>
+      </div>
+
       <div className="mt-10 flex flex-wrap gap-4">
         <Link href="/onboarding/profile" className="btn-primary no-underline">
           Set up profile →
