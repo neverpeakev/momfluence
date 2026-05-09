@@ -30,3 +30,52 @@
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
   }
 }
+
+@keyframes ribbon-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.ribbon-track {
+  animation: ribbon-scroll 50s linear infinite;
+  will-change: transform;
+}
+.ribbon-track:hover { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .ribbon-track { animation: none; }
+}
+
+@keyframes demo-cycle-bubble1 {
+  0%, 4%   { opacity: 0; transform: translateY(8px); }
+  8%, 100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes demo-cycle-bubble2 {
+  0%, 22%  { opacity: 0; transform: translateY(8px); }
+  28%, 100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes demo-cycle-typing {
+  0%, 38%  { opacity: 0; }
+  42%, 56% { opacity: 1; }
+  60%, 100% { opacity: 0; }
+}
+@keyframes demo-cycle-bubble3 {
+  0%, 60%  { opacity: 0; transform: translateY(8px); }
+  66%, 100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes demo-typing-dot {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30%           { opacity: 1;    transform: translateY(-2px); }
+}
+
+.demo-bubble-1 { animation: demo-cycle-bubble1 14s ease-in-out infinite; }
+.demo-bubble-2 { animation: demo-cycle-bubble2 14s ease-in-out infinite; }
+.demo-typing   { animation: demo-cycle-typing  14s ease-in-out infinite; }
+.demo-bubble-3 { animation: demo-cycle-bubble3 14s ease-in-out infinite; }
+.demo-dot      { animation: demo-typing-dot 1.2s ease-in-out infinite; }
+.demo-dot-2    { animation-delay: 0.15s; }
+.demo-dot-3    { animation-delay: 0.3s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-bubble-1, .demo-bubble-2, .demo-bubble-3,
+  .demo-typing, .demo-dot { animation: none; opacity: 1; }
+  .demo-typing { display: none; }
+}
