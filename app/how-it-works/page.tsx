@@ -62,8 +62,8 @@ export default function HowItWorks() {
           clicks and buys, you earn a commission.
         </p>
         <p className="mt-4 text-base text-navy-700">
-          Approved conversions clear in 30 days (industry standard). Your first $25 can come
-          faster — every new member gets one fast-track payout in their first 90 days.
+          Approved conversions clear in 30 days (industry standard). Your first $25 comes
+          faster — every new member gets a fast-track payout, available day one.
         </p>
       </section>
 

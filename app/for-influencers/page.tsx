@@ -70,7 +70,7 @@ export default function ForInfluencers() {
             <h3 className="text-lg">Get paid when people buy</h3>
             <p className="mt-3 text-sm text-navy-600">
               When someone clicks your link and buys, you earn a commission. Your first $25
-              can land in your PayPal in your first 90 days. After that, $50 minimum, max 2
+              can land in your PayPal as soon as day one. After that, $50 minimum, max 2
               cashouts per month.
             </p>
           </div>
@@ -161,7 +161,7 @@ export default function ForInfluencers() {
           <div>
             <p className="text-lg font-semibold text-navy-900">How fast do I actually get paid?</p>
             <p className="mt-2 text-base text-navy-700">
-              Your first payout: as fast as you can earn $25 in your first 90 days. After
+              Your fast-track first $25 unlocks day one — no 90-day wait. After
               that: $50 minimum, max 2 payouts per month, paid within 30 days of approval.
               We pay via PayPal, Venmo, or bank transfer.
             </p>

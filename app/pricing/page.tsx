@@ -16,7 +16,7 @@ const included = [
   "Access to 50+ vetted brand partnership programs",
   "One-click tracked links",
   "Real-time earnings dashboard",
-  "One fast-track payout in your first 90 days ($25 threshold)",
+  "Fast-track first $25 payout — available day one (vs. $50 standard threshold)",
   "Standard payouts via PayPal, Venmo, or bank transfer",
   "FTC-compliant disclosure templates",
   "AI/ChatGPT-friendly content guidelines",
