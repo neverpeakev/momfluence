@@ -92,37 +92,45 @@ export interface BuildInputs {
  * in late 2025 — creatives now must reference a previously-uploaded image
  * by hash.
  *
- * Approach: fetch our own PNG bytes and upload via multipart/form-data.
+ * Approach: fetch our own PNG bytes, base64-encode them, and POST as
+ * `bytes` in a form-urlencoded body. Meta's `bytes` field is documented
+ * as "encoded source bytes" (base64-encoded), NOT raw binary; sending
+ * raw bytes via multipart causes Meta to interpret the first 8 bytes of
+ * the PNG signature as base64-decoded garbage and reject the upload as
+ * "Invalid image format" (file_size: 8).
  *
- * Previous version passed `url=<our PNG endpoint>` so Meta would fetch
- * server-side, which is faster but gated behind a stricter Meta App
- * capability (gives error code 3 "Application does not have the
- * capability" if the app hasn't been reviewed for advanced URL-fetch
- * access). Direct byte upload uses the older, less-gated code path
- * available to any app with the standard ads_management permission.
+ * Earlier iterations of this function used:
+ *   - `url` param (Meta fetches server-side) — failed with code 3
+ *     "Application does not have the capability", needs advanced
+ *     URL-fetch capability on the Meta App.
+ *   - multipart/form-data with raw blob — failed because `bytes` is
+ *     base64-encoded, not a binary field.
  */
 async function uploadAdImage(slug: string): Promise<string> {
-  // 1. Fetch our own PNG bytes (chromium-rendered)
+  // 1. Fetch our own PNG bytes (chromium-rendered).
   const imageUrl = `${siteOrigin()}/api/render/creative/${encodeURIComponent(slug)}.png`;
   const imgRes = await fetch(imageUrl);
   if (!imgRes.ok) {
     throw new Error(`Failed to fetch own image ${imageUrl}: ${imgRes.status} ${imgRes.statusText}`);
   }
-  const imgBlob = await imgRes.blob();
+  const arrayBuf = await imgRes.arrayBuffer();
+  if (arrayBuf.byteLength < 1000) {
+    throw new Error(`Suspiciously small image for ${slug}: ${arrayBuf.byteLength} bytes — render pipeline issue`);
+  }
+  const base64 = Buffer.from(arrayBuf).toString("base64");
 
-  // 2. Upload as multipart/form-data to Meta
-  const formData = new FormData();
-  formData.append("bytes", imgBlob, `${slug}.png`);
+  // 2. POST as form-urlencoded with bytes=<base64>.
+  const formBody = new URLSearchParams();
+  formBody.append("bytes", base64);
 
   const url = `${BASE}/${adAccount()}/adimages`;
   const resp = await fetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token()}`,
-      // Note: do NOT set Content-Type — fetch sets multipart/form-data
-      // with the correct boundary automatically.
+      "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: formData,
+    body: formBody.toString(),
   });
 
   const text = await resp.text();
