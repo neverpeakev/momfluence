@@ -130,7 +130,7 @@ export async function buildCampaign(inputs: BuildInputs): Promise<BuildResult> {
     genders: [2], // 2 = female per Meta API
     geo_locations: { countries: ["US"] },
     publisher_platforms: ["facebook", "instagram", "audience_network", "messenger"],
-    facebook_positions: ["feed", "story", "reels"],
+    facebook_positions: ["feed", "story", "facebook_reels"],
     instagram_positions: ["stream", "story", "reels", "explore"],
   };
 
