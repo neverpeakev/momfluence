@@ -2,7 +2,7 @@
  * Headless Chromium renderer for funnel-lab ad creatives.
  *
  * Strategy: launch chromium in the Vercel function, navigate to
- * /_render/creative/<slug> on the same deployment, screenshot the
+ * /render/creative/<slug> on the same deployment, screenshot the
  * data-creative-export div (clean 1080×1080 PNG).
  *
  * Why @sparticuz/chromium (full) + puppeteer-core?

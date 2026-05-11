@@ -12,7 +12,11 @@ import { findRuntimeVariant } from "@/lib/funnel-lab/runtime-variants";
  *   1. The seed VARIANTS array (code-defined, c11-c20 hooks)
  *   2. The funnel_variants Supabase table (Claude-generated runtime variants)
  *
- * Path lives under /_render/ so it's clearly internal — noindex'd.
+ * Path lives under /render/ — noindex'd via metadata so it stays out
+ * of search results despite being a publicly-reachable URL (chromium
+ * has to fetch it from outside the function). NOT prefixed with _
+ * because Next.js App Router excludes underscore-prefixed folders from
+ * routing entirely.
  */
 
 export const dynamic = "force-dynamic";
