@@ -100,6 +100,10 @@ export interface RenderOptions {
   height?: number;
   scale?: number;
   selectorTimeoutMs?: number;
+  /** Skip the white default canvas so the PNG can be transparent. The
+   *  rendered page must NOT set body { background: ... } for this to
+   *  actually produce an alpha-channel PNG. */
+  omitBackground?: boolean;
 }
 
 export async function renderToPng(opts: RenderOptions): Promise<Buffer> {
