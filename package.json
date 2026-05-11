@@ -12,9 +12,12 @@
     "import:sheet": "tsx scripts/import-from-sheet.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "@sparticuz/chromium-min": "^131.0.1",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.4",
     "next": "^15.1.0",
+    "playwright-core": "^1.48.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^9.0.1",
