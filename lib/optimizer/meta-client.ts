@@ -183,6 +183,21 @@ export function isConfigured(): { ok: boolean; missing: string[] } {
   return { ok: missing.length === 0, missing };
 }
 
+/** Account-level reachability check. Used as a pre-launch connectivity probe
+ *  since this does NOT require META_AD_SET_ID (which only exists after Launch). */
+export interface MetaAdAccount {
+  id: string;
+  account_id?: string;
+  name?: string;
+  currency?: string;
+  account_status?: number;
+}
+export async function pingAccount(): Promise<MetaAdAccount> {
+  return metaFetch<MetaAdAccount>(`/${adAccountId()}`, {
+    qs: { fields: "id,account_id,name,currency,account_status" },
+  });
+}
+
 /** Unused but exported so consumers can reference the API version pinned by this client. */
 export const META_API_VERSION = API_VERSION;
 

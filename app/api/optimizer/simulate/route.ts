@@ -30,7 +30,7 @@ import {
   finishTick,
   logAction,
 } from "@/lib/optimizer/audit";
-import { listAds, getAdInsights, getAdSet, isConfigured as metaIsConfigured } from "@/lib/optimizer/meta-client";
+import { getAdInsights, getAdSet, pingAccount } from "@/lib/optimizer/meta-client";
 import { generateRemixCandidates } from "@/lib/optimizer/anthropic-client";
 import { renderToPng } from "@/lib/optimizer/renderer";
 
@@ -169,25 +169,40 @@ export async function POST(req: NextRequest) {
   checks.push(stripeRes.check);
   if (stripeRes.value) checks[checks.length - 1].detail = stripeRes.value as Record<string, unknown>;
 
-  // 3. Meta connectivity
-  const metaCfg = metaIsConfigured();
-  if (!metaCfg.ok) {
+  // 3. Meta connectivity — account-level probe.
+  //    Intentionally does NOT require META_AD_SET_ID (which only exists after Launch).
+  //    Probes /<ad_account_id> to verify token + account are reachable.
+  const metaMinReady = Boolean(
+    process.env.META_MARKETING_API_TOKEN && process.env.META_AD_ACCOUNT_ID
+  );
+  if (!metaMinReady) {
+    const missing = [
+      !process.env.META_MARKETING_API_TOKEN && "META_MARKETING_API_TOKEN",
+      !process.env.META_AD_ACCOUNT_ID && "META_AD_ACCOUNT_ID",
+    ].filter(Boolean).join(", ");
     checks.push({
       step: "meta_connectivity",
       ok: false,
       ms: 0,
-      error: `missing env: ${metaCfg.missing.join(", ")}`,
+      error: `missing env: ${missing}`,
     });
   } else {
     const metaConnRes = await timed("meta_connectivity", async () => {
-      const ads = await listAds();
-      return { ads_in_set: ads.length };
+      const acct = await pingAccount();
+      return {
+        account_id: acct.account_id ?? acct.id,
+        name: acct.name,
+        currency: acct.currency,
+        account_status: acct.account_status,
+      };
     });
     checks.push(metaConnRes.check);
     if (metaConnRes.value) checks[checks.length - 1].detail = metaConnRes.value as Record<string, unknown>;
   }
 
-  // 4. Meta ad set readability (only if META_AD_SET_ID is set)
+  // 4. Meta ad set readability — only meaningful AFTER Launch.
+  //    Pre-launch we mark it OK with a skipped/by-design note instead of failing,
+  //    so a fresh deployment doesn't show red for an expected absence.
   if (process.env.META_AD_SET_ID) {
     const adSetRes = await timed("meta_ad_set", async () => {
       const a = await getAdSet();
@@ -202,14 +217,17 @@ export async function POST(req: NextRequest) {
   } else {
     checks.push({
       step: "meta_ad_set",
-      ok: false,
+      ok: true,
       ms: 0,
-      error: "META_AD_SET_ID not yet set — will be configured after first campaign launch",
+      detail: {
+        skipped: "META_AD_SET_ID not set — by design pre-launch; populated after Launch Campaign",
+        phase: "pre_launch",
+      },
     });
   }
 
-  // 5. Meta insights (only if we have ads in the account)
-  if (metaCfg.ok && process.env.META_AD_SET_ID) {
+  // 5. Meta insights (only meaningful when an ad set is live).
+  if (metaMinReady && process.env.META_AD_SET_ID) {
     const insightsRes = await timed("meta_insights_pull", async () => {
       const insights = await getAdInsights(7);
       return { insights_rows: insights.length };
