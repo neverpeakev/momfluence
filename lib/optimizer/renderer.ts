@@ -75,9 +75,8 @@ async function getBrowser(): Promise<Browser> {
   try {
     cachedBrowser = await puppeteer.launch({
       args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
       executablePath,
-      headless: chromium.headless,
+      headless: true,
       env: {
         ...process.env,
         LD_LIBRARY_PATH: libPath,
