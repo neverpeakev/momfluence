@@ -1,14 +1,36 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
+import { toStripeMetadata, type Attribution } from "@/lib/funnel-lab/attribution";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   const secret = process.env.STRIPE_SECRET_KEY;
   const priceId = process.env.STRIPE_PRICE_ID_MEMBERSHIP;
+
+  // Best-effort parse — body is optional. If parsing fails, we just send no attribution.
+  let attribution: Attribution = {};
+  try {
+    const body = await req.json();
+    if (body?.attribution && typeof body.attribution === "object") {
+      // Re-sanitize on the server even though the client sanitized — defense in depth.
+      const a = body.attribution as Record<string, unknown>;
+      const slugLike = (v: unknown): string | undefined =>
+        typeof v === "string" && /^[a-z0-9-]{1,40}$/.test(v) ? v : undefined;
+      const isoLike = (v: unknown): string | undefined =>
+        typeof v === "string" && v.length <= 32 && !Number.isNaN(Date.parse(v)) ? v : undefined;
+      attribution = {
+        variant: slugLike(a.variant),
+        creative: slugLike(a.creative),
+        firstSeen: isoLike(a.firstSeen),
+      };
+    }
+  } catch {
+    // ignore — no body, attribution stays empty
+  }
 
   if (!secret || !priceId) {
     console.error("[/api/checkout/create] env-missing", {
@@ -51,6 +73,11 @@ export async function POST() {
     timeout: 15000
   });
 
+  // Fold funnel-lab attribution into Stripe metadata so /admin/funnel-lab can aggregate
+  // signup/Purchase events by variant + creative without a Supabase schema change.
+  const attrMeta = toStripeMetadata(attribution);
+  const sessionMeta = { auth_user_id: user.id, ...attrMeta };
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -61,9 +88,9 @@ export async function POST() {
       cancel_url: "https://momfluence.app/?cancelled=true",
       allow_promotion_codes: true,
       subscription_data: {
-        metadata: { auth_user_id: user.id }
+        metadata: sessionMeta,
       },
-      metadata: { auth_user_id: user.id }
+      metadata: sessionMeta,
     });
 
     if (!session.url) {
