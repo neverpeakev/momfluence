@@ -83,7 +83,7 @@ async function updatePageMetadata(pageToken: string, pageId: string): Promise<vo
   params.append("description", PAGE_ABOUT.longDescription);
   params.append("website", PAGE_ABOUT.website);
   params.append("mission", PAGE_ABOUT.mission);
-  params.append("company_overview", PAGE_ABOUT.companyOverview);
+  // company_overview deprecated by Meta — POST returns 500 OAuthException
   params.append("access_token", pageToken);
 
   const res = await fetch(`${BASE}/${pageId}`, {
