@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { findVariant, VARIANTS } from "@/lib/funnel-lab/variants";
+import { findRuntimeVariant } from "@/lib/funnel-lab/runtime-variants";
 import BrandRibbon from "@/components/landing/BrandRibbon";
 import DashboardPreview from "@/components/landing/DashboardPreview";
 import LPVisitTracker from "@/components/landing/LPVisitTracker";
@@ -12,12 +13,15 @@ interface Props {
 }
 
 export function generateStaticParams() {
+  // Pre-renders the seed variants at build. Runtime variants (Claude-promoted)
+  // fall through Next.js's default dynamicParams=true and render on first hit.
   return VARIANTS.map((v) => ({ variant: v.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { variant } = await params;
-  const v = findVariant(variant);
+  let v = findVariant(variant);
+  if (!v) v = await findRuntimeVariant(variant);
   if (!v) return { title: "MomFluence" };
   return {
     title: `${v.label} — MomFluence`,
@@ -29,7 +33,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function LandingPage({ params, searchParams }: Props) {
   const { variant } = await params;
   const sp = await searchParams;
-  const v = findVariant(variant);
+  // Seed variants (code-defined) first; fall back to runtime variants (Claude-promoted).
+  let v = findVariant(variant);
+  if (!v) v = await findRuntimeVariant(variant);
   if (!v) notFound();
 
   const creative = sanitize(sp.c ?? sp.creative) ?? v.primaryCreativeId;
