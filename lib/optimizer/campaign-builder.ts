@@ -10,9 +10,10 @@
  * Idempotent guard: by default refuses to build if a campaign with our
  * canonical name already exists in the account. Pass force=true to override.
  *
- * Image strategy: reads PNGs from /public/creatives/v1/cXX.png and hands their
- * public URL to Meta (Meta's `image_url` field downloads them server-side).
- * No base64 upload; no Playwright dependency.
+ * Image strategy: for each variant, POSTs the public PNG URL to Meta's
+ * /adimages endpoint, which returns an image_hash. The hash is then used
+ * in object_story_spec.link_data.image_hash. Meta dropped image_url support
+ * in late 2025 — creatives must reference uploaded images by hash now.
  */
 
 import { VARIANTS } from "@/lib/funnel-lab/variants";
@@ -82,6 +83,34 @@ export interface BuildInputs {
   dailyBudgetUsd: number;
   costCapUsd?: number;
   force?: boolean;
+}
+
+/**
+ * Upload an image to Meta's ad-image library via the /adimages endpoint,
+ * returning the resulting image_hash. Required for ad-creative creation
+ * since Meta dropped support for image_url in object_story_spec.link_data
+ * in late 2025 — creatives now must reference a previously-uploaded image
+ * by hash.
+ *
+ * Approach: pass `url=<our public PNG endpoint>` so Meta fetches the image
+ * server-side. Faster than streaming bytes through our function (which
+ * would block ~5s per image on Chromium cold-start) and keeps us under
+ * the function execution budget when launching 10 ads.
+ */
+async function uploadAdImage(slug: string): Promise<string> {
+  const imageUrl = `${siteOrigin()}/api/render/creative/${encodeURIComponent(slug)}.png`;
+  const resp = await meta<{ images: Record<string, { hash: string; url?: string }> }>(
+    `/${adAccount()}/adimages`,
+    {
+      method: "POST",
+      body: JSON.stringify({ url: imageUrl }),
+    }
+  );
+  const first = Object.values(resp.images ?? {})[0];
+  if (!first?.hash) {
+    throw new Error(`Meta /adimages returned no image_hash for ${slug} — response: ${JSON.stringify(resp).slice(0, 300)}`);
+  }
+  return first.hash;
 }
 
 async function findExistingCampaign(): Promise<string | null> {
@@ -164,17 +193,21 @@ export async function buildCampaign(inputs: BuildInputs): Promise<BuildResult> {
   });
 
   // 3 + 4: Ad creatives + ads, one per variant.
-  // image_url points at our programmatic renderer — Meta downloads the PNG once
-  // and caches it; we never have to manually screenshot anything.
+  // Image flow (Meta requires image_hash, not image_url, in object_story_spec.link_data
+  // since late 2025): for each variant we POST the public PNG URL to /adimages, which
+  // returns an image_hash that the creative spec references. Meta fetches the URL once
+  // and caches the image internally.
   const ads: BuildResult["ads"] = [];
 
   for (const v of VARIANTS) {
     const creativeId = v.primaryCreativeId;
-    const imageUrl = `${siteOrigin()}/api/render/creative/${encodeURIComponent(v.slug)}.png`;
     const destination = `${siteOrigin()}/lp/${v.slug}?c=${creativeId}&utm_source=meta&utm_campaign=funnel-lab-v1&utm_content=${creativeId}`;
 
     try {
-      // Build ad creative — link-share style (single image, click → LP)
+      // 3a. Upload image → get image_hash
+      const imageHash = await uploadAdImage(v.slug);
+
+      // 3b. Build ad creative — link-share style (single image, click → LP)
       const adCreative = await meta<{ id: string }>(`/${adAccount()}/adcreatives`, {
         method: "POST",
         body: JSON.stringify({
@@ -182,7 +215,7 @@ export async function buildCampaign(inputs: BuildInputs): Promise<BuildResult> {
           object_story_spec: {
             page_id: fbPageId(),
             link_data: {
-              image_url: imageUrl,
+              image_hash: imageHash,
               link: destination,
               message: v.hero.subhead,
               name: v.hero.headline.replace(/\n/g, " "),
@@ -193,7 +226,7 @@ export async function buildCampaign(inputs: BuildInputs): Promise<BuildResult> {
         }),
       });
 
-      // Build the ad
+      // 4. Build the ad
       const ad = await meta<{ id: string }>(`/${adAccount()}/ads`, {
         method: "POST",
         body: JSON.stringify({
