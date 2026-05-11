@@ -179,6 +179,12 @@ export async function buildCampaign(inputs: BuildInputs): Promise<BuildResult> {
       status: "PAUSED",
       special_ad_categories: [],
       buying_type: "AUCTION",
+      // Meta requires this be specified when budget lives at the ad-set
+      // level (as ours does — see daily_budget on the ad set below).
+      // false = each ad set spends only its own budget. true would let
+      // Meta reallocate up to 20% across ad sets for cross-optimization,
+      // pointless here since we run a single ad set in this campaign.
+      is_adset_budget_sharing_enabled: false,
     }),
   });
 
