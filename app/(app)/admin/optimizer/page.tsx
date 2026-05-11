@@ -4,6 +4,7 @@ import { readSettings, listRecentActions, listRecentTicks } from "@/lib/optimize
 import { setMode, setThreshold } from "./actions";
 import LaunchCampaignButton from "./LaunchCampaignButton";
 import PromoteRemixButton from "./PromoteRemixButton";
+import SimulationPanel from "./SimulationPanel";
 import { preflightConfig } from "@/lib/optimizer/campaign-builder";
 
 export const dynamic = "force-dynamic";
@@ -117,6 +118,9 @@ export default async function OptimizerPage() {
           ))}
         </ul>
       </div>
+
+      {/* End-to-end simulation — run BEFORE launching real ads */}
+      <SimulationPanel />
 
       {/* Launch campaign */}
       <LaunchCampaignButton />
