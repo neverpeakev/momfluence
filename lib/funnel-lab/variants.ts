@@ -158,7 +158,7 @@ export const VARIANTS = [
     hero: {
       eyebrow: "moms control 85% of household spend",
       headline: "Brands pay billions to reach moms.\nFinally, you get a cut.",
-      subhead: "Every &lsquo;which stroller should I get&rsquo; question in a group chat is worth real money to the brand that wins. We&apos;ve already negotiated the partnerships. You just share the link.",
+      subhead: "Every 'which stroller should I get' question in a group chat is worth real money to the brand that wins. We've already negotiated the partnerships. You just share the link.",
       ctaPrimary: "Take your cut — $5/mo",
       ctaSecondary: "How much can I make? →",
     },
@@ -218,7 +218,7 @@ export const VARIANTS = [
     hero: {
       eyebrow: "real moms. real numbers. real Venmo.",
       headline: "$72.40 last week.\nFrom 4 texts.",
-      subhead: "This is a real first-month member&apos;s dashboard. 68 clicks. 12 sign-ups. $72.40 deposited Friday. From sharing four brand links to her mom group chat. That&apos;s it.",
+      subhead: "This is a real first-month member's dashboard. 68 clicks. 12 sign-ups. $72.40 deposited Friday. From sharing four brand links to her mom group chat. That's it.",
       ctaPrimary: "See your dashboard — $5/mo",
       ctaSecondary: "Show me more receipts →",
     },

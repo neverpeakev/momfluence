@@ -145,7 +145,19 @@ async function uploadAdImage(slug: string): Promise<string> {
   return first.hash;
 }
 
-async function findExistingCampaign(): Promise<string | null> {
+function decodeHtmlEntities(s: string): string {
+  return s
+    .replace(/&apos;|&#39;|&#x27;/g, "'")
+    .replace(/&quot;|&#34;|&#x22;/g, '"')
+    .replace(/&lsquo;|&#8216;|&#x2018;/g, "‘")
+    .replace(/&rsquo;|&#8217;|&#x2019;/g, "’")
+    .replace(/&ldquo;|&#8220;|&#x201C;/g, "“")
+    .replace(/&rdquo;|&#8221;|&#x201D;/g, "”")
+    .replace(/&ndash;|&#8211;/g, "–")
+    .replace(/&mdash;|&#8212;/g, "—")
+    .replace(/&hellip;|&#8230;/g, "…")
+    .replace(/&amp;/g, "&"); // last — & must decode after other entities
+}
   type Resp = { data: Array<{ id: string; name: string }> };
   const r = await meta<Resp>(`/${adAccount()}/campaigns`, {
     qs: { fields: "id,name", limit: "200" },
@@ -245,7 +257,11 @@ export async function buildCampaign(inputs: BuildInputs): Promise<BuildResult> {
       // 3a. Upload image → get image_hash
       const imageHash = await uploadAdImage(v.slug);
 
-      // 3b. Build ad creative — link-share style (single image, click → LP)
+      // 3b. Build ad creative — link-share style (single image, click → LP).
+      // Decode HTML entities defensively: variant copy is sometimes pasted
+      // from HTML sources (&apos;, &lsquo;, etc.) and React decodes them
+      // automatically when rendering JSX, but Meta receives raw strings —
+      // so unsanitized copy appears as "you&apos;re" in the actual ads.
       const adCreative = await meta<{ id: string }>(`/${adAccount()}/adcreatives`, {
         method: "POST",
         body: JSON.stringify({
@@ -255,9 +271,9 @@ export async function buildCampaign(inputs: BuildInputs): Promise<BuildResult> {
             link_data: {
               image_hash: imageHash,
               link: destination,
-              message: v.hero.subhead,
-              name: v.hero.headline.replace(/\n/g, " "),
-              description: v.hero.eyebrow,
+              message: decodeHtmlEntities(v.hero.subhead),
+              name: decodeHtmlEntities(v.hero.headline.replace(/\n/g, " ")),
+              description: decodeHtmlEntities(v.hero.eyebrow),
               call_to_action: { type: "SIGN_UP", value: { link: destination } },
             },
           },
