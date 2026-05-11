@@ -9,6 +9,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "seed:offers": "tsx scripts/seed-mock-offers.ts",
+    "seed:fb-page": "tsx scripts/seed-fb-page.ts",
     "import:sheet": "tsx scripts/import-from-sheet.ts"
   },
   "dependencies": {
