@@ -132,6 +132,11 @@ export async function buildCampaign(inputs: BuildInputs): Promise<BuildResult> {
     publisher_platforms: ["facebook", "instagram", "audience_network", "messenger"],
     facebook_positions: ["feed", "story", "facebook_reels"],
     instagram_positions: ["stream", "story", "reels", "explore"],
+    // Meta requires this be explicitly set as of late 2025. 0 = lock to the
+    // demographics declared above (we want this for the validation phase —
+    // confirms moms-specifically convert). Flip to 1 later to let Meta expand
+    // beyond age/gender if performance plateaus.
+    targeting_automation: { advantage_audience: 0 },
   };
 
   const dailyBudgetCents = Math.round(inputs.dailyBudgetUsd * 100);
