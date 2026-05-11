@@ -328,7 +328,7 @@ export async function POST(req: NextRequest) {
     const renderRes = await timed("render_pipeline", async () => {
       const origin = process.env.NEXT_PUBLIC_SITE_URL ?? `${req.headers.get("x-forwarded-proto") ?? "https"}://${req.headers.get("host")}`;
       const buf = await renderToPng({
-        url: `${origin}/_render/creative/${VARIANTS[0].slug}`,
+        url: `${origin}/render/creative/${VARIANTS[0].slug}`,
         selector: '[data-creative-export="1"]',
         width: 1080,
         height: 1080,

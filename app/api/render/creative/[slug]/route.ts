@@ -2,7 +2,7 @@
  * Programmatic creative image endpoint.
  *
  *   GET /api/render/creative/<slug>.png  → 1080×1080 PNG of the variant's
- *                                          /_render/creative/<slug> page.
+ *                                          /render/creative/<slug> page.
  *
  * Used by the Meta Marketing API (passed as image_url on ad creative creation),
  * and by any other downstream consumer that needs the PNG.
@@ -55,7 +55,7 @@ export async function GET(
     return NextResponse.json({ error: `variant not found: ${slug}` }, { status: 404 });
   }
 
-  const targetUrl = `${siteOrigin(req)}/_render/creative/${encodeURIComponent(slug)}`;
+  const targetUrl = `${siteOrigin(req)}/render/creative/${encodeURIComponent(slug)}`;
 
   try {
     const png = await renderToPng({
