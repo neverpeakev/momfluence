@@ -1,28 +1,25 @@
 /**
  * Headless Chromium renderer for funnel-lab ad creatives.
  *
- * Strategy: launch chromium-min in the Vercel function, navigate to
+ * Strategy: launch chromium in the Vercel function, navigate to
  * /_render/creative/<slug> on the same deployment, screenshot the
  * data-creative-export div at deviceScaleFactor=1 (clean 1080×1080 PNG).
  *
- * Why @sparticuz/chromium-min + puppeteer-core (not playwright-core)?
- *   Sparticuz officially supports puppeteer-core; the playwright pairing
- *   is "best-effort" and fails on Vercel with libnss3.so resolution
- *   (shared libraries unpacked next to the binary aren't found by playwright's
- *   launcher). Puppeteer-core resolves them correctly via the binary's rpath.
- *   The -min variant excludes the bundled chromium binary; we download it
- *   on-demand from the configured CHROMIUM_BINARY_URL.
+ * Why @sparticuz/chromium (full, not -min) + puppeteer-core?
+ *   The -min variant relies on extracting libs to /tmp and resolving them
+ *   via LD_LIBRARY_PATH, which is unreliable on Vercel's runtime — the
+ *   libnss3.so resolution fails on first launch with both playwright AND
+ *   puppeteer launchers. The full @sparticuz/chromium package ships the
+ *   binary AND shared libraries inside the npm package itself, resolved by
+ *   the binary's baked-in rpath. No download, no env-var setup, no race.
+ *   Bundle adds ~52MB unzipped (well within Vercel's 250MB function limit).
  *
  * Cold start ~3-4s. Warm ~1s. Both fit Vercel's 60s function budget.
  */
 
 import "server-only";
-import chromium from "@sparticuz/chromium-min";
+import chromium from "@sparticuz/chromium";
 import puppeteer, { type Browser } from "puppeteer-core";
-
-const CHROMIUM_REMOTE_BINARY =
-  process.env.CHROMIUM_BINARY_URL ??
-  "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar";
 
 let cachedBrowser: Browser | null = null;
 let cachedAt = 0;
@@ -37,12 +34,10 @@ async function getBrowser(): Promise<Browser> {
     cachedBrowser = null;
   }
 
-  const executablePath = await chromium.executablePath(CHROMIUM_REMOTE_BINARY);
-
   cachedBrowser = await puppeteer.launch({
     args: chromium.args,
     defaultViewport: chromium.defaultViewport,
-    executablePath,
+    executablePath: await chromium.executablePath(),
     headless: chromium.headless,
   });
   cachedAt = Date.now();
