@@ -134,7 +134,7 @@ export async function renderToPng(opts: RenderOptions): Promise<Buffer> {
 
     const buf = await page.screenshot({
       type: "png",
-      omitBackground: false,
+      omitBackground: opts.omitBackground ?? false,
       fullPage: false,
       clip: { x: 0, y: 0, width, height },
     });

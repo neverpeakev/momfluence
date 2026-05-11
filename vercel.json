@@ -6,7 +6,8 @@
     "app/api/optimizer/tick/route.ts": { "memory": 2048, "maxDuration": 60 },
     "app/api/optimizer/launch/route.ts": { "memory": 1024, "maxDuration": 300 },
     "app/api/render/creative/[slug]/route.ts": { "memory": 2048, "maxDuration": 60 },
-    "app/api/render/post/[slug]/route.ts": { "memory": 2048, "maxDuration": 60 }
+    "app/api/render/post/[slug]/route.ts": { "memory": 2048, "maxDuration": 60 },
+    "app/api/render/logo/[variant]/route.ts": { "memory": 2048, "maxDuration": 60 }
   },
   "crons": [
     {
