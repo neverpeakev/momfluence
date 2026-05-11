@@ -7,19 +7,21 @@ export default function PublicLanding() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
       <p className="text-sm uppercase tracking-widest text-coral-600 font-semibold">
-        MomFluence.app
+        the simplest side income on the internet
       </p>
       <h1 className="mt-3 text-5xl text-navy-900">
-        Moms: have $5 + friends (or ChatGPT)?
+        Make money from your phone.
+        <br />
+        Without becoming an influencer.
       </h1>
       <p className="mt-6 text-lg text-navy-600">
-        Get paid for the stuff you&apos;re already sharing.
+        Pick a brand. Share a link. Get paid every time someone signs up or buys.
         <br />
-        Real brands. Real commissions. Right to your phone.
+        No followers. No camera. No experience. $5/month — cancel anytime.
       </p>
       <div className="mt-10 flex flex-wrap gap-4">
         <Link href="/signup" className="btn-primary no-underline">
-          Join $5/mo
+          Start earning — $5/mo
         </Link>
         <Link href="/how-it-works" className="btn-ghost no-underline">
           How it works →

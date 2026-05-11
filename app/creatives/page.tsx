@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import BrandRibbon from "@/components/landing/BrandRibbon";
+import { VARIANTS } from "@/lib/funnel-lab/variants";
 
 export const metadata: Metadata = {
   title: "Creative Lab — internal",
@@ -53,6 +54,66 @@ function Spec({ angle, target, format, ad }: {
           <tr className="border-t border-navy-100">
             <td className="py-1.5 pr-3 font-semibold text-navy-700 align-top">Destination</td>
             <td className="py-1.5 font-mono text-xs text-navy-700">/signup</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function VariantSpec({ slug, creativeId }: { slug: string; creativeId: string }) {
+  const v = VARIANTS.find((x) => x.slug === slug);
+  if (!v) return null;
+  return (
+    <div className="rounded-xl bg-white p-5 ring-1 ring-navy-100 shadow-sm">
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px]">
+        <span className="rounded-full bg-navy-900 px-2.5 py-1 font-bold uppercase tracking-wider text-white">
+          1080×1080 (1:1)
+        </span>
+        <span className="rounded-full bg-coral-100 px-2.5 py-1 font-semibold uppercase tracking-wider text-coral-700">
+          {v.angle}
+        </span>
+        <span className="rounded-full bg-emerald-100 px-2.5 py-1 font-semibold uppercase tracking-wider text-emerald-700 ring-1 ring-emerald-200">
+          LP-paired
+        </span>
+      </div>
+      <table className="w-full text-sm">
+        <tbody>
+          <tr>
+            <td className="py-1.5 pr-3 font-semibold text-navy-700 align-top w-32">Variant slug</td>
+            <td className="py-1.5 font-mono text-xs text-navy-800">{v.slug}</td>
+          </tr>
+          <tr className="border-t border-navy-100">
+            <td className="py-1.5 pr-3 font-semibold text-navy-700 align-top">Hypothesis</td>
+            <td className="py-1.5 italic text-navy-700">{v.hypothesis}</td>
+          </tr>
+          <tr className="border-t border-navy-100">
+            <td className="py-1.5 pr-3 font-semibold text-navy-700 align-top">Headline (LP)</td>
+            <td className="py-1.5 whitespace-pre-line text-navy-800">{v.hero.headline}</td>
+          </tr>
+          <tr className="border-t border-navy-100">
+            <td className="py-1.5 pr-3 font-semibold text-navy-700 align-top">CTA</td>
+            <td className="py-1.5">
+              <span className="rounded bg-navy-900 px-2 py-0.5 text-xs font-bold text-white">
+                {v.hero.ctaPrimary}
+              </span>
+            </td>
+          </tr>
+          <tr className="border-t border-navy-100">
+            <td className="py-1.5 pr-3 font-semibold text-navy-700 align-top">Funnel</td>
+            <td className="py-1.5 font-mono text-xs text-navy-700">{v.funnel}</td>
+          </tr>
+          <tr className="border-t border-navy-100">
+            <td className="py-1.5 pr-3 font-semibold text-navy-700 align-top">Destination</td>
+            <td className="py-1.5 font-mono text-xs text-navy-700">
+              /lp/{v.slug}?c={creativeId}
+            </td>
+          </tr>
+          <tr className="border-t border-navy-100">
+            <td className="py-1.5 pr-3 font-semibold text-navy-700 align-top">Stripe metadata</td>
+            <td className="py-1.5 font-mono text-[11px] text-navy-700">
+              lp_variant={v.slug} · creative_id={creativeId}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -764,6 +825,413 @@ export default function CreativeLab() {
           <BrandRibbon />
         </div>
       </section>
+
+      {/* ============================================================ */}
+      {/* FUNNEL LAB — 10 variant-paired creatives (#11–#20) */}
+      {/* ============================================================ */}
+      <section className="mt-20 border-t border-navy-100 pt-12">
+        <p className="text-xs uppercase tracking-widest text-coral-600 font-semibold">
+          Funnel Lab · v1
+        </p>
+        <h2 className="text-3xl text-navy-900">
+          10 variant-paired creatives → matched landing pages
+        </h2>
+        <p className="mt-3 text-base text-navy-700">
+          Each creative below ships paired with a dedicated landing page at
+          {" "}
+          <span className="font-mono text-sm">/lp/&lt;slug&gt;</span>{" "}
+          tuned to the same psychographic angle. The destination URL carries
+          the variant + creative IDs through the funnel so /admin/funnel-lab
+          can aggregate signups and Purchase events by combination.
+        </p>
+        <p className="mt-3 text-sm text-navy-500">
+          Lowest-common-denominator copy across all variants — assume zero
+          following, zero AI experience, zero affiliate marketing knowledge.
+        </p>
+      </section>
+
+      {/* #11 — Group Chat is a Goldmine */}
+      <Block num={11} title={VARIANTS[0].label} hook={VARIANTS[0].angle}>
+        <CreativeFrame w={FEED_W} h={FEED_H} scale={FEED_SCALE}>
+          <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-amber-50 via-coral-50 to-amber-100 p-14">
+            <div className="absolute -right-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-coral-300 opacity-40 blur-3xl" />
+            <p className="relative text-2xl font-bold uppercase tracking-[0.2em] text-coral-700">
+              No followers required.
+            </p>
+            <p className="relative mt-4 font-display text-7xl leading-tight text-navy-900">
+              Your group chat<br />is a goldmine.
+            </p>
+
+            <div className="relative mt-10 rounded-3xl bg-white p-7 shadow-2xl ring-2 ring-navy-100">
+              <div className="flex items-center gap-3 border-b border-navy-100 pb-3">
+                <div className="flex -space-x-2">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-coral-200 text-xl font-bold text-coral-700 ring-2 ring-white">J</span>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-300 text-xl font-bold text-amber-900 ring-2 ring-white">K</span>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-300 text-xl font-bold text-emerald-900 ring-2 ring-white">L</span>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-navy-200 text-xl font-bold text-navy-900 ring-2 ring-white">+3</span>
+                </div>
+                <p className="text-xl font-semibold text-navy-900">School moms 📚</p>
+              </div>
+              <div className="mt-4 space-y-2">
+                <div className="max-w-[80%] rounded-2xl rounded-bl-md bg-navy-100 px-4 py-3 text-xl">anyone got a sephora rec?</div>
+                <div className="ml-auto max-w-[80%] rounded-2xl rounded-br-md bg-[#34b7f1] px-4 py-3 text-xl text-white">omg yes — try this 💖</div>
+              </div>
+            </div>
+
+            <div className="absolute right-12 bottom-32 rotate-6 rounded-2xl bg-coral-500 px-6 py-4 text-white shadow-2xl ring-4 ring-coral-200">
+              <p className="text-base font-bold uppercase">commission</p>
+              <p className="font-display text-5xl font-bold">+$18.50</p>
+              <p className="text-sm">per month, recurring</p>
+            </div>
+
+            <div className="absolute bottom-10 left-14 right-14 rounded-2xl bg-navy-900 p-5 text-white">
+              <p className="text-center font-display text-3xl font-bold">MomFluence · $5/mo · momfluence.app/lp/group-chat-goldmine</p>
+            </div>
+          </div>
+        </CreativeFrame>
+        <VariantSpec slug="group-chat-goldmine" creativeId="c11" />
+      </Block>
+
+      {/* #12 — Make Money Without Being an Influencer */}
+      <Block num={12} title={VARIANTS[1].label} hook={VARIANTS[1].angle}>
+        <CreativeFrame w={FEED_W} h={FEED_H} scale={FEED_SCALE}>
+          <div className="flex h-full w-full flex-col justify-between bg-white p-14">
+            <div>
+              <p className="text-2xl font-bold uppercase tracking-[0.2em] text-coral-600">
+                the simplest side income on the internet
+              </p>
+              <p className="mt-6 font-display text-7xl leading-[1.05] text-navy-900">
+                Make money<br />from your phone.
+              </p>
+              <p className="mt-4 font-display text-6xl leading-tight text-navy-400">
+                Without becoming an{" "}
+                <span className="relative text-navy-900">
+                  influencer
+                  <span className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 bg-coral-500" />
+                </span>
+                .
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              {["no followers", "no camera", "no experience"].map((t) => (
+                <div key={t} className="rounded-2xl bg-coral-50 p-5 text-center ring-2 ring-coral-200">
+                  <p className="text-xl font-bold uppercase tracking-widest text-coral-700">✓ {t}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-2xl bg-navy-900 p-8 text-center text-white">
+              <p className="font-display text-4xl font-bold">Pick a brand → share a link → get paid.</p>
+              <p className="mt-2 text-2xl text-navy-200">$5/mo · cancel anytime · momfluence.app</p>
+            </div>
+          </div>
+        </CreativeFrame>
+        <VariantSpec slug="no-influencer-needed" creativeId="c12" />
+      </Block>
+
+      {/* #13 — Earn Between Drop-off & Pickup */}
+      <Block num={13} title={VARIANTS[2].label} hook={VARIANTS[2].angle}>
+        <CreativeFrame w={FEED_W} h={FEED_H} scale={FEED_SCALE}>
+          <div className="flex h-full w-full flex-col justify-center bg-gradient-to-br from-blue-50 via-white to-coral-50 p-14">
+            <p className="text-center text-2xl font-bold uppercase tracking-[0.2em] text-coral-600">
+              while the kids are at school
+            </p>
+            <p className="mt-4 text-center font-display text-7xl leading-tight text-navy-900">
+              Earn between<br />drop-off &amp; pickup.
+            </p>
+
+            <div className="mt-10 grid grid-cols-3 items-center gap-4">
+              <div className="rounded-3xl bg-white p-6 text-center ring-2 ring-navy-100 shadow-md">
+                <p className="font-display text-5xl font-bold text-navy-900">8:00 AM</p>
+                <p className="mt-1 text-xl text-navy-600">drop-off</p>
+              </div>
+              <div className="text-center">
+                <p className="font-display text-7xl">→</p>
+                <p className="font-display text-4xl font-bold text-coral-600">$25</p>
+                <p className="text-base text-navy-500">earned</p>
+              </div>
+              <div className="rounded-3xl bg-white p-6 text-center ring-2 ring-navy-100 shadow-md">
+                <p className="font-display text-5xl font-bold text-navy-900">2:30 PM</p>
+                <p className="mt-1 text-xl text-navy-600">pickup</p>
+              </div>
+            </div>
+
+            <p className="mt-10 text-center text-2xl text-navy-700">
+              4 minutes to set up · cash out same-day at $25
+            </p>
+
+            <div className="mt-8 rounded-2xl bg-navy-900 p-7 text-center text-white">
+              <p className="font-display text-3xl font-bold">MomFluence · $5/mo</p>
+              <p className="mt-1 text-xl text-navy-200">momfluence.app/lp/school-hours-income</p>
+            </div>
+          </div>
+        </CreativeFrame>
+        <VariantSpec slug="school-hours-income" creativeId="c13" />
+      </Block>
+
+      {/* #14 — Stealth Income */}
+      <Block num={14} title={VARIANTS[3].label} hook={VARIANTS[3].angle}>
+        <CreativeFrame w={FEED_W} h={FEED_H} scale={FEED_SCALE}>
+          <div className="flex h-full w-full flex-col justify-between bg-navy-900 p-14 text-white">
+            <div>
+              <p className="text-2xl font-bold uppercase tracking-[0.2em] text-coral-300">
+                🤫 no awkward dms to friends
+              </p>
+              <p className="mt-6 font-display text-7xl leading-[1.05]">
+                Make money online.<br />
+                <span className="text-coral-300">Without telling a soul.</span>
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                "drop a link in a Reddit thread",
+                "leave it in a YouTube comment",
+                "pin it to Pinterest",
+                "post it to a niche forum",
+              ].map((p) => (
+                <div key={p} className="flex items-center gap-4 rounded-2xl bg-white/5 p-4 ring-1 ring-white/10 backdrop-blur">
+                  <span className="text-3xl">→</span>
+                  <p className="text-2xl">{p}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-2xl bg-coral-500 p-6 text-center ring-4 ring-coral-300">
+              <p className="font-display text-4xl font-bold">strangers click for years</p>
+              <p className="mt-2 text-xl text-coral-50">you get paid every time · $5/mo</p>
+              <p className="mt-1 text-base text-coral-100">momfluence.app/lp/stealth-income</p>
+            </div>
+          </div>
+        </CreativeFrame>
+        <VariantSpec slug="stealth-income" creativeId="c14" />
+      </Block>
+
+      {/* #15 — ChatGPT Writes It (variant-paired) */}
+      <Block num={15} title={VARIANTS[4].label} hook={VARIANTS[4].angle}>
+        <CreativeFrame w={FEED_W} h={FEED_H} scale={FEED_SCALE}>
+          <div className="flex h-full w-full flex-col bg-gradient-to-b from-emerald-50 to-white p-12">
+            <p className="text-2xl font-bold uppercase tracking-[0.15em] text-coral-600">
+              if you can copy &amp; paste, you can do this
+            </p>
+            <p className="mt-4 font-display text-6xl leading-tight text-navy-900">
+              Let ChatGPT<br />write the post.
+            </p>
+            <p className="mt-3 font-display text-5xl text-coral-600">
+              You keep the commission.
+            </p>
+
+            <div className="mt-8 grid grid-cols-4 items-center gap-3">
+              {[
+                { n: 1, l: "Pick a brand" },
+                { n: 2, l: "Copy the prompt" },
+                { n: 3, l: "Paste in ChatGPT" },
+                { n: 4, l: "Post & earn" },
+              ].map((s) => (
+                <div key={s.n} className="rounded-2xl bg-white p-4 text-center ring-2 ring-navy-100 shadow-sm">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-coral-100 text-lg font-bold text-coral-700">{s.n}</span>
+                  <p className="mt-2 text-base font-semibold text-navy-800">{s.l}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-auto rounded-2xl bg-navy-900 p-7 text-center text-white">
+              <p className="font-display text-3xl font-bold">MomFluence · $5/mo · ChatGPT does the writing</p>
+              <p className="mt-1 text-base text-navy-300">momfluence.app/lp/chatgpt-writes-it</p>
+            </div>
+          </div>
+        </CreativeFrame>
+        <VariantSpec slug="chatgpt-writes-it" creativeId="c15" />
+      </Block>
+
+      {/* #16 — Brands Pay for Mom Trust */}
+      <Block num={16} title={VARIANTS[5].label} hook={VARIANTS[5].angle}>
+        <CreativeFrame w={FEED_W} h={FEED_H} scale={FEED_SCALE}>
+          <div className="h-full w-full bg-white p-14">
+            <p className="text-2xl font-bold uppercase tracking-[0.2em] text-coral-600">
+              moms control 85% of household spend
+            </p>
+
+            <div className="mt-6 text-center">
+              <p className="font-display text-[200px] font-bold leading-none text-navy-900">$2.4T</p>
+              <p className="-mt-3 text-2xl text-navy-500">spent by moms each year</p>
+            </div>
+
+            <p className="mt-6 text-center font-display text-5xl leading-tight text-navy-900">
+              Brands pay billions to reach you.
+            </p>
+            <p className="mt-3 text-center font-display text-5xl leading-tight text-coral-600">
+              Finally — you get a cut.
+            </p>
+
+            <div className="mt-10 rounded-2xl bg-coral-500 p-7 text-center text-white">
+              <p className="font-display text-3xl font-bold">20–60% recurring · $5/mo to access</p>
+              <p className="mt-1 text-xl text-coral-50">momfluence.app/lp/trusted-mom-economy</p>
+            </div>
+          </div>
+        </CreativeFrame>
+        <VariantSpec slug="trusted-mom-economy" creativeId="c16" />
+      </Block>
+
+      {/* #17 — Not MLM */}
+      <Block num={17} title={VARIANTS[6].label} hook={VARIANTS[6].angle}>
+        <CreativeFrame w={FEED_W} h={FEED_H} scale={FEED_SCALE}>
+          <div className="flex h-full w-full flex-col justify-between bg-white p-14">
+            <p className="text-2xl font-bold uppercase tracking-[0.2em] text-coral-600">
+              we hate MLMs too. listen up ↓
+            </p>
+
+            <div className="space-y-2">
+              <p className="font-display text-6xl font-bold leading-tight text-navy-300 line-through decoration-coral-500 decoration-[8px]">
+                MLM. ❌
+              </p>
+              <p className="font-display text-6xl font-bold leading-tight text-navy-300 line-through decoration-coral-500 decoration-[8px]">
+                Course. ❌
+              </p>
+              <p className="font-display text-6xl font-bold leading-tight text-navy-300 line-through decoration-coral-500 decoration-[8px]">
+                Crypto. ❌
+              </p>
+              <p className="font-display text-6xl font-bold leading-tight text-navy-300 line-through decoration-coral-500 decoration-[8px]">
+                Recruit-your-friends. ❌
+              </p>
+              <p className="mt-4 font-display text-6xl font-bold leading-tight text-navy-900">
+                Just <span className="text-coral-600">affiliate links</span>. ✓
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-navy-900 p-7 text-white">
+              <div className="flex items-center justify-between">
+                <p className="font-display text-3xl font-bold">No tiers. No downlines. No weirdness.</p>
+              </div>
+              <p className="mt-2 text-xl text-navy-200">$5/mo · momfluence.app/lp/not-mlm</p>
+            </div>
+          </div>
+        </CreativeFrame>
+        <VariantSpec slug="not-mlm" creativeId="c17" />
+      </Block>
+
+      {/* #18 — $25 Day One */}
+      <Block num={18} title={VARIANTS[7].label} hook={VARIANTS[7].angle}>
+        <CreativeFrame w={FEED_W} h={FEED_H} scale={FEED_SCALE}>
+          <div className="flex h-full w-full flex-col justify-center bg-gradient-to-br from-navy-900 to-navy-700 p-14 text-white">
+            <p className="text-center text-2xl font-bold uppercase tracking-[0.2em] text-coral-300">
+              the math is simple
+            </p>
+
+            <div className="mt-12 flex items-center justify-center gap-8">
+              <div className="text-center">
+                <p className="text-2xl uppercase tracking-widest text-navy-300">you put in</p>
+                <p className="mt-2 font-display text-[200px] font-bold leading-none">$5</p>
+              </div>
+              <p className="font-display text-[140px] text-coral-300">→</p>
+              <div className="text-center">
+                <p className="text-2xl uppercase tracking-widest text-coral-300">you cash out</p>
+                <p className="mt-2 font-display text-[200px] font-bold leading-none text-coral-300">$25</p>
+              </div>
+            </div>
+
+            <p className="mt-10 text-center font-display text-5xl font-bold text-white">
+              Day. One.
+            </p>
+            <p className="mt-3 text-center text-xl text-navy-200">
+              Drop a few links, hit $25 in commissions, cash out same day.
+            </p>
+
+            <div className="mt-12 rounded-2xl bg-coral-500 p-6 text-center ring-4 ring-coral-300">
+              <p className="font-display text-3xl font-bold">MomFluence · cancel anytime</p>
+              <p className="text-base">momfluence.app/lp/twenty-five-day-one</p>
+            </div>
+          </div>
+        </CreativeFrame>
+        <VariantSpec slug="twenty-five-day-one" creativeId="c18" />
+      </Block>
+
+      {/* #19 — Real Receipts */}
+      <Block num={19} title={VARIANTS[8].label} hook={VARIANTS[8].angle}>
+        <CreativeFrame w={FEED_W} h={FEED_H} scale={FEED_SCALE}>
+          <div className="h-full w-full bg-coral-50 p-14">
+            <p className="text-2xl font-bold uppercase tracking-[0.2em] text-coral-600">
+              real moms · real numbers · real Venmo
+            </p>
+            <p className="mt-4 font-display text-6xl leading-tight text-navy-900">
+              $72.40 last week.
+              <br />
+              From 4 texts.
+            </p>
+
+            <div className="mt-8 rounded-3xl bg-white p-7 shadow-2xl ring-2 ring-navy-100">
+              <p className="text-base uppercase tracking-widest text-navy-500">this week · Jess</p>
+              <div className="mt-3 grid grid-cols-3 gap-3">
+                <div className="rounded-xl bg-navy-50 p-4 text-center">
+                  <p className="font-display text-4xl font-bold text-navy-900">68</p>
+                  <p className="text-sm text-navy-500">clicks</p>
+                </div>
+                <div className="rounded-xl bg-navy-50 p-4 text-center">
+                  <p className="font-display text-4xl font-bold text-navy-900">12</p>
+                  <p className="text-sm text-navy-500">sign-ups</p>
+                </div>
+                <div className="rounded-xl bg-coral-100 p-4 text-center ring-2 ring-coral-300">
+                  <p className="font-display text-4xl font-bold text-coral-700">$72</p>
+                  <p className="text-sm text-coral-600">earned</p>
+                </div>
+              </div>
+              <div className="mt-4 flex h-12 items-end gap-1.5">
+                {[22, 38, 28, 55, 42, 70, 88].map((h, i) => (
+                  <div key={i} className="flex-1 rounded-t bg-coral-400" style={{ height: `${h}%` }} />
+                ))}
+              </div>
+              <div className="mt-4 flex items-center justify-between rounded-lg bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200">
+                <p className="text-base font-bold text-emerald-700">Friday payout</p>
+                <p className="text-lg font-bold text-emerald-700">$72.40 → Venmo</p>
+              </div>
+            </div>
+
+            <p className="mt-6 text-center text-2xl text-navy-700">
+              $5 to start. Cancel anytime.
+            </p>
+            <p className="mt-1 text-center text-base text-navy-500">momfluence.app/lp/real-receipts</p>
+          </div>
+        </CreativeFrame>
+        <VariantSpec slug="real-receipts" creativeId="c19" />
+      </Block>
+
+      {/* #20 — Faceless Creator */}
+      <Block num={20} title={VARIANTS[9].label} hook={VARIANTS[9].angle}>
+        <CreativeFrame w={FEED_W} h={FEED_H} scale={FEED_SCALE}>
+          <div className="relative flex h-full w-full flex-col justify-between overflow-hidden bg-gradient-to-br from-purple-100 via-coral-50 to-blue-100 p-14">
+            <div className="absolute -right-32 -bottom-32 h-[28rem] w-[28rem] rounded-full bg-purple-300 opacity-30 blur-3xl" />
+            <div>
+              <p className="text-2xl font-bold uppercase tracking-[0.2em] text-coral-600">
+                no face. no follower count. no problem.
+              </p>
+              <p className="mt-6 font-display text-7xl leading-tight text-navy-900">
+                Start a faceless<br />content brand.
+              </p>
+            </div>
+
+            <div className="relative mx-auto w-[420px]">
+              <div className="rounded-[3rem] bg-navy-900 p-3 shadow-2xl">
+                <div className="overflow-hidden rounded-[2.5rem] bg-gradient-to-b from-pink-100 to-amber-50 p-8 text-center">
+                  <p className="text-4xl">🎭</p>
+                  <p className="mt-2 text-2xl font-bold text-navy-900">@mom_recs_anon</p>
+                  <p className="text-base text-navy-500">faceless · AI-written · 47k followers</p>
+                  <div className="mt-4 rounded-2xl bg-coral-500 px-5 py-3 text-white">
+                    <p className="text-3xl font-bold">$1,247</p>
+                    <p className="text-sm">this month, passive</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-navy-900 p-7 text-center text-white">
+              <p className="font-display text-3xl font-bold">AI writes. You earn. $5/mo.</p>
+              <p className="mt-1 text-base text-navy-300">momfluence.app/lp/faceless-creator</p>
+            </div>
+          </div>
+        </CreativeFrame>
+        <VariantSpec slug="faceless-creator" creativeId="c20" />
+      </Block>
 
       <section className="mt-16 rounded-2xl bg-coral-50 p-6 ring-1 ring-coral-200">
         <h2 className="text-xl text-navy-900">Testing strategy</h2>
