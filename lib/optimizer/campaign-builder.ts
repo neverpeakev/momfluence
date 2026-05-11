@@ -92,23 +92,47 @@ export interface BuildInputs {
  * in late 2025 — creatives now must reference a previously-uploaded image
  * by hash.
  *
- * Approach: pass `url=<our public PNG endpoint>` so Meta fetches the image
- * server-side. Faster than streaming bytes through our function (which
- * would block ~5s per image on Chromium cold-start) and keeps us under
- * the function execution budget when launching 10 ads.
+ * Approach: fetch our own PNG bytes and upload via multipart/form-data.
+ *
+ * Previous version passed `url=<our PNG endpoint>` so Meta would fetch
+ * server-side, which is faster but gated behind a stricter Meta App
+ * capability (gives error code 3 "Application does not have the
+ * capability" if the app hasn't been reviewed for advanced URL-fetch
+ * access). Direct byte upload uses the older, less-gated code path
+ * available to any app with the standard ads_management permission.
  */
 async function uploadAdImage(slug: string): Promise<string> {
+  // 1. Fetch our own PNG bytes (chromium-rendered)
   const imageUrl = `${siteOrigin()}/api/render/creative/${encodeURIComponent(slug)}.png`;
-  const resp = await meta<{ images: Record<string, { hash: string; url?: string }> }>(
-    `/${adAccount()}/adimages`,
-    {
-      method: "POST",
-      body: JSON.stringify({ url: imageUrl }),
-    }
-  );
-  const first = Object.values(resp.images ?? {})[0];
+  const imgRes = await fetch(imageUrl);
+  if (!imgRes.ok) {
+    throw new Error(`Failed to fetch own image ${imageUrl}: ${imgRes.status} ${imgRes.statusText}`);
+  }
+  const imgBlob = await imgRes.blob();
+
+  // 2. Upload as multipart/form-data to Meta
+  const formData = new FormData();
+  formData.append("bytes", imgBlob, `${slug}.png`);
+
+  const url = `${BASE}/${adAccount()}/adimages`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token()}`,
+      // Note: do NOT set Content-Type — fetch sets multipart/form-data
+      // with the correct boundary automatically.
+    },
+    body: formData,
+  });
+
+  const text = await resp.text();
+  if (!resp.ok) {
+    throw new Error(`Meta /adimages upload failed: ${resp.status} ${text.slice(0, 500)}`);
+  }
+  const data = JSON.parse(text) as { images: Record<string, { hash: string }> };
+  const first = Object.values(data.images ?? {})[0];
   if (!first?.hash) {
-    throw new Error(`Meta /adimages returned no image_hash for ${slug} — response: ${JSON.stringify(resp).slice(0, 300)}`);
+    throw new Error(`Meta /adimages returned no hash for ${slug}: ${text.slice(0, 300)}`);
   }
   return first.hash;
 }
