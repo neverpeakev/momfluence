@@ -22,6 +22,10 @@ export const maxDuration = 60;
 const VARIANTS = {
   icon:     { width: 1024, height: 1024, omitBackground: false },
   wordmark: { width: 1200, height: 400,  omitBackground: true  },
+  // FB cover: 1640×924 is Meta's current "high-res" spec (2× retina of
+  // 820×462 desktop display). Mobile crops to a center safe zone of ~640×360,
+  // so the key tagline + visual sit in the middle band.
+  cover:    { width: 1640, height: 924,  omitBackground: false },
 } as const;
 
 function siteOrigin(req: NextRequest): string {
@@ -34,7 +38,8 @@ function siteOrigin(req: NextRequest): string {
 
 function sanitize(raw: string): keyof typeof VARIANTS | null {
   const cleaned = raw.replace(/\.png$/i, "");
-  return cleaned === "icon" || cleaned === "wordmark" ? cleaned : null;
+  if (cleaned === "icon" || cleaned === "wordmark" || cleaned === "cover") return cleaned;
+  return null;
 }
 
 export async function GET(
@@ -45,7 +50,7 @@ export async function GET(
   const variant = sanitize(rawVariant);
   if (!variant) {
     return NextResponse.json(
-      { error: "invalid variant — must be 'icon' or 'wordmark'" },
+      { error: "invalid variant — must be 'icon', 'wordmark', or 'cover'" },
       { status: 400 }
     );
   }

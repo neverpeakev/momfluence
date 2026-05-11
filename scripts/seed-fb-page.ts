@@ -110,6 +110,65 @@ async function fetchPostImage(slug: string): Promise<Buffer> {
   return buf;
 }
 
+async function fetchLogoImage(variant: "icon" | "cover"): Promise<Buffer> {
+  const url = `${siteOrigin()}/api/render/logo/${variant}.png`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Render fetch ${url} → ${res.status} ${res.statusText}`);
+  }
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length < 1000) {
+    throw new Error(`Render returned suspiciously small image for logo ${variant}: ${buf.length} bytes`);
+  }
+  return buf;
+}
+
+async function updateProfilePicture(pageToken: string, pageId: string): Promise<void> {
+  const buf = await fetchLogoImage("icon");
+  const form = new FormData();
+  form.append("source", new Blob([new Uint8Array(buf)], { type: "image/png" }), "profile.png");
+  form.append("access_token", pageToken);
+  const res = await fetch(`${BASE}/${pageId}/picture`, { method: "POST", body: form });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`POST /${pageId}/picture → ${res.status}: ${text.slice(0, 500)}`);
+  }
+}
+
+/** Cover photo flow: upload as unpublished photo first (returns photo_id),
+ *  then POST /{page-id} with `cover=<photo_id>` to set it as the page cover. */
+async function updateCoverPhoto(pageToken: string, pageId: string): Promise<void> {
+  const buf = await fetchLogoImage("cover");
+  // Step 1: upload as unpublished + no_story (so it doesn't appear in feed)
+  const uploadForm = new FormData();
+  uploadForm.append("source", new Blob([new Uint8Array(buf)], { type: "image/png" }), "cover.png");
+  uploadForm.append("published", "false");
+  uploadForm.append("no_story", "true");
+  uploadForm.append("access_token", pageToken);
+  const upRes = await fetch(`${BASE}/${pageId}/photos`, { method: "POST", body: uploadForm });
+  const upText = await upRes.text();
+  if (!upRes.ok) {
+    throw new Error(`Cover upload POST /${pageId}/photos → ${upRes.status}: ${upText.slice(0, 500)}`);
+  }
+  const { id: photoId } = JSON.parse(upText) as { id?: string };
+  if (!photoId) {
+    throw new Error(`Cover upload returned no photo id: ${upText.slice(0, 200)}`);
+  }
+  // Step 2: assign as cover
+  const setForm = new URLSearchParams();
+  setForm.append("cover", photoId);
+  setForm.append("access_token", pageToken);
+  const setRes = await fetch(`${BASE}/${pageId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: setForm.toString(),
+  });
+  const setText = await setRes.text();
+  if (!setRes.ok) {
+    throw new Error(`Set cover POST /${pageId} cover=${photoId} → ${setRes.status}: ${setText.slice(0, 500)}`);
+  }
+}
+
 /** Convert {dayOffset, hourEastern} → Unix timestamp.
  *  Meta wants seconds since epoch. ET = UTC-5 (or -4 in DST); we use -5
  *  as a conservative approximation — being an hour "off" from true ET is
@@ -168,6 +227,22 @@ async function main() {
   console.log(`\n→ Updating page metadata (about / description / website / mission)...`);
   await updatePageMetadata(pageToken, pageId);
   console.log(`  ✓ Metadata updated`);
+
+  console.log(`\n→ Updating profile photo (rendered from /api/render/logo/icon.png)...`);
+  try {
+    await updateProfilePicture(pageToken, pageId);
+    console.log(`  ✓ Profile photo updated`);
+  } catch (e) {
+    console.log(`  ✗ Profile photo failed: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
+  console.log(`\n→ Updating cover photo (rendered from /api/render/logo/cover.png)...`);
+  try {
+    await updateCoverPhoto(pageToken, pageId);
+    console.log(`  ✓ Cover photo updated`);
+  } catch (e) {
+    console.log(`  ✗ Cover photo failed: ${e instanceof Error ? e.message : String(e)}`);
+  }
 
   console.log(`\n→ Creating ${SEED_POSTS.length} posts...`);
   let succeeded = 0;

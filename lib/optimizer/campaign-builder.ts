@@ -158,6 +158,8 @@ function decodeHtmlEntities(s: string): string {
     .replace(/&hellip;|&#8230;/g, "…")
     .replace(/&amp;/g, "&"); // last — & must decode after other entities
 }
+
+async function findExistingCampaign(): Promise<string | null> {
   type Resp = { data: Array<{ id: string; name: string }> };
   const r = await meta<Resp>(`/${adAccount()}/campaigns`, {
     qs: { fields: "id,name", limit: "200" },
