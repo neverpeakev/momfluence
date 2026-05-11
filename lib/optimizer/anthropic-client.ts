@@ -23,22 +23,26 @@ function client(): Anthropic {
   return new Anthropic({ apiKey: apiKey.trim() });
 }
 
-/** Schema for a single remix candidate. Mirrors the FunnelVariant.hero shape. */
+/** Schema for a single remix candidate. Mirrors the FunnelVariant.hero shape.
+ *  Limits are LLM-forgiving — Claude often emits psychographic angles longer
+ *  than terse tags and slightly-overlong headlines; failing the simulate run
+ *  on a 41-char angle isn't useful, so we leave headroom and downstream
+ *  consumers (admin review, ad creation) can hard-truncate if they need to. */
 const RemixSchema = z.object({
-  hypothesis: z.string().min(10).max(200),
-  angle: z.string().min(3).max(40),
+  hypothesis: z.string().min(10).max(400),
+  angle: z.string().min(3).max(100),
   hero: z.object({
-    eyebrow: z.string().min(3).max(60),
-    headline: z.string().min(5).max(140),
-    subhead: z.string().min(10).max(300),
-    ctaPrimary: z.string().min(3).max(50),
-    ctaSecondary: z.string().min(3).max(40),
+    eyebrow: z.string().min(3).max(100),
+    headline: z.string().min(5).max(200),
+    subhead: z.string().min(10).max(400),
+    ctaPrimary: z.string().min(3).max(80),
+    ctaSecondary: z.string().min(3).max(80),
   }),
   closer: z.object({
-    headline: z.string().min(3).max(80),
-    subhead: z.string().min(5).max(160),
+    headline: z.string().min(3).max(120),
+    subhead: z.string().min(5).max(240),
   }),
-  notes: z.string().min(5).max(300),
+  notes: z.string().min(5).max(500),
 });
 
 const RemixResponseSchema = z.object({ candidates: z.array(RemixSchema).length(3) });
