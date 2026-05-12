@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SEED_POSTS, type PostImageConfig } from "@/lib/fb-page/seed-content";
+import { getBySlug } from "@/lib/social/db";
 
 /**
  * Renders a single FB Page seed post as a clean 1080×1080 image, intended
@@ -60,10 +61,28 @@ function footerColor(image: PostImageConfig): string {
 
 export default async function PostRenderPage({ params }: Props) {
   const { slug } = await params;
-  const post = SEED_POSTS.find((p) => p.slug === slug);
-  if (!post) notFound();
 
-  const image = post.image;
+  // First check static seed posts (welcome / origin / etc.)
+  const seed = SEED_POSTS.find((p) => p.slug === slug);
+  let image: PostImageConfig | null = seed?.image ?? null;
+
+  // Fall back to DB for cron-generated posts (slug like `gen-2026-05-12-xxxxx`)
+  if (!image) {
+    const row = await getBySlug(slug).catch(() => null);
+    if (row) {
+      image = {
+        bg: row.image_bg as PostImageConfig["bg"],
+        display: row.display,
+        eyebrow: row.eyebrow ?? undefined,
+        body: row.body ?? undefined,
+        accentBadge: row.accent_badge ?? undefined,
+        footer: row.footer ?? undefined,
+        displayColor: (row.display_color ?? undefined) as PostImageConfig["displayColor"],
+      };
+    }
+  }
+
+  if (!image) notFound();
   const isWhiteRing = image.bg === "white-coral-ring";
 
   return (
