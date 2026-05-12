@@ -77,6 +77,87 @@ async function fetchPageAccessToken(userToken: string, pageId: string): Promise<
   return { token: page.access_token, name: page.name };
 }
 
+/** Resolve the Instagram Business Account ID linked to the FB Page (if any).
+ *  Returns null if no IG account is linked — common for FB Pages that haven't
+ *  connected an IG account yet, and not an error condition. */
+async function fetchInstagramAccountId(pageToken: string, pageId: string): Promise<string | null> {
+  const url = `${BASE}/${pageId}?fields=instagram_business_account&access_token=${encodeURIComponent(pageToken)}`;
+  const res = await fetch(url);
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`GET /${pageId} (instagram_business_account) → ${res.status}: ${text.slice(0, 500)}`);
+  }
+  const data = JSON.parse(text) as { instagram_business_account?: { id: string } };
+  return data.instagram_business_account?.id ?? null;
+}
+
+/** Publish a single image post to Instagram. Two-step flow per Meta docs:
+ *  1. POST /{ig-id}/media with image_url + caption → returns creation_id
+ *  2. POST /{ig-id}/media_publish with creation_id → publishes immediately
+ *
+ *  IG Graph API does NOT support scheduling — only immediate publish. We
+ *  use the public render endpoint for image_url (no upload step needed). */
+async function publishInstagramPost(
+  igAccountId: string,
+  pageToken: string,
+  post: SeedPost
+): Promise<string> {
+  const imageUrl = `${siteOrigin()}/api/render/post/${post.slug}.png`;
+
+  // Step 1: create media container
+  const containerParams = new URLSearchParams();
+  containerParams.append("image_url", imageUrl);
+  containerParams.append("caption", post.caption);
+  containerParams.append("access_token", pageToken);
+  const containerRes = await fetch(`${BASE}/${igAccountId}/media`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: containerParams.toString(),
+  });
+  const containerText = await containerRes.text();
+  if (!containerRes.ok) {
+    throw new Error(`IG /media (container) for ${post.slug} → ${containerRes.status}: ${containerText.slice(0, 500)}`);
+  }
+  const { id: creationId } = JSON.parse(containerText) as { id?: string };
+  if (!creationId) {
+    throw new Error(`IG /media returned no creation_id for ${post.slug}: ${containerText.slice(0, 200)}`);
+  }
+
+  // Step 2: publish (the container needs to be FINISHED — IG fetches the
+  // image asynchronously. For small images on a fast endpoint it's usually
+  // ready in <2s, but we poll briefly to be safe.)
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await new Promise((r) => setTimeout(r, 1500));
+    const statusRes = await fetch(
+      `${BASE}/${creationId}?fields=status_code&access_token=${encodeURIComponent(pageToken)}`
+    );
+    const statusText = await statusRes.text();
+    if (!statusRes.ok) {
+      throw new Error(`IG status check for ${post.slug} → ${statusRes.status}: ${statusText.slice(0, 300)}`);
+    }
+    const { status_code } = JSON.parse(statusText) as { status_code?: string };
+    if (status_code === "FINISHED") break;
+    if (status_code === "ERROR" || status_code === "EXPIRED") {
+      throw new Error(`IG container ${creationId} status=${status_code} for ${post.slug}`);
+    }
+  }
+
+  const publishParams = new URLSearchParams();
+  publishParams.append("creation_id", creationId);
+  publishParams.append("access_token", pageToken);
+  const publishRes = await fetch(`${BASE}/${igAccountId}/media_publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: publishParams.toString(),
+  });
+  const publishText = await publishRes.text();
+  if (!publishRes.ok) {
+    throw new Error(`IG /media_publish for ${post.slug} → ${publishRes.status}: ${publishText.slice(0, 500)}`);
+  }
+  const { id: mediaId } = JSON.parse(publishText) as { id?: string };
+  return mediaId ?? "<no-id>";
+}
+
 async function updatePageMetadata(pageToken: string, pageId: string): Promise<void> {
   const params = new URLSearchParams();
   params.append("about", PAGE_ABOUT.shortDescription);
@@ -217,6 +298,7 @@ async function createPagePost(
 }
 
 async function main() {
+  const igOnly = process.argv.includes("--ig-only");
   const userToken = requiredEnv("META_MARKETING_API_TOKEN");
   const pageId = requiredEnv("META_FB_PAGE_ID");
 
@@ -224,44 +306,81 @@ async function main() {
   const { token: pageToken, name } = await fetchPageAccessToken(userToken, pageId);
   console.log(`  ✓ ${name} (page ${pageId})`);
 
-  console.log(`\n→ Updating page metadata (about / description / website / mission)...`);
-  await updatePageMetadata(pageToken, pageId);
-  console.log(`  ✓ Metadata updated`);
-
-  console.log(`\n→ Updating profile photo (rendered from /api/render/logo/icon.png)...`);
-  try {
-    await updateProfilePicture(pageToken, pageId);
-    console.log(`  ✓ Profile photo updated`);
-  } catch (e) {
-    console.log(`  ✗ Profile photo failed: ${e instanceof Error ? e.message : String(e)}`);
-  }
-
-  console.log(`\n→ Updating cover photo (rendered from /api/render/logo/cover.png)...`);
-  try {
-    await updateCoverPhoto(pageToken, pageId);
-    console.log(`  ✓ Cover photo updated`);
-  } catch (e) {
-    console.log(`  ✗ Cover photo failed: ${e instanceof Error ? e.message : String(e)}`);
-  }
-
-  console.log(`\n→ Creating ${SEED_POSTS.length} posts...`);
   let succeeded = 0;
   const failures: Array<{ slug: string; error: string }> = [];
 
-  for (const post of SEED_POSTS) {
+  if (!igOnly) {
+    console.log(`\n→ Updating page metadata (about / description / website / mission)...`);
+    await updatePageMetadata(pageToken, pageId);
+    console.log(`  ✓ Metadata updated`);
+
+    console.log(`\n→ Updating profile photo (rendered from /api/render/logo/icon.png)...`);
     try {
-      const r = await createPagePost(pageToken, pageId, post);
-      const label = post.schedule === "immediate" ? "[LIVE NOW]" : `[scheduled ${r.scheduledFor}]`;
-      console.log(`  ✓ ${post.slug.padEnd(24)} ${r.id}  ${label}`);
-      succeeded++;
+      await updateProfilePicture(pageToken, pageId);
+      console.log(`  ✓ Profile photo updated`);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.log(`  ✗ ${post.slug.padEnd(24)} ${msg}`);
-      failures.push({ slug: post.slug, error: msg });
+      console.log(`  ✗ Profile photo failed: ${e instanceof Error ? e.message : String(e)}`);
     }
+
+    console.log(`\n→ Updating cover photo (rendered from /api/render/logo/cover.png)...`);
+    try {
+      await updateCoverPhoto(pageToken, pageId);
+      console.log(`  ✓ Cover photo updated`);
+    } catch (e) {
+      console.log(`  ✗ Cover photo failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+
+    console.log(`\n→ Creating ${SEED_POSTS.length} posts...`);
+
+    for (const post of SEED_POSTS) {
+      try {
+        const r = await createPagePost(pageToken, pageId, post);
+        const label = post.schedule === "immediate" ? "[LIVE NOW]" : `[scheduled ${r.scheduledFor}]`;
+        console.log(`  ✓ ${post.slug.padEnd(24)} ${r.id}  ${label}`);
+        succeeded++;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.log(`  ✗ ${post.slug.padEnd(24)} ${msg}`);
+        failures.push({ slug: post.slug, error: msg });
+      }
+    }
+
+    console.log(`\n${succeeded}/${SEED_POSTS.length} posts created. ${failures.length === 0 ? "✓ All good." : "✗ See failures above."}`);
+  } else {
+    console.log(`\n→ --ig-only mode: skipping FB metadata, photos, and post creation`);
   }
 
-  console.log(`\n${succeeded}/${SEED_POSTS.length} posts created. ${failures.length === 0 ? "✓ All good." : "✗ See failures above."}\n`);
+  // Instagram cross-post. IG Graph API doesn't support scheduling, so we
+  // only mirror the immediate posts. The 12 scheduled posts will need to
+  // be cross-posted via Meta Business Suite or a follow-up daily cron.
+  console.log(`\n→ Cross-posting immediate posts to Instagram...`);
+  const igAccountId = await fetchInstagramAccountId(pageToken, pageId).catch((e) => {
+    console.log(`  ✗ Could not resolve IG account: ${e instanceof Error ? e.message : String(e)}`);
+    return null;
+  });
+  if (!igAccountId) {
+    console.log(`  (skipped — no Instagram Business Account linked to this Page, or token lacks instagram_basic scope)`);
+  } else {
+    console.log(`  ✓ IG account ${igAccountId} linked`);
+    const immediates = SEED_POSTS.filter((p) => p.schedule === "immediate");
+    let igOk = 0;
+    const igFailures: Array<{ slug: string; error: string }> = [];
+    for (const post of immediates) {
+      try {
+        const mediaId = await publishInstagramPost(igAccountId, pageToken, post);
+        console.log(`  ✓ ${post.slug.padEnd(24)} IG media ${mediaId}`);
+        igOk++;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.log(`  ✗ ${post.slug.padEnd(24)} ${msg}`);
+        igFailures.push({ slug: post.slug, error: msg });
+      }
+    }
+    console.log(`\n${igOk}/${immediates.length} IG posts published. ${immediates.length - igOk > 0 ? "Note: IG only mirrors immediate posts (scheduling not supported by IG Graph API)." : ""}`);
+  }
+
+  console.log("");
+
   if (failures.length > 0) {
     console.log("Failed posts (re-run after fixing):");
     for (const f of failures) console.log(`  - ${f.slug}: ${f.error}`);
