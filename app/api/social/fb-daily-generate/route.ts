@@ -70,11 +70,30 @@ async function fetchPageAccessToken(userToken: string, pageId: string): Promise<
 
 async function fetchRenderedPng(req: NextRequest, slug: string): Promise<Buffer> {
   const url = `${siteOrigin(req)}/api/render/post/${slug}.png`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Render fetch ${url} → ${res.status}`);
-  const buf = Buffer.from(await res.arrayBuffer());
-  if (buf.length < 1000) throw new Error(`Render returned suspiciously small image: ${buf.length} bytes`);
-  return buf;
+  // The row was inserted moments ago; any non-2xx here is almost certainly
+  // a transient blip (Supabase lookup hiccup, cold Chromium boot, edge cache).
+  // Retry a couple times with backoff before giving up.
+  const delays = [0, 1500, 4000];
+  let lastErr: Error | null = null;
+  for (const wait of delays) {
+    if (wait) await new Promise((r) => setTimeout(r, wait));
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        lastErr = new Error(`Render fetch ${url} → ${res.status}`);
+        continue;
+      }
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.length < 1000) {
+        lastErr = new Error(`Render returned suspiciously small image: ${buf.length} bytes`);
+        continue;
+      }
+      return buf;
+    } catch (e) {
+      lastErr = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+  throw lastErr ?? new Error(`Render fetch ${url} failed after retries`);
 }
 
 async function postPhotoToFb(

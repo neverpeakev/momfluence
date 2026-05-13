@@ -46,7 +46,22 @@ export async function GET(
   // and page route agree on what's renderable.
   const isSeed = SEED_POSTS.some((p) => p.slug === slug);
   if (!isSeed) {
-    const row = await getBySlug(slug).catch(() => null);
+    // A transient Supabase lookup failure here must NOT be reported as 404 —
+    // the fb-daily cron treats 404 as terminal and marks the row fb_failed,
+    // even though the row was just inserted moments earlier. Surface lookup
+    // errors as 500 so the caller can distinguish "truly missing" from
+    // "lookup blip" and retry appropriately.
+    let row;
+    try {
+      row = await getBySlug(slug);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[render/post] getBySlug failed", slug, msg);
+      return NextResponse.json(
+        { error: "lookup failed", message: msg },
+        { status: 500 }
+      );
+    }
     if (!row) {
       return NextResponse.json({ error: `post not found: ${slug}` }, { status: 404 });
     }
