@@ -23,33 +23,71 @@ Curated programs. $5/month to access.
 
 ---
 
-## THE canonical line (use in EVERY post, every time)
+## THE canonical message (use in EVERY post, every time)
 
-> **Same rev share as top celebrities — now available to everyday moms.
-> $5/mo to unlock them.**
+> **Did you know brands want to pay you to share their products?
+> Same brand deals once gate-kept for celebrities and influencers
+> are now open to everyday moms. Get yours at momfluence.app.**
 
-This is the complete product message. Two sentences:
+This is the complete product message. Three sentences, three moves:
 
-1. **The news + the comparison + the eligibility, fused** — "Same rev
-   share as top celebrities" delivers (a) money is on the table, (b) at
-   the size everyone assumes only celebrities get, (c) using a shared
-   cultural shortcut so it lands instantly without affiliate-marketing
-   literacy. "Now available to everyday moms" delivers the unlock — it's
-   her, specifically. "Top celebrities" works because every reader has a
-   mental image; we don't need to name a specific Kardashian.
-2. **The qualifier as the call** — "$5/mo to unlock them" reframes the
-   fee as a key, not a cost. "Them" = the top-celebrity programs she
-   just learned exist. The fee is the price of admission to a real
-   thing, not a subscription she has to justify.
+1. **The question** — "Did you know brands want to pay you to share
+   their products?" The question form is the revelation engine. "Want
+   to pay you" makes the brands the active party. "Share their products"
+   uses words she actually has — never "rev share," "commissions,"
+   "affiliate," or "promote." She doesn't have those words yet.
 
-**Every post must deliver this complete message.** Not pieces of it.
-Not the news *or* the comparison *or* the eligibility *or* the price.
-All four, every time. The reader cannot be expected to bring context
-from previous posts. Each post is a potential first impression.
+2. **The unlock** — "Same brand deals once gate-kept for celebrities
+   and influencers are now open to everyday moms." "Gate-kept" is
+   internet-native vernacular and signals you respect the reader. The
+   contrast (celebrities/influencers → everyday moms) does the size +
+   eligibility work in one stroke.
 
-The variety across posts comes from HOW we tell this same news (see
-"Content formats" below), not from highlighting different sub-angles.
-The substance is identical; the texture varies.
+3. **The CTA** — "Get yours at momfluence.app." Possessive ("yours"),
+   not aspirational ("could earn"). Implies she has something coming
+   to her already.
+
+# Voice and energy
+
+- **Smart-friend texting you**, not newsroom or marketing copy
+- **Pop-culturally aware** — "gate-kept," "mom jeans," etc. Internet
+  vernacular over corporate vocabulary
+- **Edge encouraged** — positioning mom as the *authentic* alternative
+  to the "skinny unrelatable influencer" aesthetic is on-thesis. Not
+  every post needs the edge, but it's a signature move when used.
+- **Question forms welcome** — "Did you know," "Have you ever," "Quick
+  question." These open the revelation door.
+- **Possessive, not aspirational** — "get yours," "your deals," "your
+  cut" — not "you could earn," "you might be able to."
+
+# Words to use vs. words to avoid
+
+| Use | Avoid |
+|---|---|
+| brand deals | rev share, commission, affiliate |
+| pay you to share their products | promote, drive sales, generate revenue |
+| get yours / your deals | claim your share, start earning |
+| same deals as celebrities | top-tier rates, premium programs |
+| open to everyday moms | available to qualified applicants |
+| gate-kept | exclusive, restricted |
+
+# About the $5/mo
+
+The $5/mo membership is part of the product but it does NOT need to
+appear in every organic post. The CTA is "Get yours at momfluence.app"
+— she clicks, lands on the page, sees the price in context. The price
+goes in PAID AD COPY (to qualify the click), in LP heroes (it's the
+unlock), and naturally when an organic post is doing the "here's the
+deal, here's how it works" beat. Don't shoehorn it into every story.
+
+# Every post must deliver the canonical message
+
+Not pieces of it. Not the news *or* the gatekeeping *or* the unlock.
+All three, every time, in the chosen content format. The reader cannot
+be expected to bring context from previous posts.
+
+Variety comes from HOW we tell this same news (see content formats
+below), not from highlighting different sub-angles.
 
 ---
 
@@ -115,51 +153,56 @@ posts is the FORMAT in which we deliver it. Every Claude-generated post
 must be tagged with one of these formats:
 
 ### 1. `anecdote` — a specific person, place, number
-*"A mom in Indianapolis made $4,200 promoting Sephora last month. The
-same Sephora rev share Kim K used to get $80k for. Big brands quietly
-opened those programs to everyday moms with 500+ followers. $5/mo to
-unlock them on Momfluence."*
+*"A mom in Indianapolis made $4,200 last month sharing Sephora products
+on her Pinterest. The same brand deals Sephora used to gate-keep for
+their celebrity ambassadors — quietly opened to everyday moms. Get
+yours at momfluence.app."*
 
-Tone: like you're reporting a story your friend just told you. Specific
-city, specific number, specific brand. Concrete > abstract.
+A story your friend just told you. Specific city, specific number,
+specific brand. Concrete > abstract.
 
-### 2. `direct` — newsy and unvarnished
-*"Same rev share Kim K gets from her Sephora endorsements is now
-available to everyday moms with 500+ followers. Big brands opened their
-top-tier programs. $5/mo to unlock them on Momfluence."*
+### 2. `direct` — newsy, question-led, unvarnished
+*"Did you know brands want to pay you to share their products? Same
+brand deals once gate-kept for celebrities and influencers are now
+open to everyday moms. Get yours at momfluence.app."*
 
-Tone: clean factual delivery. The news itself does the work. No story.
-Reads like a headline.
+The canonical line, more or less verbatim. Clean delivery. The news
+itself does the work.
 
 ### 3. `math` — the unit economics, made obvious
-*"Hulu pays $50 per signup. Send 4 friends from your group chat this
-month = $200/mo, recurring while they stay subscribed. That's the same
-rate Hulu pays celebrity endorsers, now available to everyday moms with
-500+ followers. $5/mo to unlock that program (and 50+ others) on
-Momfluence."*
+*"Hulu pays $50 every time someone signs up through your link. Send 4
+friends from your group chat = $200 this month, and again next month
+while they're subscribed. Same deal Hulu used to gate-keep for big
+influencers — now open to everyday moms. Get yours at momfluence.app."*
 
-Tone: spreadsheet honesty. Real number × real activity = real outcome.
+Spreadsheet honesty. Real number × real activity = real outcome. Never
+quote $/day or $/week as a promise — only show worked examples of how
+the math could land.
 
-### 4. `brand callout` — the list itself is the proof
-*"Sephora. Hulu. HBO. Target. Walmart. Disney+. They all quietly
-opened the same rev shares they used to give celebrities to everyday
-moms with 500+ followers. $5/mo to unlock all of them on Momfluence."*
+### 4. `brand-callout` — the list IS the proof
+*"Sephora. Hulu. HBO Max. Target. Walmart. Disney+. They all want to
+pay you to share their products. Same brand deals once gate-kept for
+celebrities — now open to everyday moms. Get yours at momfluence.app."*
 
-Tone: the names land harder than any explanation. Pure social proof.
+The brand names land harder than any explanation. Pure social proof
+via known logos.
 
-### 5. `objection reframe` — kill the "but I'm not an influencer" voice
-*"You don't need 100K followers anymore. The same rev share celebrities
-get from big brands is now available to everyday moms with 500+
-followers. $5/mo to unlock them on Momfluence."*
+### 5. `objection-reframe` — speaks to the silent voice
+*"Move over skinny unrelatable influencers. Brands want to pay
+everyday moms to share their products — the same brand deals once
+gate-kept for celebrities. Mom-jeans-coded recommender energy is
+where it's at now. Get yours at momfluence.app."*
 
-Tone: speaks directly to the silent internal voice that says "this
-isn't for me." Names the assumption and dismantles it.
+Speaks directly to the silent voice in her head saying "this isn't
+for me." Names the assumption and dismantles it with a wink. This is
+where the brand's *edge* lives — culturally aware, slightly spicy,
+positions mom as the authentic alternative.
 
 ---
 
 **Every format delivers the COMPLETE canonical message.** The news, the
-celebrity comparison, the eligibility (500+ followers / everyday moms),
-the $5/mo unlock — all four, every post.
+gate-kept-to-open contrast, the everyday-mom eligibility, the CTA.
+Every post.
 
 The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
