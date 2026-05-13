@@ -103,6 +103,7 @@ interface CronResult {
   slug?: string;
   fb_post_id?: string;
   angle_tag?: string;
+  content_format?: string;
   attempts?: number;
   duration_ms: number;
   error?: string;
@@ -148,7 +149,14 @@ export async function POST(req: NextRequest): Promise<NextResponse<CronResult>> 
       post: result.post,
       claudeModel: result.model,
       promptVersion: result.promptVersion,
-      metadata: { attempts: result.attempts },
+      // content_format goes into metadata so the weekly audit + dashboard can
+      // roll up performance by format (anecdote / direct / math / brand-callout /
+      // objection-reframe). See docs/product-thesis.md "Content formats".
+      metadata: {
+        attempts: result.attempts,
+        content_format: result.post.content_format,
+        rationale: result.post.rationale,
+      },
     });
 
     // 4. Pre-warm render endpoint (avoid IG-fetch cold-render timeouts later)
@@ -172,6 +180,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<CronResult>> 
       slug,
       fb_post_id: fbPostId,
       angle_tag: result.post.angle_tag,
+      content_format: result.post.content_format,
       attempts: result.attempts,
       duration_ms: Date.now() - started,
     });
