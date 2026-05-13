@@ -13,6 +13,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { renderToPng } from "@/lib/optimizer/renderer";
 import { SEED_POSTS } from "@/lib/fb-page/seed-content";
+import { getBySlug } from "@/lib/social/db";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -39,8 +40,16 @@ export async function GET(
   const slug = sanitizeSlug(rawSlug);
   if (!slug) return NextResponse.json({ error: "invalid slug" }, { status: 400 });
 
-  if (!SEED_POSTS.some((p) => p.slug === slug)) {
-    return NextResponse.json({ error: `post not found: ${slug}` }, { status: 404 });
+  // Slug must exist in either the static seed array or the generated_posts
+  // table (cron-generated daily posts, slug pattern gen-YYYY-MM-DD-xxxxx).
+  // Mirrors the fallback logic in app/render/post/[slug]/page.tsx so the API
+  // and page route agree on what's renderable.
+  const isSeed = SEED_POSTS.some((p) => p.slug === slug);
+  if (!isSeed) {
+    const row = await getBySlug(slug).catch(() => null);
+    if (!row) {
+      return NextResponse.json({ error: `post not found: ${slug}` }, { status: 404 });
+    }
   }
 
   const targetUrl = `${siteOrigin(req)}/render/post/${encodeURIComponent(slug)}`;
