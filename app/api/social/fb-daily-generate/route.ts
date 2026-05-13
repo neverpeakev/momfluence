@@ -103,7 +103,7 @@ interface CronResult {
   slug?: string;
   fb_post_id?: string;
   angle_tag?: string;
-  news_beat?: string;
+  content_format?: string;
   attempts?: number;
   duration_ms: number;
   error?: string;
@@ -149,12 +149,12 @@ export async function POST(req: NextRequest): Promise<NextResponse<CronResult>> 
       post: result.post,
       claudeModel: result.model,
       promptVersion: result.promptVersion,
-      // news_beat goes into metadata so the weekly audit + dashboard can
-      // roll up performance by news beat (amount / eligibility / simplicity).
-      // See docs/product-thesis.md "The three news beats we test".
+      // content_format goes into metadata so the weekly audit + dashboard can
+      // roll up performance by format (anecdote / direct / math / brand-callout /
+      // objection-reframe). See docs/product-thesis.md "Content formats".
       metadata: {
         attempts: result.attempts,
-        news_beat: result.post.news_beat,
+        content_format: result.post.content_format,
         rationale: result.post.rationale,
       },
     });
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<CronResult>> 
       slug,
       fb_post_id: fbPostId,
       angle_tag: result.post.angle_tag,
-      news_beat: result.post.news_beat,
+      content_format: result.post.content_format,
       attempts: result.attempts,
       duration_ms: Date.now() - started,
     });

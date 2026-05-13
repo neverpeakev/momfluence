@@ -23,26 +23,33 @@ Curated programs. $5/month to access.
 
 ---
 
-## THE canonical line (use verbatim or as close as possible)
+## THE canonical line (use in EVERY post, every time)
 
-> **Big brands quietly started paying moms with 500 followers up to 50%
-> of every sale they bring in. We're the platform that makes it easy.**
+> **Same rev share as top celebrities — now available to everyday moms.
+> $5/mo to unlock them.**
 
-This is the gold-standard hook. Two sentences:
+This is the complete product message. Two sentences:
 
-1. **The news** — quiet, factual, specific. "Quietly started" gives the
-   reader the feeling they're being let in on something. "500 followers"
-   makes her think *"wait — I have more than 500 followers."* "50%"
-   anchors the size of the prize against the 1% she might know from
-   Amazon Associates. "Every sale they bring in" makes it concrete.
-2. **The positioning** — short, confident, low-friction. We're the rails,
-   not the gatekeeper.
+1. **The news + the comparison + the eligibility, fused** — "Same rev
+   share as top celebrities" delivers (a) money is on the table, (b) at
+   the size everyone assumes only celebrities get, (c) using a shared
+   cultural shortcut so it lands instantly without affiliate-marketing
+   literacy. "Now available to everyday moms" delivers the unlock — it's
+   her, specifically. "Top celebrities" works because every reader has a
+   mental image; we don't need to name a specific Kardashian.
+2. **The qualifier as the call** — "$5/mo to unlock them" reframes the
+   fee as a key, not a cost. "Them" = the top-celebrity programs she
+   just learned exist. The fee is the price of admission to a real
+   thing, not a subscription she has to justify.
 
-Every ad headline, every LP hero, every page meta description, every
-press blurb should start from this line and deviate only when there's a
-specific reason. The autonomous post generator may compose around it
-(e.g., add a third sentence with a personal-anecdote hook) but should
-not water it down with abstraction.
+**Every post must deliver this complete message.** Not pieces of it.
+Not the news *or* the comparison *or* the eligibility *or* the price.
+All four, every time. The reader cannot be expected to bring context
+from previous posts. Each post is a potential first impression.
+
+The variety across posts comes from HOW we tell this same news (see
+"Content formats" below), not from highlighting different sub-angles.
+The substance is identical; the texture varies.
 
 ---
 
@@ -101,26 +108,62 @@ Comparable category-creating messaging:
 
 ---
 
-## The three "news beats" we test
+## Content formats (the variety axis)
 
-Every ad, post, and LP hero tests ONE of these three sub-angles:
+The MESSAGE is fixed (the canonical line above). The variation across
+posts is the FORMAT in which we deliver it. Every Claude-generated post
+must be tagged with one of these formats:
 
-### 1. The Amount
-*"20–50% of every sale. Not 1% like Amazon affiliates."*
-Anchors the size of the prize. Wakes up anyone who has heard "affiliate"
-before and assumed it was nickels.
+### 1. `anecdote` — a specific person, place, number
+*"A mom in Indianapolis made $4,200 promoting Sephora last month. The
+same Sephora rev share Kim K used to get $80k for. Big brands quietly
+opened those programs to everyday moms with 500+ followers. $5/mo to
+unlock them on Momfluence."*
 
-### 2. The Eligibility
-*"500 followers. No application. No portfolio. You're already in."*
-Defeats the #1 internal objection: "but I'm not an influencer."
+Tone: like you're reporting a story your friend just told you. Specific
+city, specific number, specific brand. Concrete > abstract.
 
-### 3. The Simplicity
-*"One link. Share it where you already share things. We handle the rest."*
-Defeats the #2 internal objection: "this sounds like a lot of work."
+### 2. `direct` — newsy and unvarnished
+*"Same rev share Kim K gets from her Sephora endorsements is now
+available to everyday moms with 500+ followers. Big brands opened their
+top-tier programs. $5/mo to unlock them on Momfluence."*
 
-Every Claude-generated post must be tagged with which beat it tests
-(`amount` / `eligibility` / `simplicity`). The weekly audit rolls up by
-beat to tell us which is winning.
+Tone: clean factual delivery. The news itself does the work. No story.
+Reads like a headline.
+
+### 3. `math` — the unit economics, made obvious
+*"Hulu pays $50 per signup. Send 4 friends from your group chat this
+month = $200/mo, recurring while they stay subscribed. That's the same
+rate Hulu pays celebrity endorsers, now available to everyday moms with
+500+ followers. $5/mo to unlock that program (and 50+ others) on
+Momfluence."*
+
+Tone: spreadsheet honesty. Real number × real activity = real outcome.
+
+### 4. `brand callout` — the list itself is the proof
+*"Sephora. Hulu. HBO. Target. Walmart. Disney+. They all quietly
+opened the same rev shares they used to give celebrities to everyday
+moms with 500+ followers. $5/mo to unlock all of them on Momfluence."*
+
+Tone: the names land harder than any explanation. Pure social proof.
+
+### 5. `objection reframe` — kill the "but I'm not an influencer" voice
+*"You don't need 100K followers anymore. The same rev share celebrities
+get from big brands is now available to everyday moms with 500+
+followers. $5/mo to unlock them on Momfluence."*
+
+Tone: speaks directly to the silent internal voice that says "this
+isn't for me." Names the assumption and dismantles it.
+
+---
+
+**Every format delivers the COMPLETE canonical message.** The news, the
+celebrity comparison, the eligibility (500+ followers / everyday moms),
+the $5/mo unlock — all four, every post.
+
+The weekly audit (Sunday) rolls up by content_format to tell us which
+texture is producing the highest-quality posts and which is consistently
+weaker. The optimizer dashboard groups ad variants the same way.
 
 ---
 
@@ -225,17 +268,20 @@ Same product. Two voices.
 ## How this doc gets used by the system
 
 - **`lib/social/post-generator.ts`** — SYSTEM_PROMPT references this doc's
-  tenets explicitly. Generator must produce posts that pass the "huh,
-  really?" test and tag which of the 3 news beats they test.
+  tenets explicitly. Generator must produce posts that deliver the
+  complete canonical message AND tag which of the 5 content formats
+  they use.
 - **`scripts/seed-fb-page.ts`** — Future seed runs reference this doc.
   Existing scheduled posts that don't fit are documented below and
   flagged for manual removal in Meta Business Suite.
 - **Routine 2 — weekly content audit** — Sunday's Claude routine scores
   each post against this doc's tenets. The audit rubric IS this doc.
+  Rolls up by content_format to spot format-level patterns.
 - **`lib/funnel-lab/variants.ts`** — Ad variants get retagged with their
-  news beat. Optimizer Bayesian engine rolls up posteriors by beat first,
-  by variant second.
-- **`/admin/optimizer`** — Dashboard adds a "by news beat" rollup view.
+  content_format. Optimizer Bayesian engine rolls up posteriors by
+  format first, by variant second.
+- **`/admin/optimizer`** — Dashboard adds a "by content format" rollup
+  view.
 
 ---
 
