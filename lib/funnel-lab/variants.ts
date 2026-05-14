@@ -1,10 +1,17 @@
 /**
  * Funnel Lab variant registry.
  *
- * Each variant tests a distinct psychographic ANGLE on a shared lowest-common-denominator
- * foundation. Copy must stay jargon-free (assume no following, no AI experience, no prior
- * affiliate-marketing knowledge). The variant itself only swaps the hero, CTA copy, and a
- * couple of opt-in below-fold blocks — the funnel mechanics and proof sections are shared.
+ * Each variant tests a distinct content_format / POV on a shared canonical
+ * message. The MESSAGE is locked (see docs/product-thesis.md):
+ *   1. Brands are paying regular moms now to recommend their products and services
+ *   2. No million followers needed, no celebrity status
+ *   3. Find out more at momfluence.app
+ *
+ * The variant only swaps the hero copy, the CTA copy, and a couple of opt-in
+ * below-fold blocks — the funnel mechanics and proof sections are shared.
+ *
+ * v5 voice locked: "regular moms," "big bucks," "Find out more," "get yours"
+ * or "get your cut" CTA. NO "gate-kept," NO "rev share," NO "everyday moms."
  *
  * Attribution chain:
  *   ad → /lp/<slug>?c=<creativeId> → /signup?lp=<slug>&c=<creativeId>
@@ -16,6 +23,13 @@ export type FunnelShape = "direct" | "email-gate";
 
 export type BelowFoldShape = "lean" | "full";
 
+export type ContentFormat =
+  | "anecdote"
+  | "direct"
+  | "math"
+  | "brand-callout"
+  | "objection-reframe";
+
 export interface FunnelVariant {
   /** URL slug — readable on purpose for the marketer skimming Ads Manager. */
   slug: string;
@@ -25,6 +39,8 @@ export interface FunnelVariant {
   hypothesis: string;
   /** Psychographic angle this variant pulls. Used as a chip in /creatives. */
   angle: string;
+  /** Which content format this variant tests. Optimizer rolls up posteriors by format. */
+  contentFormat: ContentFormat;
   /** Funnel mechanic. v1 ships "direct" only; "email-gate" is wired but feature-flagged off. */
   funnel: FunnelShape;
   /** Which below-fold treatment to render. */
@@ -48,17 +64,19 @@ export interface FunnelVariant {
 
 export const VARIANTS = [
   {
+    // KEPT — founder confirmed this one still works
     slug: "group-chat-goldmine",
     label: "Group Chat is a Goldmine",
     hypothesis: "Moms with active group chats see their text threads as community, not audience.",
     angle: "community / group chat",
+    contentFormat: "anecdote",
     funnel: "direct",
     belowFold: "full",
     primaryCreativeId: "c11",
     hero: {
       eyebrow: "no followers needed",
       headline: "Your group chat is a goldmine.",
-      subhead: "You’re not an influencer. You’re a mom with friends who actually listen. Real brands will pay you 20–60% when those friends sign up through your link — every month, for as long as they stay.",
+      subhead: "You're not an influencer. You're a mom with friends who actually listen. Real brands will pay you 20–60% when those friends sign up through your link — every month, for as long as they stay.",
       ctaPrimary: "Get paid — $5/mo to start",
       ctaSecondary: "How it works →",
     },
@@ -68,175 +86,193 @@ export const VARIANTS = [
     },
   },
   {
+    // v5 rewrite — was generic "no-influencer-needed"
     slug: "no-influencer-needed",
-    label: "Make Money Without Being an Influencer",
-    hypothesis: "Plain LCD framing for everyone — the universal pitch.",
-    angle: "newbie / no-jargon",
+    label: "The Direct News",
+    hypothesis: "Direct/newsy framing — clean question-led delivery of the canonical news.",
+    angle: "direct news",
+    contentFormat: "direct",
     funnel: "direct",
     belowFold: "full",
     primaryCreativeId: "c12",
     hero: {
-      eyebrow: "the simplest side income on the internet",
-      headline: "Make money from your phone.\nWithout becoming an influencer.",
-      subhead: "Pick a brand. Share a link. Get paid every time someone buys. No followers. No camera. No experience. $5/month to access — cancel anytime.",
-      ctaPrimary: "Start earning — $5/mo",
+      eyebrow: "did you know?",
+      headline: "Moms are getting paid\ncelebrity-tier money\nto recommend things online now.",
+      subhead: "Not polished influencers with millions of followers — actual regular moms with regular group chats. Big brands are paying real money for real recommendations. $5/mo to access.",
+      ctaPrimary: "Find out more — $5/mo",
       ctaSecondary: "Show me how →",
     },
     closer: {
-      headline: "$5 in. $25 out, day one.",
-      subhead: "Cancel anytime. No followers needed. No content needed. Real brand commissions.",
+      headline: "Real moms. Real money. Real easy.",
+      subhead: "$5/mo to access. Cancel anytime. No following needed.",
     },
   },
   {
-    slug: "school-hours-income",
-    label: "Earn Between Drop-off & Pickup",
-    hypothesis: "Stay-at-home moms have predictable windows of unused time; tie the offer to that.",
-    angle: "time-of-day / SAHM",
+    // v5 REPLACEMENT — old "school-hours-income" killed (time-fit-gig framing)
+    slug: "heads-up-moms",
+    label: "Heads Up Moms (Anchored Moment)",
+    hypothesis: "Anchored past moment opener — speaks directly to a recent action she actually took.",
+    angle: "anchored moment / past action",
+    contentFormat: "objection-reframe",
     funnel: "direct",
-    belowFold: "lean",
+    belowFold: "full",
     primaryCreativeId: "c13",
     hero: {
-      eyebrow: "while the kids are at school",
-      headline: "Earn between drop-off and pickup.",
-      subhead: "Four minutes to set up. Five dollars a month. Pick a brand from your dashboard, share the link, and get paid every time someone buys. No commute, no boss, no schedule.",
-      ctaPrimary: "Get started — $5/mo",
-      ctaSecondary: "See the dashboard →",
+      eyebrow: "yes, you",
+      headline: "That recommendation\nin your group chat last week?",
+      subhead: "You could've gotten paid for it. You don't need to have millions of followers or be a celebrity to get paid like one. Brands are starting to pay regular moms big bucks to share their products and services online.",
+      ctaPrimary: "Find out more — $5/mo",
+      ctaSecondary: "See how it works →",
     },
     closer: {
-      headline: "Four minutes. Five dollars. Day-one $25 cashout.",
-      subhead: "Set it up before the bus comes back.",
+      headline: "You've been doing this for free.",
+      subhead: "Now there's a way to get paid for it. $5/mo to access. Cancel anytime.",
     },
   },
   {
-    slug: "stealth-income",
-    label: "Stealth Income (Don't Tell Anyone)",
-    hypothesis: "Some moms want anonymity — they don’t want to ‘shill’ to friends.",
-    angle: "anonymous / introvert",
+    // v5 REPLACEMENT — old "stealth-income" killed (defensive/hiding framing)
+    slug: "you-already-do-this",
+    label: "You Already Do This",
+    hypothesis: "Permission/acknowledgment frame — she's already recommending; now there's pay.",
+    angle: "permission / acknowledgment",
+    contentFormat: "direct",
     funnel: "direct",
     belowFold: "full",
     primaryCreativeId: "c14",
     hero: {
-      eyebrow: "no awkward ‘check out my link!’ posts",
-      headline: "Make money online.\nWithout telling a soul.",
-      subhead: "You don’t have to message a single friend. Drop your link in a comment, in a Reddit thread, on a Pinterest pin, anywhere strangers hang out online. They click — you get paid. Forever.",
-      ctaPrimary: "Get my stealth link — $5/mo",
-      ctaSecondary: "Show me where to post →",
+      eyebrow: "now with a paycheck",
+      headline: "You already recommend things\nto your friends every week.",
+      subhead: "Now you can get paid for it. No celebrity status or million followers needed. Regular moms making real money for the same stuff they're already sharing.",
+      ctaPrimary: "Find out more — $5/mo",
+      ctaSecondary: "How much can I make? →",
     },
     closer: {
-      headline: "Your friends don’t need to know.",
-      subhead: "$5 to get the link. $25 day-one cashout. Anywhere on the internet works.",
+      headline: "Real moms. Real money. Real easy.",
+      subhead: "$5/mo to access. Cancel anytime. Same recommendations, paid this time.",
     },
   },
   {
+    // v5 rewrite — kept the AI angle, rewrote with locked voice
     slug: "chatgpt-writes-it",
     label: "ChatGPT Writes It",
-    hypothesis: "AI-curious moms who use ChatGPT instead of Google but don’t monetize it yet.",
+    hypothesis: "AI-curious moms who use ChatGPT instead of Google but don't monetize it yet.",
     angle: "AI / empowerment",
+    contentFormat: "direct",
     funnel: "direct",
     belowFold: "full",
     primaryCreativeId: "c15",
     hero: {
-      eyebrow: "if you can copy & paste, you can do this",
-      headline: "Let ChatGPT write the post.\nYou keep the commission.",
-      subhead: "Pick a brand. We hand you the exact ChatGPT prompt. Paste it in. Six seconds later you’ve got 5 TikTok hooks or a Reddit post ready to share. The AI does the writing. You get paid.",
-      ctaPrimary: "Start for $5/mo",
+      eyebrow: "let AI do the writing",
+      headline: "Brands are paying regular moms now.\nChatGPT writes the post.",
+      subhead: "Pick a brand. We hand you the exact ChatGPT prompt. Six seconds later you've got a Pinterest pin, a Reddit post, or a group-chat-ready recommendation. No million followers needed, no celebrity status.",
+      ctaPrimary: "Find out more — $5/mo",
       ctaSecondary: "See the prompts →",
     },
     closer: {
-      headline: "AI writes. You earn.",
-      subhead: "Five dollars to access. Cancel anytime. New to AI? We’ll walk you through it.",
+      headline: "AI writes. You get paid.",
+      subhead: "$5/mo to access. Cancel anytime. New to AI? We'll walk you through it.",
     },
   },
   {
-    slug: "trusted-mom-economy",
-    label: "Brands Pay for Mom Trust",
-    hypothesis: "The thesis pitch — moms control household spend, brands desperately want access.",
-    angle: "economy / thesis",
-    funnel: "direct",
-    belowFold: "full",
-    primaryCreativeId: "c16",
-    hero: {
-      eyebrow: "moms control 85% of household spend",
-      headline: "Brands pay billions to reach moms.\nFinally, you get a cut.",
-      subhead: "Every 'which stroller should I get' question in a group chat is worth real money to the brand that wins. We've already negotiated the partnerships. You just share the link.",
-      ctaPrimary: "Take your cut — $5/mo",
-      ctaSecondary: "How much can I make? →",
-    },
-    closer: {
-      headline: "Your recommendations move markets.",
-      subhead: "Get paid for it. $5/mo. Cancel anytime.",
-    },
-  },
-  {
-    slug: "not-mlm",
-    label: "Not MLM, Not a Scheme",
-    hypothesis: "MLM-burned moms; pre-empt the objection so they don’t bounce on the LP.",
-    angle: "skepticism bust",
+    // v5 REPLACEMENT — old "trusted-mom-economy" killed (lecturing, "take your cut")
+    slug: "brand-wall",
+    label: "Brand Wall (Names Are the Proof)",
+    hypothesis: "Known brand logos do the lifting — proof without explanation.",
+    angle: "brand-callout / social proof",
+    contentFormat: "brand-callout",
     funnel: "direct",
     belowFold: "lean",
-    primaryCreativeId: "c17",
+    primaryCreativeId: "c16",
     hero: {
-      eyebrow: "we hate MLMs too",
-      headline: "Not MLM.\nNot a course.\nJust affiliate links.",
-      subhead: "Same kind of links every blogger and YouTuber uses — except we’ve already done the application, the interviews, and the negotiating. $5/mo to access. Cancel any time. No recruiting, no ‘downline,’ no weirdness.",
-      ctaPrimary: "Show me — $5/mo",
-      ctaSecondary: "Read the terms →",
+      eyebrow: "sephora · hulu · target · hbo · walmart · disney+",
+      headline: "These brands are paying\nregular moms now.",
+      subhead: "Sephora. Hulu. Target. HBO. Walmart. Disney+. They're all paying regular moms now to share their products and services. No million followers required, no celebrity status — just real recommendations from real moms.",
+      ctaPrimary: "Find out more — $5/mo",
+      ctaSecondary: "See all 50+ brands →",
     },
     closer: {
-      headline: "No pyramids. No tiers. No recruiting.",
-      subhead: "Just real affiliate links from real brands. Five bucks a month.",
+      headline: "Real brands. Real money.",
+      subhead: "50+ brand deals. $5/mo to access. Cancel anytime.",
     },
   },
   {
+    // v5 REPLACEMENT — old "not-mlm" killed (defensive)
+    slug: "move-over-influencers",
+    label: "Move Over Influencers (Edge)",
+    hypothesis: "Objection-reframe with edge — positions mom as the authentic alternative.",
+    angle: "edge / objection-reframe",
+    contentFormat: "objection-reframe",
+    funnel: "direct",
+    belowFold: "full",
+    primaryCreativeId: "c17",
+    hero: {
+      eyebrow: "the new economy",
+      headline: "Move over skinny\nunrelatable influencers.",
+      subhead: "Brands have moved on — they're paying regular moms big bucks now for the same recommendations they used to only pay celebrities for. Real moms. Real money.",
+      ctaPrimary: "Find out more — $5/mo",
+      ctaSecondary: "Get your cut →",
+    },
+    closer: {
+      headline: "Real moms. Real money. Real easy.",
+      subhead: "$5/mo to access. Cancel anytime. Welcome to the new economy.",
+    },
+  },
+  {
+    // v5 rewrite — kept the $5→$25 angle, rewrote in locked voice
     slug: "twenty-five-day-one",
     label: "$25 Day One",
-    hypothesis: "Specific-number direct-response moms; the proof-via-number psychographic.",
+    hypothesis: "Specific-number direct-response moms; proof-via-number psychographic.",
     angle: "specific number / proof",
+    contentFormat: "math",
     funnel: "direct",
     belowFold: "full",
     primaryCreativeId: "c18",
     hero: {
-      eyebrow: "fast-track payout, day one",
-      headline: "$5 in. $25 out.\nDay one.",
-      subhead: "Pay $5 to join. Drop a few links anywhere online (group chat, Reddit, Pinterest, comments — anywhere). Hit $25 in commissions — cash out the same day. Most people hit it inside a week.",
-      ctaPrimary: "Start for $5",
+      eyebrow: "day-one fast-track payout",
+      headline: "$5 in.\n$25 out.\nDay one.",
+      subhead: "Brands are paying real money for real recommendations from regular moms now. Pay $5 to access. Hit $25 in payouts → cash out same day. Most moms hit it inside a week. No million followers needed.",
+      ctaPrimary: "Find out more — $5/mo",
       ctaSecondary: "How fast really? →",
     },
     closer: {
-      headline: "$5 → $25 day one. Math math math.",
-      subhead: "Cancel any time. PayPal, Venmo, or bank transfer.",
+      headline: "$5 → $25 day one.",
+      subhead: "PayPal, Venmo, or bank transfer. Cancel anytime.",
     },
   },
   {
+    // v5 rewrite — kept the receipts angle, BIG number bump ($72.40 → $720.40)
     slug: "real-receipts",
     label: "Real Dashboard, Real Receipts",
     hypothesis: "Skeptics who need to see numbers before they buy in.",
-    angle: "proof / receipts",
+    angle: "math / receipts",
+    contentFormat: "math",
     funnel: "direct",
     belowFold: "full",
     primaryCreativeId: "c19",
     hero: {
-      eyebrow: "real moms. real numbers. real Venmo.",
-      headline: "$72.40 last week.\nFrom 4 texts.",
-      subhead: "This is a real first-month member's dashboard. 68 clicks. 12 sign-ups. $72.40 deposited Friday. From sharing four brand links to her mom group chat. That's it.",
-      ctaPrimary: "See your dashboard — $5/mo",
+      eyebrow: "real mom. real dashboard. real venmo.",
+      headline: "$720.40 last week.\nFrom 4 group-chat texts.",
+      subhead: "A real first-month member's dashboard. 68 clicks. 12 sign-ups. $720.40 in her bank account by Friday. Brands are paying real money for real recommendations — no million followers required, no celebrity status.",
+      ctaPrimary: "Find out more — $5/mo",
       ctaSecondary: "Show me more receipts →",
     },
     closer: {
-      headline: "Receipts speak louder than copy.",
-      subhead: "Five dollars to get in. Cancel any time.",
+      headline: "Receipts don't lie.",
+      subhead: "$5/mo to access. Cancel any time. Real moms, real money.",
     },
   },
   {
+    // KEPT — founder confirmed this one still works
     slug: "faceless-creator",
     label: "Faceless Creator",
-    hypothesis: "Edge persona: ‘I could probably start a faceless YouTube channel’ moms.",
+    hypothesis: "Edge persona: 'I could probably start a faceless YouTube channel' moms.",
     angle: "faceless brand / creator-curious",
+    contentFormat: "objection-reframe",
     funnel: "direct",
     belowFold: "full",
     primaryCreativeId: "c20",
     hero: {
-      eyebrow: "you don’t need a face, a following, or a niche",
+      eyebrow: "you don't need a face, a following, or a niche",
       headline: "Start a faceless content brand.\nWe pay you for the clicks.",
       subhead: "Open a faceless TikTok or Pinterest. Use AI to make posts about the brands you love. Drop your tracked link in the bio. We pay you every time someone signs up — month after month, for as long as they stay.",
       ctaPrimary: "Start my faceless brand — $5/mo",

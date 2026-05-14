@@ -23,71 +23,97 @@ Curated programs. $5/month to access.
 
 ---
 
-## THE canonical message (use in EVERY post, every time)
+## THE canonical message (v5 — locked voice)
 
-> **Did you know brands want to pay you to share their products?
-> Same brand deals once gate-kept for celebrities and influencers
-> are now open to everyday moms. Get yours at momfluence.app.**
+The voice was iterated to convergence over multiple drafts with the
+founder. What landed (and what's locked):
 
-This is the complete product message. Three sentences, three moves:
+> **Did you know moms are getting paid celebrity-tier money to recommend
+> things online now? Not polished influencers with millions of followers
+> — actual regular moms. Brands are paying real money for real
+> recommendations. Find out more at momfluence.app.**
 
-1. **The question** — "Did you know brands want to pay you to share
-   their products?" The question form is the revelation engine. "Want
-   to pay you" makes the brands the active party. "Share their products"
-   uses words she actually has — never "rev share," "commissions,"
-   "affiliate," or "promote." She doesn't have those words yet.
+This is the spine. Every post is a different POV/opener on this same
+spine. Variety comes from **how** we tell the same news (anecdote vs.
+direct vs. math vs. brand-callout vs. objection-reframe), not from
+what we say.
 
-2. **The unlock** — "Same brand deals once gate-kept for celebrities
-   and influencers are now open to everyday moms." "Gate-kept" is
-   internet-native vernacular and signals you respect the reader. The
-   contrast (celebrities/influencers → everyday moms) does the size +
-   eligibility work in one stroke.
+### What every post must deliver (3 pieces)
 
-3. **The CTA** — "Get yours at momfluence.app." Possessive ("yours"),
-   not aspirational ("could earn"). Implies she has something coming
-   to her already.
+1. **The news** — Brands are paying regular moms for recommendations.
+   Often delivered as a question ("Did you know") or anchored moment
+   ("Heads up moms: that recommendation you made in your group chat
+   last week...").
 
-# Voice and energy
+2. **The eligibility puncture** — No million followers. No celebrity
+   status. The "this used to be only for X, now it's for regular moms"
+   reveal does this in a single move.
 
-- **Smart-friend texting you**, not newsroom or marketing copy
-- **Pop-culturally aware** — "gate-kept," "mom jeans," etc. Internet
-  vernacular over corporate vocabulary
-- **Edge encouraged** — positioning mom as the *authentic* alternative
-  to the "skinny unrelatable influencer" aesthetic is on-thesis. Not
-  every post needs the edge, but it's a signature move when used.
-- **Question forms welcome** — "Did you know," "Have you ever," "Quick
-  question." These open the revelation door.
-- **Possessive, not aspirational** — "get yours," "your deals," "your
-  cut" — not "you could earn," "you might be able to."
+3. **The CTA** — "Find out more at momfluence.app" or "Find out more
+   and get yours / get your cut at momfluence.app." Soft, two-step:
+   "find out more" lowers commitment to click.
 
-# Words to use vs. words to avoid
+# Voice and energy (LOCKED)
+
+- **Smart friend texting another smart friend.** NOT newsroom. NOT
+  marketing copy. NOT corporate brand voice.
+- **Casual openers** — "Moms:", "Heads up moms:", "Did you know",
+  "Wait —", "POV:", "Hot tip:", "Quick PSA:". Direct address, comma,
+  conversational.
+- **Anchored moments work better than abstractions** — "that
+  recommendation in your group chat last week" > "your recommendations."
+  Specific > general.
+- **"Big bucks" / "real money"** — folksy and blunt. Beats "earnings,"
+  "income," "revenue."
+- **"Regular moms"** is the locked term — NOT "everyday moms" (too
+  brand-tradey), NOT "moms" alone (vague). "Regular moms" is the
+  eligibility frame.
+- **"To get paid like one"** — the sneaky celebrity-money reference.
+  Lets us say "you can get paid like a celebrity" without saying
+  "celebrity" twice.
+- **Possessive CTAs** — "get yours," "get your cut." Implies she
+  already has something coming to her.
+- **Tagline available** — "Real moms. Real money. Real easy." Three
+  beats. Use selectively, not in every post.
+
+# Words to use vs. words to avoid (LOCKED)
 
 | Use | Avoid |
 |---|---|
-| brand deals | rev share, commission, affiliate |
-| pay you to share their products | promote, drive sales, generate revenue |
-| get yours / your deals | claim your share, start earning |
-| same deals as celebrities | top-tier rates, premium programs |
-| open to everyday moms | available to qualified applicants |
-| gate-kept | exclusive, restricted |
+| regular moms | everyday moms, moms (alone) |
+| big bucks, real money | earnings, income, revenue, rev share |
+| recommendations | promotions, endorsements |
+| products and services | products (alone — misses Hulu/HBO/etc.) |
+| get yours, get your cut | claim your share, start earning |
+| find out more at momfluence.app | learn more, sign up now |
+| brands are paying / brands want to pay | we work with brands |
+| like a celebrity / celebrity-tier | rev shares, commissions |
+| share their stuff / share your favorites | promote, drive sales |
+| no million followers needed, no celebrity status | exclusive, restricted, gate-kept |
 
 # About the $5/mo
 
-The $5/mo membership is part of the product but it does NOT need to
-appear in every organic post. The CTA is "Get yours at momfluence.app"
-— she clicks, lands on the page, sees the price in context. The price
-goes in PAID AD COPY (to qualify the click), in LP heroes (it's the
-unlock), and naturally when an organic post is doing the "here's the
-deal, here's how it works" beat. Don't shoehorn it into every story.
+The $5/mo membership is part of the product but does NOT need to
+appear in every organic post. The CTA "Find out more at momfluence.app"
+sends her to the LP where she sees the price in context. The price
+goes in PAID AD COPY (qualifies the click), in LP heroes (the unlock),
+and naturally when an organic post is doing the "here's how it works"
+beat. Don't shoehorn it into every story.
 
-# Every post must deliver the canonical message
+# Phrases that are DEAD (never use)
 
-Not pieces of it. Not the news *or* the gatekeeping *or* the unlock.
-All three, every time, in the chosen content format. The reader cannot
-be expected to bring context from previous posts.
-
-Variety comes from HOW we tell this same news (see content formats
-below), not from highlighting different sub-angles.
+- "Gate-kept" / "gatekept"
+- "That's so 2025" (was tried; doesn't land)
+- "Drop a few links anywhere"
+- "Drop your link in Reddit/Pinterest/wherever" (lists feel transactional)
+- "Rev share," "commissions," "affiliate," "affiliate marketing"
+- "Promote," "drive sales"
+- "Personal brand" as a prerequisite
+- "Influencer" applied to the reader
+- "Side hustle," "side gig"
+- "Are you tired of," "wish you could," "if you've ever wanted"
+- "Moms are powerful," "your voice matters," "you deserve"
+- "Real talk," "hot take," "let's be honest" as openers
 
 ---
 
@@ -148,61 +174,80 @@ Comparable category-creating messaging:
 
 ## Content formats (the variety axis)
 
-The MESSAGE is fixed (the canonical line above). The variation across
+The MESSAGE is fixed (the canonical spine above). The variation across
 posts is the FORMAT in which we deliver it. Every Claude-generated post
-must be tagged with one of these formats:
+must be tagged with one of these formats. Examples below are LOCKED
+(v5 voice — these are the gold-standard reference).
 
 ### 1. `anecdote` — a specific person, place, number
-*"A mom in Indianapolis made $4,200 last month sharing Sephora products
-on her Pinterest. The same brand deals Sephora used to gate-keep for
-their celebrity ambassadors — quietly opened to everyday moms. Get
-yours at momfluence.app."*
+
+> *"A regular mom in Indianapolis recommended a face cream to 4 friends
+> in her group chat last week. She got paid $720 for it. No celebrity
+> status, no million followers — just real recommendations from a real
+> mom. Brands are starting to pay big bucks for the stuff regular moms
+> are already sharing. Find out more at momfluence.app."*
 
 A story your friend just told you. Specific city, specific number,
 specific brand. Concrete > abstract.
 
 ### 2. `direct` — newsy, question-led, unvarnished
-*"Did you know brands want to pay you to share their products? Same
-brand deals once gate-kept for celebrities and influencers are now
-open to everyday moms. Get yours at momfluence.app."*
 
-The canonical line, more or less verbatim. Clean delivery. The news
-itself does the work.
+> *"Did you know moms are getting paid celebrity-tier money to recommend
+> things online now? Not polished influencers with millions of followers
+> — actual regular moms with regular group chats. Big brands are paying
+> real money for real recommendations. Find out more and get yours at
+> momfluence.app."*
+
+Clean delivery. The news itself does the work.
 
 ### 3. `math` — the unit economics, made obvious
-*"Hulu pays $50 every time someone signs up through your link. Send 4
-friends from your group chat = $200 this month, and again next month
-while they're subscribed. Same deal Hulu used to gate-keep for big
-influencers — now open to everyday moms. Get yours at momfluence.app."*
 
-Spreadsheet honesty. Real number × real activity = real outcome. Never
-quote $/day or $/week as a promise — only show worked examples of how
-the math could land.
+> *"$720 a week. From four group-chat texts. That's what one regular
+> mom made last week sharing her favorite products. Brands are paying
+> real money for real recommendations — no million followers required,
+> no celebrity status. Find out more and get your cut at momfluence.app."*
+
+Specific number × specific activity = specific outcome. Never quote
+$/day or $/week as a promise — only show worked examples.
 
 ### 4. `brand-callout` — the list IS the proof
-*"Sephora. Hulu. HBO Max. Target. Walmart. Disney+. They all want to
-pay you to share their products. Same brand deals once gate-kept for
-celebrities — now open to everyday moms. Get yours at momfluence.app."*
+
+> *"Sephora. Hulu. Target. HBO. Walmart. Disney+. They're all paying
+> regular moms now to share their products and services. No million
+> followers required, no celebrity status — just real recommendations
+> from real moms. Find out more and get yours at momfluence.app."*
 
 The brand names land harder than any explanation. Pure social proof
 via known logos.
 
 ### 5. `objection-reframe` — speaks to the silent voice
-*"Move over skinny unrelatable influencers. Brands want to pay
-everyday moms to share their products — the same brand deals once
-gate-kept for celebrities. Mom-jeans-coded recommender energy is
-where it's at now. Get yours at momfluence.app."*
 
-Speaks directly to the silent voice in her head saying "this isn't
-for me." Names the assumption and dismantles it with a wink. This is
-where the brand's *edge* lives — culturally aware, slightly spicy,
-positions mom as the authentic alternative.
+> *"Move over skinny unrelatable influencers. Brands have moved on —
+> they're paying regular moms big bucks now for the same recommendations
+> they used to only pay celebrities for. Real moms. Real money. Find
+> out more and get your cut at momfluence.app."*
+
+Speaks directly to the silent voice in her head saying "this isn't for
+me." Names the assumption and dismantles it. This is where the brand's
+*edge* lives — culturally aware, slightly spicy, positions mom as the
+authentic alternative.
+
+### Additional approved POVs (use any of these openers, all in `direct` or `objection-reframe`)
+
+- **Anchored past moment**: *"Heads up moms: that recommendation in
+  your group chat last week? You could've gotten paid for it..."*
+- **Wait / incredulous**: *"Wait — moms are getting paid to recommend
+  things online now? Yes..."*
+- **POV / Gen Z**: *"POV: you just realized you've been recommending
+  products to your friends for free your whole adult life..."*
+- **Permission / acknowledgment**: *"Moms: you already recommend
+  things to your friends every week. Now you can get paid for it..."*
 
 ---
 
-**Every format delivers the COMPLETE canonical message.** The news, the
-gate-kept-to-open contrast, the everyday-mom eligibility, the CTA.
-Every post.
+**Every format delivers the COMPLETE canonical message.** The news,
+the eligibility puncture (no million followers / no celebrity), the
+CTA. Every post.
 
 The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently

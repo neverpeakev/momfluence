@@ -963,11 +963,11 @@ export default function CreativeLab() {
 
             <div className="mt-8 rounded-2xl bg-navy-900 p-7 text-center text-white">
               <p className="font-display text-3xl font-bold">MomFluence · $5/mo</p>
-              <p className="mt-1 text-xl text-navy-200">momfluence.app/lp/school-hours-income</p>
+              <p className="mt-1 text-xl text-navy-200">momfluence.app/lp/heads-up-moms</p>
             </div>
           </div>
         </CreativeFrame>
-        <VariantSpec slug="school-hours-income" creativeId="c13" />
+        <VariantSpec slug="heads-up-moms" creativeId="c13" />
       </Block>
 
       {/* #14 — Stealth Income */}
@@ -1001,11 +1001,11 @@ export default function CreativeLab() {
             <div className="rounded-2xl bg-coral-500 p-6 text-center ring-4 ring-coral-300">
               <p className="font-display text-4xl font-bold">strangers click for years</p>
               <p className="mt-2 text-xl text-coral-50">you get paid every time · $5/mo</p>
-              <p className="mt-1 text-base text-coral-100">momfluence.app/lp/stealth-income</p>
+              <p className="mt-1 text-base text-coral-100">momfluence.app/lp/you-already-do-this</p>
             </div>
           </div>
         </CreativeFrame>
-        <VariantSpec slug="stealth-income" creativeId="c14" />
+        <VariantSpec slug="you-already-do-this" creativeId="c14" />
       </Block>
 
       {/* #15 — ChatGPT Writes It (variant-paired) */}
@@ -1067,11 +1067,11 @@ export default function CreativeLab() {
 
             <div className="mt-10 rounded-2xl bg-coral-500 p-7 text-center text-white">
               <p className="font-display text-3xl font-bold">20–60% recurring · $5/mo to access</p>
-              <p className="mt-1 text-xl text-coral-50">momfluence.app/lp/trusted-mom-economy</p>
+              <p className="mt-1 text-xl text-coral-50">momfluence.app/lp/brand-wall</p>
             </div>
           </div>
         </CreativeFrame>
-        <VariantSpec slug="trusted-mom-economy" creativeId="c16" />
+        <VariantSpec slug="brand-wall" creativeId="c16" />
       </Block>
 
       {/* #17 — Not MLM */}
@@ -1104,11 +1104,11 @@ export default function CreativeLab() {
               <div className="flex items-center justify-between">
                 <p className="font-display text-3xl font-bold">No tiers. No downlines. No weirdness.</p>
               </div>
-              <p className="mt-2 text-xl text-navy-200">$5/mo · momfluence.app/lp/not-mlm</p>
+              <p className="mt-2 text-xl text-navy-200">$5/mo · momfluence.app/lp/move-over-influencers</p>
             </div>
           </div>
         </CreativeFrame>
-        <VariantSpec slug="not-mlm" creativeId="c17" />
+        <VariantSpec slug="move-over-influencers" creativeId="c17" />
       </Block>
 
       {/* #18 — $25 Day One */}
