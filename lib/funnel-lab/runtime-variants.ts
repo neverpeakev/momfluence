@@ -48,6 +48,10 @@ function rowToVariant(r: DbVariantRow): FunnelVariant {
     label: r.label,
     hypothesis: r.hypothesis,
     angle: r.angle,
+    // Runtime-variant rows (Claude-generated remixes) predate the
+    // contentFormat field; default to "direct" until the DB schema is
+    // extended to persist content_format on remix promotion.
+    contentFormat: "direct",
     funnel: r.funnel as FunnelVariant["funnel"],
     belowFold: r.below_fold as FunnelVariant["belowFold"],
     primaryCreativeId: r.primary_creative_id,
