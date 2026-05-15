@@ -203,21 +203,37 @@ export async function buildCampaign(inputs: BuildInputs): Promise<BuildResult> {
   });
 
   // 2. Ad Set
-  // Targeting: women 28-55, US, no detailed-interest targeting (Andromeda-friendly).
-  // Optimization on Purchase pixel event with cost cap.
+  // Targeting: women 28-55, US, NO detailed interests (Andromeda-friendly),
+  // full Advantage+ enabled — both audience expansion AND placement selection
+  // are delegated to Meta's optimizer.
+  //
+  // History: launch config locked advantage_audience to 0 + listed explicit
+  // placements (FB/IG feed/story/reels + audience_network + messenger). That
+  // was for week-1 validation ("do moms specifically convert?"). With 20
+  // design-agent creatives now testing real angles + a working funnel,
+  // Meta's playbook says: maximize optimization headroom. Both Advantage+
+  // flags on; let Meta find the audience expansion + the placement mix.
+  // Explicitly OMITTING publisher_platforms / facebook_positions /
+  // instagram_positions is what enables Advantage+ Placements per Meta docs.
   const targeting = {
-    age_min: 28,
-    age_max: 55,
+    // Meta requires a wide age envelope when advantage_audience=1:
+    //   - age_min must be ≤ 25
+    //   - age_max must be ≥ 65
+    // Setting at the thresholds so Meta starts here but can expand inside
+    // *and* outside. Our mom-coded creatives + Purchase-event optimization
+    // do the actual demographic filtering through engagement signals.
+    age_min: 25,
+    age_max: 65,
     genders: [2], // 2 = female per Meta API
     geo_locations: { countries: ["US"] },
-    publisher_platforms: ["facebook", "instagram", "audience_network", "messenger"],
-    facebook_positions: ["feed", "story", "facebook_reels"],
-    instagram_positions: ["stream", "story", "reels", "explore"],
-    // Meta requires this be explicitly set as of late 2025. 0 = lock to the
-    // demographics declared above (we want this for the validation phase —
-    // confirms moms-specifically convert). Flip to 1 later to let Meta expand
-    // beyond age/gender if performance plateaus.
-    targeting_automation: { advantage_audience: 0 },
+    // Advantage+ Audience ON — Meta optimizes audience within and beyond the
+    // demographic envelope above. Required for cost-cap conversion campaigns
+    // post-validation phase.
+    targeting_automation: { advantage_audience: 1 },
+    // NOTE: NO publisher_platforms / facebook_positions / instagram_positions.
+    // Omitting these enables Advantage+ Placements — Meta auto-selects across
+    // FB feed/story/reels/marketplace/search, IG feed/story/reels/explore/shop,
+    // Audience Network, Messenger. Cost-cap handles the quality control.
   };
 
   const dailyBudgetCents = Math.round(inputs.dailyBudgetUsd * 100);
