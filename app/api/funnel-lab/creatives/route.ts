@@ -28,12 +28,18 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 // Origins allowed to send credentialed requests. Add deploy URLs as needed.
+// The exporter runs inside the Claude web UI at https://claude.ai. Note:
+// some browsers (Safari ITP, Brave strict, Firefox ETP) block third-party
+// cookies on cross-origin POSTs even with credentials: 'include' — if the
+// exporter's "↗ Push all" button fails despite this origin being whitelisted,
+// fall back to the exporter's ⬇ Download all as ZIP and upload manually.
+// Permanent fix: host the exporter as a sub-route under app.momfluence.app
+// so it's same-origin (no third-party cookie blockers can interfere).
 const ALLOWED_ORIGINS = new Set<string>([
   "https://momfluence.app",
   "https://app.momfluence.app",
   "https://momfluence-platform.vercel.app",
-  // Design-system ad-exporter origin — fill in the actual host this runs on:
-  "https://design-system.momfluence.app",
+  "https://claude.ai",
 ]);
 
 function corsHeaders(origin: string | null): HeadersInit {
