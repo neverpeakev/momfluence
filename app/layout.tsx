@@ -65,8 +65,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           ONLY the v2 pixel fires value events (Purchase, SignupStarted, etc.).
           Use lib/meta-pixel.ts → fireMetaEvent() to fire custom events; it scopes to v2 via trackSingle.
 
-          Stape CAPIG (https://capig.momfluence.app) sits in front of fbevents.js and automatically
-          forwards browser events server-to-server to Meta CAPI. No backend code needed.
+          Stape Meta CAPI Gateway is wired at https://capig.momfluence.app — a first-party
+          domain alias registered in Meta Events Manager → CAPI Gateway for this pixel.
+
+          How the first-party benefit works: fbevents.js still loads from connect.facebook.net
+          (it MUST — Stape CAPIG doesn't serve the Pixel JS; an earlier attempt to override
+          the script src to capig.momfluence.app caused 404s and was reverted in PR #33).
+          The first-party magic happens AFTER the script loads: fbevents.js fetches Meta's
+          pixel-config at runtime, sees the registered domain alias, and starts sending a
+          PARALLEL copy of every event to https://capig.momfluence.app/events/... in addition
+          to the regular www.facebook.com/tr browser-pixel POST. Stape forwards that parallel
+          copy as a server-side Meta CAPI event. Meta dedupes the two on event_id. Net
+          result: _fbp and _fbc cookies are first-party (ITP-resistant), match quality goes up,
+          and no backend code is needed in this repo.
 
           See docs/planning/session-4-meta-tracking.md for full architecture.
         */}
