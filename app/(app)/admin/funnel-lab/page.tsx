@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Stripe from "stripe";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { VARIANTS, type FunnelVariant } from "@/lib/funnel-lab/variants";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +14,36 @@ interface VariantRollup {
   cancelled: number;
   revenueUsd: number;
   byCreative: Map<string, { signups: number; active: number; revenueUsd: number }>;
+}
+
+/** Metadata for a creative_id, fetched from the `creatives` table populated
+ *  by /api/funnel-lab/creatives (design-system exporter pushes here). */
+interface CreativeMeta {
+  public_url: string | null;
+  label: string;
+  section: string;
+  lp_variant: string | null;
+}
+
+async function fetchCreativeMeta(): Promise<Map<string, CreativeMeta>> {
+  // Use service-role so admin viewers see all rows (RLS would also allow
+  // admins, but this saves a session-lookup round trip).
+  const sb = createServiceRoleClient();
+  const { data, error } = await sb
+    .from("creatives")
+    .select("creative_id, public_url, label, section, lp_variant")
+    .order("pushed_at", { ascending: false });
+  const map = new Map<string, CreativeMeta>();
+  if (error || !data) return map;
+  for (const row of data) {
+    map.set(row.creative_id, {
+      public_url: row.public_url,
+      label: row.label,
+      section: row.section,
+      lp_variant: row.lp_variant,
+    });
+  }
+  return map;
 }
 
 async function fetchStripeRollup(): Promise<Map<string, VariantRollup> | { error: string }> {
@@ -97,7 +127,10 @@ export default async function FunnelLabPage() {
     );
   }
 
-  const rollup = await fetchStripeRollup();
+  const [rollup, creativeMeta] = await Promise.all([
+    fetchStripeRollup(),
+    fetchCreativeMeta(),
+  ]);
   const errorMsg = !(rollup instanceof Map) ? rollup.error : null;
   const data = rollup instanceof Map ? rollup : new Map<string, VariantRollup>();
 
@@ -175,6 +208,37 @@ export default async function FunnelLabPage() {
                     <div className="mt-1 text-[10px] text-navy-500">
                       primary creative: <span className="font-mono">{v.primaryCreativeId}</span>
                     </div>
+                    {/* Thumbnail strip — any creative pushed via the design-system
+                        exporter that's been tagged with this lp_variant. Renders
+                        up to 4 per row, wraps for more. */}
+                    {(() => {
+                      const matching = Array.from(creativeMeta.entries()).filter(
+                        ([, m]) => m.lp_variant === v.slug
+                      );
+                      if (matching.length === 0) return null;
+                      return (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {matching.map(([cid, m]) =>
+                            m.public_url ? (
+                              <Link
+                                key={cid}
+                                href={m.public_url}
+                                target="_blank"
+                                title={`${m.label} (${cid})`}
+                                className="block h-10 w-10 overflow-hidden rounded ring-1 ring-navy-200 hover:ring-coral-400"
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={m.public_url}
+                                  alt={m.label}
+                                  className="h-full w-full object-cover"
+                                />
+                              </Link>
+                            ) : null
+                          )}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-right font-mono align-top">{signups}</td>
                   <td className="px-4 py-3 text-right font-mono text-emerald-700 align-top">{active}</td>
@@ -191,6 +255,72 @@ export default async function FunnelLabPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Creatives library — all PNGs pushed via /api/funnel-lab/creatives,
+          grouped by section. Unassigned creatives (lp_variant=null) live
+          here until manually assigned to a variant. */}
+      {creativeMeta.size > 0 && (
+        <div className="rounded-2xl bg-white p-5 ring-1 ring-navy-100">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-base font-semibold text-navy-900">
+              Creatives library
+            </h2>
+            <p className="text-xs text-navy-500">
+              {creativeMeta.size} creative{creativeMeta.size === 1 ? "" : "s"} pushed via the design-system exporter
+            </p>
+          </div>
+          {(() => {
+            const bySection: Record<string, Array<[string, CreativeMeta]>> = {};
+            for (const entry of creativeMeta.entries()) {
+              const s = entry[1].section || "other";
+              if (!bySection[s]) bySection[s] = [];
+              bySection[s].push(entry);
+            }
+            const order = ["polished", "screenshot", "ugly", "hook", "other"];
+            return (
+              <div className="mt-4 space-y-5">
+                {order
+                  .filter((s) => bySection[s]?.length)
+                  .map((s) => (
+                    <div key={s}>
+                      <p className="text-[10px] uppercase tracking-widest text-coral-600 font-semibold">
+                        {s} · {bySection[s].length}
+                      </p>
+                      <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5">
+                        {bySection[s].map(([cid, m]) =>
+                          m.public_url ? (
+                            <Link
+                              key={cid}
+                              href={m.public_url}
+                              target="_blank"
+                              className="group block overflow-hidden rounded-lg ring-1 ring-navy-200 hover:ring-coral-400"
+                              title={cid}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={m.public_url}
+                                alt={m.label}
+                                className="aspect-square w-full object-cover"
+                              />
+                              <div className="bg-white p-1.5">
+                                <p className="truncate text-[10px] font-semibold text-navy-900">
+                                  {m.label}
+                                </p>
+                                <p className="truncate text-[9px] text-navy-500">
+                                  {m.lp_variant ? `→ /lp/${m.lp_variant}` : "(unassigned)"}
+                                </p>
+                              </div>
+                            </Link>
+                          ) : null
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       <details className="rounded-xl bg-white p-4 ring-1 ring-navy-100">
         <summary className="cursor-pointer text-sm font-semibold text-navy-900">
