@@ -65,7 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           ONLY the v2 pixel fires value events (Purchase, SignupStarted, etc.).
           Use lib/meta-pixel.ts → fireMetaEvent() to fire custom events; it scopes to v2 via trackSingle.
 
-          Stape CAPIG (https://capig.stape.vip) sits in front of fbevents.js and automatically
+          Stape CAPIG (https://capig.momfluence.app) sits in front of fbevents.js and automatically
           forwards browser events server-to-server to Meta CAPI. No backend code needed.
 
           See docs/planning/session-4-meta-tracking.md for full architecture.
@@ -78,7 +78,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           n.queue=[];t=b.createElement(e);t.async=!0;
           t.src=v;s=b.getElementsByTagName(e)[0];
           s.parentNode.insertBefore(t,s)}(window, document,'script',
-          'https://connect.facebook.net/en_US/fbevents.js');
+          'https://capig.momfluence.app/en_US/fbevents.js');
 
           fbq('init', '1468831514190648');         // v2 primary
           fbq('init', '1407633647209853');         // v1 legacy (audience signal)
@@ -90,7 +90,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             height="1"
             width="1"
             style={{ display: "none" }}
-            src="https://www.facebook.com/tr?id=1468831514190648&ev=PageView&noscript=1"
+            src="https://capig.momfluence.app/tr?id=1468831514190648&ev=PageView&noscript=1"
             alt=""
           />
         </noscript>
