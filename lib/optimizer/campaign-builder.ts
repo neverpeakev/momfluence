@@ -237,7 +237,15 @@ export async function buildCampaign(inputs: BuildInputs): Promise<BuildResult> {
   };
 
   const dailyBudgetCents = Math.round(inputs.dailyBudgetUsd * 100);
-  const bidAmountCents = Math.round((inputs.costCapUsd ?? 5) * 100);
+  // Cost-cap default raised from $5 → $10 (2026-05-15).
+  // Rationale: original $5 cap was the day-1 breakeven target, but in
+  // practice it was so tight that Meta couldn't find auctions where the
+  // predicted CPA stayed under the cap — only 14 impressions delivered
+  // in the first 24h on a $30/day budget (3% budget utilization). $10
+  // gives Meta the room to find converting audiences during the
+  // learning phase. Plan: tighten back toward $5 after the campaign
+  // exits Learning Status with 50+ Purchase events.
+  const bidAmountCents = Math.round((inputs.costCapUsd ?? 10) * 100);
 
   const adSet = await meta<{ id: string }>(`/${adAccount()}/adsets`, {
     method: "POST",

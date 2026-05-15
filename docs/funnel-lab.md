@@ -183,15 +183,17 @@ Recommended Meta Ads Manager setup (mirrored in the coral tile at the top
 of `/creatives`):
 
 - **Objective:** Sales (or Engagement → SignupStarted custom event from v2 pixel)
-- **Audience:** Women 28–55, US, **no interests** — let Andromeda pick
+- **Audience:** Women 25–65, US, **Advantage+ Audience ON** (let Meta expand)
 - **Optimization:** Conversions on Purchase event (v2 pixel via Stape CAPIG)
 - **Placements:** Advantage+ (let Meta serve everywhere)
 - **Budget:** $20–50/day per ad set
-- **Bidding:** Cost cap at $5 (matches day-1 breakeven)
+- **Bidding:** Cost cap at $10 (raised from $5 day-1 breakeven on 2026-05-15 —
+  $5 was too tight, throttled delivery to 3% of daily budget. Plan: tighten back
+  to $5 after Learning Status exits with 50+ Purchase events.)
 
 Per-creative rules of thumb:
 - Kill creatives below 1.5% CTR after 1,000 impressions
-- Scale creatives below $5 CPA aggressively
+- Scale creatives below $10 CPA during learning, below $5 CPA after Learning Status exit
 - Refresh winners every 14 days — same angle, new visual — to fight fatigue
 
 ## v2 — Autonomous optimizer

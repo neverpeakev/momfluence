@@ -15,7 +15,9 @@ interface LaunchResult {
 
 export default function LaunchCampaignButton() {
   const [budget, setBudget] = useState("30");
-  const [costCap, setCostCap] = useState("5");
+  // Default cost cap raised to $10 (2026-05-15) — see comment in
+  // lib/optimizer/campaign-builder.ts:bidAmountCents for rationale.
+  const [costCap, setCostCap] = useState("10");
   const [force, setForce] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<LaunchResult | null>(null);
