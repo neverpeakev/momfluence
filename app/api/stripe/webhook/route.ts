@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { fireServerSidePurchase } from "@/lib/meta-capi";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -95,6 +96,30 @@ export async function POST(req: NextRequest) {
 
         if (error) {
           console.error("[stripe webhook] failed to upsert momfluencer:", error.message);
+        } else if (customerId) {
+          // Fire Meta CAPI Purchase server-side, in parallel with the browser pixel
+          // and Stape CAPIG. Meta dedupes on event_id = `purchase_${session.id}`
+          // (same id /welcome's fireMetaPurchase passes). See
+          // docs/planning/server-side-capi-from-stripe-webhook.md.
+          //
+          // Fire-and-forget: do NOT await — the webhook must respond fast and a
+          // CAPI failure must never delay/block Stripe's 200.
+          // amount_total is in the smallest currency unit (cents for USD); the
+          // /welcome page fires a fixed $5.00 Purchase, so we mirror that exactly
+          // when amount_total is missing or zero (e.g. fully discounted via promo
+          // code) to keep browser + server event values aligned for dedupe.
+          const amountTotal = typeof session.amount_total === "number" ? session.amount_total : 0;
+          const value = amountTotal > 0 ? amountTotal / 100 : 5.0;
+          const currency = (session.currency || "usd").toUpperCase();
+          void fireServerSidePurchase({
+            email,
+            stripeCustomerId: customerId,
+            stripeCheckoutSessionId: session.id,
+            value,
+            currency,
+            eventTimeUnixSeconds: event.created,
+            eventSourceUrl: "https://momfluence.app/welcome",
+          });
         }
         break;
       }

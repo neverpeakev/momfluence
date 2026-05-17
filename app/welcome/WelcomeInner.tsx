@@ -23,8 +23,11 @@ export default function WelcomeInner() {
       // sessionStorage unavailable (rare, e.g. private mode) — fire anyway.
     }
 
-    // Stape CAPIG mirrors this server-side automatically; no event_id needed.
-    fireMetaPurchase(5.0, "USD");
+    // Pass a deterministic event_id derived from the Stripe Checkout session id
+    // so this browser pixel event dedupes against the server-side CAPI Purchase
+    // event fired from the Stripe webhook (see lib/meta-capi.ts).
+    const eventId = sessionId ? `purchase_${sessionId}` : undefined;
+    fireMetaPurchase(5.0, "USD", eventId);
   }, [sessionId]);
 
   return (
