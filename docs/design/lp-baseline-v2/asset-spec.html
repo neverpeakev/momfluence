@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>LP Baseline v2 — Asset Deliverable Spec</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { navy:{50:"#f3f5fa",100:"#e2e7f1",200:"#c2cce0",400:"#5d70a3",500:"#3a4f87",600:"#2c3d6c",700:"#243155",800:"#1c2541",900:"#141a30"}, coral:{50:"#fff4f1",100:"#ffe1d8",200:"#ffbaa6",500:"#f04a25",600:"#cf3a1b",700:"#a82e16"} },
+    fontFamily: { sans:['"DM Sans"',"system-ui"], display:['"Playfair Display"',"serif"] }
+  } } };
+</script>
+<style>
+  body { background:#f3f5fa; color:#1c2541; font-family:"DM Sans",system-ui; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3 { font-family:"Playfair Display",serif; letter-spacing:-0.01em; }
+  .tag { display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; letter-spacing:0.03em; }
+  .tag-todo { background:#ffe1d8; color:#a82e16; }
+  .tag-mock { background:#fef3c7; color:#854d0e; }
+  .tag-ready{ background:#d1fae5; color:#065f46; }
+  .mono { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 12px; }
+  table.spec { width:100%; border-collapse:collapse; background:#fff; border-radius:14px; overflow:hidden; box-shadow: inset 0 0 0 1px #e2e7f1; }
+  table.spec th, table.spec td { text-align:left; padding: 12px 14px; border-top:1px solid #e2e7f1; vertical-align:top; font-size: 13px; }
+  table.spec th { background:#f3f5fa; color:#5d70a3; text-transform:uppercase; letter-spacing:0.08em; font-size: 11px; font-weight:700; border-top:0; }
+  table.spec tr:first-child td { border-top:0; }
+</style>
+</head>
+<body class="min-h-screen">
+  <main class="mx-auto max-w-5xl px-6 py-12" data-screen-label="01 Asset spec">
+
+    <p class="text-xs uppercase tracking-widest text-coral-700 font-semibold">Visual handoff · Day 7 deliverable</p>
+    <h1 class="mt-2 text-4xl text-navy-900 font-bold">Asset deliverable spec — LP Baseline v2</h1>
+    <p class="mt-3 text-base text-navy-600 max-w-2xl">
+      Five asset classes ship for engineering to drop into the already-merged React components.
+      Component code in <span class="mono">components/landing/sections/</span> degrades gracefully when assets are missing — every slot is a progressive enhancement.
+    </p>
+
+    <!-- 1. Brand logo SVGs -->
+    <section class="mt-12">
+      <div class="flex items-baseline justify-between flex-wrap gap-2">
+        <h2 class="text-2xl text-navy-900">1 · Brand logo SVGs <span class="tag tag-todo ml-2">22 needed</span></h2>
+        <p class="mono text-navy-500">/public/lp-baseline/logos/&lt;slug&gt;.svg</p>
+      </div>
+      <p class="mt-3 text-sm text-navy-700 max-w-3xl">
+        One SVG per active brand in <span class="mono">lib/landing/brand-wall-data.ts</span>. Render area is 32×32 in the full grid
+        and 36×36 in highlight cards. Source from each brand’s partner press kit (affiliate-partner usage is approved per
+        <span class="mono">docs/planning/lp-baseline-upgrade.md</span> Decisions Locked). The component auto-renders the SVG if present,
+        else falls back to the letter-mark shown in the preview.
+      </p>
+      <table class="spec mt-4">
+        <thead><tr><th>Slug</th><th>Brand</th><th>Vertical</th><th>Payout</th><th>Spec</th></tr></thead>
+        <tbody id="brand-rows"></tbody>
+      </table>
+    </section>
+
+    <!-- 2. Dashboard screenshots -->
+    <section class="mt-12">
+      <div class="flex items-baseline justify-between flex-wrap gap-2">
+        <h2 class="text-2xl text-navy-900">2 · Dashboard screenshots <span class="tag tag-todo ml-2">4 needed</span></h2>
+        <p class="mono text-navy-500">/public/lp-baseline/dashboard/&lt;slug&gt;.png</p>
+      </div>
+      <p class="mt-3 text-sm text-navy-700 max-w-3xl">
+        Captured at <span class="mono">app.momfluence.app/dashboard</span> · 1440 viewport · 2× DPR for retina · PII masked
+        (blur or replace usernames/email/payout method tail digits). Add the numbered coral callout overlays in Figma before export.
+      </p>
+      <table class="spec mt-4">
+        <thead><tr><th>Step</th><th>Slug</th><th>What it shows</th><th>Annotation</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="mono">brand-picker.png</td><td>Brand catalog grid · filtered to one vertical (Streaming) · payout column visible</td><td>Coral arrow → payout column · label “Each program shows what the brand pays and what you take home.”</td></tr>
+          <tr><td>2</td><td class="mono">link-generator.png</td><td>Single-brand link modal · post-click confirmation state (link in clipboard)</td><td>Coral arrow → “Copy link” CTA · label “One click. Link copied. Paste anywhere.”</td></tr>
+          <tr><td>3</td><td class="mono">earnings.png</td><td>Earnings table for last 7 days · clicks → signups → $ per row · positive delta visible</td><td>Coral arrow → realtime delta · label “Every click, every link, in real time.”</td></tr>
+          <tr><td>4</td><td class="mono">cashout.png</td><td>Payouts screen with $25 fast-track row landed same-day · Venmo destination</td><td>Coral arrow → fast-track row · label “Lands same-day. So you can verify it’s real.”</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 3. Channel illustrations -->
+    <section class="mt-12">
+      <div class="flex items-baseline justify-between flex-wrap gap-2">
+        <h2 class="text-2xl text-navy-900">3 · Channel illustrations <span class="tag tag-todo ml-2">8 needed</span></h2>
+        <p class="mono text-navy-500">/public/lp-baseline/channels/&lt;slug&gt;.svg</p>
+      </div>
+      <p class="mt-3 text-sm text-navy-700 max-w-3xl">
+        Replaces emoji icons in §3 progressively. 64×64 canvas · single-tone navy line drawing on coral-50 ground · 2px stroke · 8px corner radius.
+        Each illustration should retain semantic recognition of the channel (group chat = three speech bubbles, Pinterest = pinned card, etc).
+        Component falls back to emoji if SVG missing.
+      </p>
+      <table class="spec mt-4">
+        <thead><tr><th>Slug</th><th>Channel</th><th>Current emoji</th><th>Illustration brief</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">groupchats.svg</td><td>Group chats / iMessage</td><td>💬</td><td>Three overlapping speech bubbles, the front one with a link icon inside.</td></tr>
+          <tr><td class="mono">fbgroups.svg</td><td>School / Facebook groups</td><td>👩‍👩‍👧</td><td>Cluster of three head silhouettes connected by hairline arcs (community).</td></tr>
+          <tr><td class="mono">reddit.svg</td><td>Reddit threads</td><td>🧵</td><td>Threaded reply branching from one parent · upvote chevron at top.</td></tr>
+          <tr><td class="mono">pinterest.svg</td><td>Pinterest pins</td><td>📌</td><td>Pinned card with a corner pin and a small heart in the corner.</td></tr>
+          <tr><td class="mono">tiktok.svg</td><td>TikTok (faceless)</td><td>🎬</td><td>Phone outline showing a comment field with no face avatar.</td></tr>
+          <tr><td class="mono">nextdoor.svg</td><td>Nextdoor recs</td><td>🏘️</td><td>Three little house silhouettes on a hairline ground line.</td></tr>
+          <tr><td class="mono">email-sig.svg</td><td>Email signature</td><td>📧</td><td>Envelope with a small underlined link on the sender row.</td></tr>
+          <tr><td class="mono">youtube.svg</td><td>YouTube comments</td><td>📺</td><td>Stacked comment block, top one highlighted (pinned).</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 4. §2 animated flow diagram -->
+    <section class="mt-12">
+      <div class="flex items-baseline justify-between flex-wrap gap-2">
+        <h2 class="text-2xl text-navy-900">4 · §2 Without/With animated diagram <span class="tag tag-todo ml-2">1 needed</span></h2>
+        <p class="mono text-navy-500">/public/lp-baseline/diagrams/affiliate-circuit.lottie.json</p>
+      </div>
+      <p class="mt-3 text-sm text-navy-700 max-w-3xl">
+        Lottie or stage-animated SVG · 6s loop · ~480 × 280 viewport at 1× · 60fps targeted but holds at 30 minimum.
+        Three nodes: <strong>Mom</strong> (avatar circle, left) · <strong>Friend</strong> (avatar circle, middle) · <strong>Brand</strong> (logo block, right).
+      </p>
+      <ul class="mt-3 list-disc pl-6 text-sm text-navy-700 space-y-1.5">
+        <li><strong>Stage A (0–2.5s):</strong> Mom → Friend → Brand arrow chain · coin animates Friend → Brand · coin stays at Brand · subtitle “Without MomFluence — Mom gets nothing.”</li>
+        <li><strong>Stage B (2.5–6s):</strong> Same chain · a tracked-link badge attaches to Mom→Friend arrow · coin animates Friend → Brand · second coin splits off Brand → Mom · subtitle “With MomFluence — Mom earns recurring.”</li>
+      </ul>
+      <p class="mt-3 text-sm text-navy-700">Honors <span class="mono">prefers-reduced-motion</span>: freeze on Stage B end frame.</p>
+    </section>
+
+    <!-- 5. Founder + Phase 2 photos -->
+    <section class="mt-12">
+      <div class="flex items-baseline justify-between flex-wrap gap-2">
+        <h2 class="text-2xl text-navy-900">5 · §6 Photography <span class="tag tag-mock ml-2">2 Phase 1 · 5 Phase 2</span></h2>
+        <p class="mono text-navy-500">/public/lp-baseline/founders/ · /public/lp-baseline/moms/</p>
+      </div>
+      <p class="mt-3 text-sm text-navy-700 max-w-3xl">
+        Phase 1: Kevin + Kelly · real headshots · 512×512 sq · warm light · brand-consistent backdrop · masked from any visible address / kids' faces.
+        Phase 2 (T+14d): 5 real founding-cohort moms · same 512×512 sq · accompanying <span class="mono">/lib/landing/social-proof-data.ts</span> with first name, first-month earnings, channels list, optional pull quote.
+      </p>
+      <table class="spec mt-4">
+        <thead><tr><th>Slot</th><th>Path</th><th>Phase</th></tr></thead>
+        <tbody>
+          <tr><td>Kevin (founder)</td><td class="mono">founders/kevin.jpg</td><td><span class="tag tag-mock">Phase 1</span></td></tr>
+          <tr><td>Kelly (first member)</td><td class="mono">founders/kelly.jpg</td><td><span class="tag tag-mock">Phase 1</span></td></tr>
+          <tr><td>Founding mom #1</td><td class="mono">moms/mom-1.jpg</td><td><span class="tag tag-todo">Phase 2</span></td></tr>
+          <tr><td>Founding mom #2</td><td class="mono">moms/mom-2.jpg</td><td><span class="tag tag-todo">Phase 2</span></td></tr>
+          <tr><td>Founding mom #3</td><td class="mono">moms/mom-3.jpg</td><td><span class="tag tag-todo">Phase 2</span></td></tr>
+          <tr><td>Founding mom #4</td><td class="mono">moms/mom-4.jpg</td><td><span class="tag tag-todo">Phase 2</span></td></tr>
+          <tr><td>Founding mom #5</td><td class="mono">moms/mom-5.jpg</td><td><span class="tag tag-todo">Phase 2</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 6. Hero variant assets -->
+    <section class="mt-12">
+      <div class="flex items-baseline justify-between flex-wrap gap-2">
+        <h2 class="text-2xl text-navy-900">6 · Hero visuals (variant-specific) <span class="tag tag-mock ml-2">10 needed · 1 per /lp/&lt;variant&gt;</span></h2>
+        <p class="mono text-navy-500">/public/lp-baseline/heroes/&lt;variant&gt;.{png,svg}</p>
+      </div>
+      <p class="mt-3 text-sm text-navy-700 max-w-3xl">
+        One hero visual per variant in <span class="mono">lib/funnel-lab/variants.ts</span>. Tested in 5 compositions via the Tweaks panel —
+        ship the SAME asset under each variant; the page-level layout swap is handled by the variant page, not the asset.
+      </p>
+    </section>
+
+    <!-- 7. Tailwind config additions -->
+    <section class="mt-12">
+      <h2 class="text-2xl text-navy-900">7 · Tailwind config additions</h2>
+      <p class="mt-3 text-sm text-navy-700 max-w-3xl">
+        No new colors. Confirm <span class="mono">tailwind.config.ts</span> still has the navy/coral 10-stop scales · no new font families · keep <span class="mono">font-display = Playfair Display</span>.
+        New utility shadow only: <span class="mono">shadow-faq-open: 0 8px 24px -8px rgba(20,26,48,.12)</span>.
+      </p>
+      <p class="mt-2 text-sm text-navy-700">
+        See <a href="tokens.html" class="underline text-coral-700">tokens.html</a> for the full class/token spec sheet (heading scale, eyebrow, pill, card, button, ring).
+      </p>
+    </section>
+
+  </main>
+
+  <script src="lib/data.js"></script>
+  <script>
+    const tbody = document.getElementById("brand-rows");
+    const { BRANDS, VERTICALS, payoutLabel } = window.LP_DATA;
+    for (const b of BRANDS) {
+      const vert = VERTICALS.find(v => v.slug === b.vertical)?.label || b.vertical;
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td class="mono">${b.slug}.svg</td>
+        <td><strong>${b.brand}</strong>${b.highlight ? ' <span class="tag tag-ready" style="font-size:9px;padding:1px 5px;margin-left:4px;">HIGHLIGHT</span>' : ''}</td>
+        <td>${vert}</td>
+        <td>${payoutLabel(b)}</td>
+        <td>32×32 render · 4:3 aspect cell · monochrome OK if brand has b/w version</td>
+      `;
+      tbody.appendChild(row);
+    }
+  </script>
+</body>
+</html>
