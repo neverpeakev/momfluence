@@ -62,7 +62,7 @@ export default async function LandingPage({ params, searchParams }: Props) {
         {v.hero.eyebrow}
       </p>
       <h1
-        className="mt-3 whitespace-pre-line text-5xl text-navy-900"
+        className="mt-3 whitespace-pre-line text-balance text-5xl text-navy-900"
         dangerouslySetInnerHTML={{ __html: v.hero.headline.replace(/\n/g, "<br />") }}
       />
       <p
