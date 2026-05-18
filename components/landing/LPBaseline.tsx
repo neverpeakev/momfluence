@@ -2,9 +2,8 @@
  * <LPBaseline />
  *
  * The unified below-the-fold template every /lp/<variant> inherits.
- * Server Component — runs once per request, sets the pricing-variant
- * cookie if not already set, and renders 9 sections (each wrapped in
- * <LPSectionTracker /> so funnel-depth events fire on scroll).
+ * Server Component — runs once per request and renders 9 sections (each
+ * wrapped in <LPSectionTracker /> so funnel-depth events fire on scroll).
  *
  * Architecture: see docs/planning/lp-baseline-upgrade.md
  *
@@ -17,19 +16,15 @@
  *     variant page-level conditional, not here)
  *   - live: rendered for all production traffic
  *
- * Pricing cookie: set in middleware OR here on first render. We do it
- * here (Server Component) so the cookie is available before client
- * components mount.
+ * Pricing cookie: set in middleware (lib/supabase/middleware.ts) on the
+ * first /lp/* request, so the cookie is available to client components
+ * on this very request without requiring a Server Action / Route Handler.
+ * Next.js 15 forbids cookies().set() from a Server Component, hence the
+ * middleware pattern.
  */
 
-import { cookies } from "next/headers";
 import LPSectionTracker from "./LPSectionTracker";
 import { LP_SECTION_EVENTS } from "@/lib/funnel-lab/lp-events";
-import {
-  PRICING_VARIANT_COOKIE,
-  PRICING_VARIANT_MAX_AGE_SECONDS,
-  parsePricingVariant,
-} from "@/lib/funnel-lab/pricing-variants";
 
 import SectionHowItWorks from "./sections/SectionHowItWorks";
 import SectionAffiliateMarketing101 from "./sections/SectionAffiliateMarketing101";
@@ -55,26 +50,10 @@ interface Props {
 }
 
 export default async function LPBaseline({ signupHref, closer }: Props) {
-  // Set the pricing variant cookie if it's not already present. Sticky for
-  // 90 days, so a returning visitor always sees the same pricing pitch.
-  //
-  // As of 2026-05-18, Variant B is parked indefinitely (see header comment
-  // in SectionPricingABTest.tsx). New visitors always get assigned "C".
-  // Returning visitors with a B cookie keep it for now — the section
-  // component force-renders Variant C regardless, and the value still
-  // flows through to Stripe metadata so we can later identify which
-  // visitors saw which variant (B-cookie visitors who never converted
-  // are an audience worth knowing).
-  const cookieStore = await cookies();
-  const existing = parsePricingVariant(cookieStore.get(PRICING_VARIANT_COOKIE)?.value);
-  if (!existing) {
-    cookieStore.set(PRICING_VARIANT_COOKIE, "C", {
-      maxAge: PRICING_VARIANT_MAX_AGE_SECONDS,
-      path: "/",
-      sameSite: "lax",
-      httpOnly: false, // client component needs to read it
-    });
-  }
+  // Pricing variant cookie is seeded by middleware on /lp/* requests
+  // (see lib/supabase/middleware.ts). Sticky for 90 days; new visitors get
+  // "C" (Variant B parked — see SectionPricingABTest.tsx header).
+  // This component is purely a read-through; nothing to do here.
 
   return (
     <>

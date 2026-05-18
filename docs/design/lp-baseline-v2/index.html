@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en" data-density="default" data-type-mode="display" data-annotate="on">
+<head>
+<meta charset="utf-8" />
+<title>LP Baseline v2 · MomFluence · Visual Handoff</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="../../assets/favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          navy:  { 50:"#f3f5fa",100:"#e2e7f1",200:"#c2cce0",300:"#92a2c4",400:"#5d70a3",500:"#3a4f87",600:"#2c3d6c",700:"#243155",800:"#1c2541",900:"#141a30" },
+          coral: { 50:"#fff4f1",100:"#ffe1d8",200:"#ffbaa6",300:"#ff8d6f",400:"#ff6a48",500:"#f04a25",600:"#cf3a1b",700:"#a82e16",800:"#852616",900:"#5c1d12" }
+        },
+        fontFamily: {
+          sans: ['"DM Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
+          display: ['"Playfair Display"', "ui-serif", "serif"]
+        }
+      }
+    }
+  };
+</script>
+<link rel="stylesheet" href="styles.css" />
+<template id="__bundler_thumbnail">
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MomFluence LP Baseline v2">
+  <rect width="200" height="200" fill="#141a30"/>
+  <rect x="60" y="60" width="80" height="80" rx="18" fill="#f04a25"/>
+  <text x="100" y="124" text-anchor="middle" font-family="Playfair Display, serif" font-weight="700" font-size="56" fill="#fff">M</text>
+  <text x="100" y="166" text-anchor="middle" font-family="DM Sans, system-ui, sans-serif" font-weight="700" font-size="11" letter-spacing="2" fill="#ffbaa6">LP BASELINE v2</text>
+</svg>
+</template>
+
+</head>
+<body class="flex min-h-screen flex-col" data-screen-label="01 LP Baseline v2">
+  <div id="root" class="flex min-h-screen flex-col"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <!-- Data + primitives -->
+  <script src="lib/data.js"></script>
+  <script type="text/babel" src="lib/core.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+
+  <!-- Sections (order matches LPBaseline.tsx) -->
+  <script type="text/babel" src="sections/Section0Hero.jsx"></script>
+  <script type="text/babel" src="sections/Section1HowItWorks.jsx"></script>
+  <script type="text/babel" src="sections/Section2AffiliateMarketing101.jsx"></script>
+  <script type="text/babel" src="sections/Section3MyriadWaysToShare.jsx"></script>
+  <script type="text/babel" src="sections/Section3_5EarningsCalculator.jsx"></script>
+  <script type="text/babel" src="sections/Section4DashboardTour.jsx"></script>
+  <script type="text/babel" src="sections/Section5BrandWall.jsx"></script>
+  <script type="text/babel" src="sections/Section5_5Comparison.jsx"></script>
+  <script type="text/babel" src="sections/Section6SocialProof.jsx"></script>
+  <script type="text/babel" src="sections/Section7PricingABTest.jsx"></script>
+  <script type="text/babel" src="sections/Section8FAQ.jsx"></script>
+  <script type="text/babel" src="sections/Section9ClosingCTA.jsx"></script>
+
+  <!-- Orchestrator -->
+  <script type="text/babel" src="app.jsx"></script>
+</body>
+</html>
