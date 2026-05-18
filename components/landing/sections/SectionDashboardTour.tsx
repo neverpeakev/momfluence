@@ -22,21 +22,25 @@ const FEATURES = [
   {
     n: 1,
     title: "Brand picker",
+    slug: "brand-picker",
     body: "Browse 20+ curated brand programs. Filter by vertical — streaming, beauty, savings apps, family safety. Each program shows the commission, what the brand pays, and what you take home.",
   },
   {
     n: 2,
     title: "One-click link generator",
+    slug: "link-generator",
     body: "Pick a brand, generate your tracked link in one tap. Copy to clipboard, paste anywhere. Each link is uniquely tied to your account so clicks attribute correctly.",
   },
   {
     n: 3,
     title: "Live earnings & clicks",
+    slug: "earnings",
     body: "Every click on every link, in real time. See which channels and which brands are converting for you. Updated within minutes of the click.",
   },
   {
     n: 4,
     title: "Fast-track first cashout",
+    slug: "cashout",
     body: "Most affiliate programs make you wait 60-90 days for your first payout. Our $25 fast-track lands in your dashboard same-day so you can verify it&apos;s real.",
   },
 ];
@@ -101,6 +105,54 @@ export default function SectionDashboardTour() {
           ))}
         </ol>
       </div>
+
+      {/* Phase 2 — annotated production screenshots reservation grid.
+          Drop captures into /public/lp-baseline/dashboard/<slug>.png and they
+          render automatically (component reads FEATURES[].slug). Capture at
+          1440 viewport, mask any PII, brand logos visible. */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="mt-12"
+      >
+        <p className="text-xs font-semibold uppercase tracking-widest text-navy-500">
+          Phase 2 — annotated production screenshots
+        </p>
+        <p className="mt-2 max-w-3xl text-sm text-navy-600">
+          Real screenshots of the dashboard ship next — one per feature, each
+          with a coral arrow + matching step-number callout. Until they land,
+          the CSS preview above is itself based on the real dashboard layout.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {FEATURES.map((f) => (
+            <div
+              key={f.slug}
+              className="rounded-2xl bg-white p-3 ring-1 ring-navy-100"
+            >
+              <div className="flex h-36 items-center justify-center rounded-xl border border-dashed border-navy-200 bg-navy-50/60 text-center">
+                <div className="px-3">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-coral-100 text-xs font-bold text-coral-700">
+                    {f.n}
+                  </span>
+                  <p className="mt-2 text-[10px] font-semibold uppercase tracking-widest text-navy-400">
+                    Screenshot
+                    <br />
+                    reserved
+                  </p>
+                </div>
+              </div>
+              <p className="mt-3 px-1 text-xs font-semibold text-navy-900">
+                {f.title}
+              </p>
+              <p className="px-1 text-[10px] text-navy-400">
+                /lp-baseline/dashboard/{f.slug}.png
+              </p>
+            </div>
+          ))}
+        </div>
+      </motion.div>
     </section>
   );
 }
