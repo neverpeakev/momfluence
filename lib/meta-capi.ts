@@ -41,6 +41,13 @@ interface FireServerSidePurchaseInput {
   clientIpAddress?: string;
   /** Optional — not currently passed. */
   clientUserAgent?: string;
+  /**
+   * Optional test_event_code from Meta Events Manager → Test Events tab.
+   * When set, Meta routes the event to Test Events (real-time view, no
+   * impact on production aggregates or ad optimization). Used by the
+   * /api/admin/test-capi-purchase diagnostic endpoint.
+   */
+  testEventCode?: string;
 }
 
 interface MetaUserData {
@@ -69,23 +76,44 @@ interface MetaEvent {
 }
 
 /**
+ * Result of a fireServerSidePurchase call. Returned for callers (like the
+ * /api/admin/test-capi-purchase diagnostic endpoint) that want to surface
+ * the outcome. The Stripe webhook caller uses `void` and ignores this.
+ */
+export interface FireServerSidePurchaseResult {
+  ok: boolean;
+  eventId: string;
+  /** HTTP status from graph.facebook.com, undefined if we never reached it. */
+  metaStatus?: number;
+  /** Truncated response body from Meta on error, or success ack on 200. */
+  metaBody?: string;
+  /** Set when we never POSTed (missing token, exception thrown, etc.). */
+  skippedReason?: string;
+}
+
+/**
  * Fire a Purchase event to Meta CAPI server-side. Best-effort: any error is
- * logged but swallowed. Caller does not need to await this; the webhook can
- * fire-and-forget so the 200 response isn't delayed by Meta's RTT.
+ * logged but never thrown. Caller does not need to await this; the webhook
+ * fires-and-forgets so the 200 response isn't delayed by Meta's RTT.
+ *
+ * Returns a structured result for callers that want to surface success/
+ * failure (e.g. the admin diagnostic endpoint). The webhook discards it
+ * via `void`.
  */
 export async function fireServerSidePurchase(
   input: FireServerSidePurchaseInput
-): Promise<void> {
+): Promise<FireServerSidePurchaseResult> {
+  const eventId = `purchase_${input.stripeCheckoutSessionId}`;
+
   const token = process.env.META_MARKETING_API_TOKEN;
   if (!token) {
     console.error(
       "[meta-capi] META_MARKETING_API_TOKEN not set; skipping server-side Purchase event"
     );
-    return;
+    return { ok: false, eventId, skippedReason: "META_MARKETING_API_TOKEN not set" };
   }
 
   try {
-    const eventId = `purchase_${input.stripeCheckoutSessionId}`;
     const hashedEmail = sha256Hex(normalizeEmail(input.email));
     const hashedExternalId = sha256Hex(input.stripeCustomerId);
 
@@ -116,10 +144,17 @@ export async function fireServerSidePurchase(
       token.trim()
     )}`;
 
+    const requestBody: { data: MetaEvent[]; test_event_code?: string } = {
+      data: [metaEvent],
+    };
+    if (input.testEventCode) {
+      requestBody.test_event_code = input.testEventCode;
+    }
+
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: [metaEvent] }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!res.ok) {
@@ -127,16 +162,30 @@ export async function fireServerSidePurchase(
       console.error(
         `[meta-capi] Purchase event POST failed: ${res.status} ${body.slice(0, 500)}`
       );
-      return;
+      return {
+        ok: false,
+        eventId,
+        metaStatus: res.status,
+        metaBody: body.slice(0, 500),
+      };
     }
 
     // Light success log — useful for verifying via Vercel logs that the
     // server-side event actually went out.
+    const testTag = input.testEventCode ? ` [TEST ${input.testEventCode}]` : "";
     console.log(
-      `[meta-capi] Purchase event sent (event_id=${eventId}, customer=${input.stripeCustomerId})`
+      `[meta-capi] Purchase event sent (event_id=${eventId}, customer=${input.stripeCustomerId})${testTag}`
     );
+    const ackBody = await res.text().catch(() => "");
+    return {
+      ok: true,
+      eventId,
+      metaStatus: res.status,
+      metaBody: ackBody.slice(0, 500),
+    };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[meta-capi] unexpected error firing Purchase: ${message}`);
+    return { ok: false, eventId, skippedReason: `exception: ${message}` };
   }
 }
