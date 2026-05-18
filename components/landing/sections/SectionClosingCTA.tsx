@@ -29,10 +29,25 @@ export default function SectionClosingCTA({ headline, subhead, ctaPrimary, signu
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="mt-24"
     >
-      <div className="rounded-3xl bg-navy-900 p-10 text-center sm:p-14">
-        <h2 className="text-4xl text-white sm:text-5xl">{headline}</h2>
-        <p className="mt-4 text-base text-navy-200 sm:text-lg">{subhead}</p>
-        <div className="mt-8 flex flex-wrap justify-center gap-4">
+      <div className="relative overflow-hidden rounded-3xl bg-navy-900 p-10 text-center sm:p-14">
+        {/* Soft coral atmosphere — single radial, no gradient slop. Agent
+            spec: "brand signature: every long page ends in this dark zone". */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-32 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full"
+          style={{
+            background:
+              "radial-gradient(closest-side, rgba(240,74,37,0.18), transparent)",
+          }}
+        />
+
+        <h2 className="relative text-balance text-4xl text-white sm:text-5xl">
+          {headline}
+        </h2>
+        <p className="relative mx-auto mt-4 max-w-2xl text-base text-navy-200 sm:text-lg">
+          {subhead}
+        </p>
+        <div className="relative mt-8 flex flex-wrap justify-center gap-4">
           <Link
             href={signupHref}
             onClick={() => fireLPClosingCTAClicked()}
@@ -42,12 +57,12 @@ export default function SectionClosingCTA({ headline, subhead, ctaPrimary, signu
           </Link>
           <Link
             href="/how-it-works"
-            className="inline-flex items-center justify-center rounded-xl border border-navy-700 bg-transparent px-5 py-3 font-medium text-navy-100 transition hover:bg-navy-800 no-underline"
+            className="inline-flex items-center justify-center rounded-xl border border-navy-700 bg-transparent px-5 py-3 font-medium text-navy-100 no-underline transition hover:bg-navy-800"
           >
             Read the full breakdown →
           </Link>
         </div>
-        <p className="mt-6 text-xs text-navy-400">
+        <p className="relative mt-6 text-xs text-navy-400">
           $5/mo membership. Cancel anytime. Example earnings shown elsewhere on
           this page are illustrative — individual results vary.
         </p>

@@ -20,6 +20,8 @@
 
 export interface BrandWallBrand {
   brand: string;
+  /** kebab-case identifier — matches /public/lp-baseline/logos/<slug>.svg + BRAND_MARKS key. */
+  slug: string;
   vertical: string;
   /** "cpa" (one-time payout per signup), "cpl" (per lead), "rev_share" (recurring %) */
   payoutType: "cpa" | "cpl" | "rev_share";
@@ -27,6 +29,49 @@ export interface BrandWallBrand {
   payoutDollars: number | null;
   /** True if this brand gets a payout-example callout card. */
   highlight?: boolean;
+}
+
+/**
+ * Letter-mark fallback (brand-colored chip with initials) used until a real
+ * SVG logo lands in /public/lp-baseline/logos/<slug>.svg. Keys match
+ * BrandWallBrand.slug. Colors are eyeballed from each brand's public marks
+ * — close-enough for "feels like the real brand" at chip size, replaced by
+ * the SVG file the moment one is added.
+ */
+export interface BrandMark {
+  bg: string;
+  fg: string;
+  mark: string;
+}
+
+export const BRAND_MARKS: Record<string, BrandMark> = {
+  hulu: { bg: "#1ce783", fg: "#0b3b1f", mark: "h" },
+  paramount: { bg: "#0064ff", fg: "#fff", mark: "P+" },
+  geologie: { bg: "#1a1a1a", fg: "#ffd6a8", mark: "G" },
+  klarna: { bg: "#ffa8cd", fg: "#17120e", mark: "K" },
+  gizmogo: { bg: "#0a7d3a", fg: "#fff", mark: "Gz" },
+  rita: { bg: "#5b3df5", fg: "#fff", mark: "R" },
+  openfarm: { bg: "#3e6b3a", fg: "#fff", mark: "OF" },
+  meowmobile: { bg: "#ff8e3c", fg: "#1c2541", mark: "M" },
+  shopify: { bg: "#7ab55c", fg: "#fff", mark: "S" },
+  base44: { bg: "#141a30", fg: "#ff8d6f", mark: "B" },
+  tiktok: { bg: "#000", fg: "#25f4ee", mark: "tt" },
+  capcut: { bg: "#000", fg: "#fff", mark: "Cc" },
+  riverside: { bg: "#9145ff", fg: "#fff", mark: "Rv" },
+  invideo: { bg: "#2563eb", fg: "#fff", mark: "iV" },
+  namecheap: { bg: "#de3723", fg: "#fff", mark: "Nc" },
+  hostinger: { bg: "#673de6", fg: "#fff", mark: "H" },
+  ssls: { bg: "#0088cc", fg: "#fff", mark: "SS" },
+  sentrypc: { bg: "#1f2a44", fg: "#ffd166", mark: "Sp" },
+  sesame: { bg: "#ffe2a8", fg: "#7c3a0d", mark: "Sc" },
+  gtplayer: { bg: "#dc2626", fg: "#fff", mark: "GT" },
+  nexters: { bg: "#0ea5e9", fg: "#fff", mark: "Nx" },
+  wineexpress: { bg: "#5c1d12", fg: "#fff8e7", mark: "We" },
+};
+
+/** Safe lookup: returns a slate fallback if the slug isn't in BRAND_MARKS. */
+export function brandMark(slug: string, brand: string): BrandMark {
+  return BRAND_MARKS[slug] ?? { bg: "#141a30", fg: "#fff", mark: brand.charAt(0) };
 }
 
 /**
@@ -47,46 +92,46 @@ export const VERTICALS = [
 
 export const BRANDS: ReadonlyArray<BrandWallBrand> = [
   // Streaming
-  { brand: "Hulu", vertical: "streaming", payoutType: "cpa", payoutDollars: 1.6 },
-  { brand: "Paramount+", vertical: "streaming", payoutType: "cpa", payoutDollars: 7.2, highlight: true },
+  { brand: "Hulu", slug: "hulu", vertical: "streaming", payoutType: "cpa", payoutDollars: 1.6 },
+  { brand: "Paramount+", slug: "paramount", vertical: "streaming", payoutType: "cpa", payoutDollars: 7.2, highlight: true },
 
   // Beauty
-  { brand: "Geologie", vertical: "beauty", payoutType: "cpa", payoutDollars: 10 },
+  { brand: "Geologie", slug: "geologie", vertical: "beauty", payoutType: "cpa", payoutDollars: 10 },
 
   // Savings apps
-  { brand: "Klarna", vertical: "savings-apps", payoutType: "cpa", payoutDollars: 35, highlight: true },
-  { brand: "Gizmogo", vertical: "savings-apps", payoutType: "cpa", payoutDollars: 5 },
-  { brand: "Rita.ai", vertical: "savings-apps", payoutType: "rev_share", payoutDollars: null },
+  { brand: "Klarna", slug: "klarna", vertical: "savings-apps", payoutType: "cpa", payoutDollars: 35, highlight: true },
+  { brand: "Gizmogo", slug: "gizmogo", vertical: "savings-apps", payoutType: "cpa", payoutDollars: 5 },
+  { brand: "Rita.ai", slug: "rita", vertical: "savings-apps", payoutType: "rev_share", payoutDollars: null },
 
   // Pet food
-  { brand: "Open Farm", vertical: "pet-food", payoutType: "cpa", payoutDollars: 60, highlight: true },
-  { brand: "Meow Mobile", vertical: "pet-food", payoutType: "cpa", payoutDollars: 25 },
+  { brand: "Open Farm", slug: "openfarm", vertical: "pet-food", payoutType: "cpa", payoutDollars: 60, highlight: true },
+  { brand: "Meow Mobile", slug: "meowmobile", vertical: "pet-food", payoutType: "cpa", payoutDollars: 25 },
 
   // Creator tools
-  { brand: "Shopify", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 50, highlight: true },
-  { brand: "Base44", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 50, highlight: true },
-  { brand: "TikTok", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 10 },
-  { brand: "CapCut", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
-  { brand: "Riverside", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
-  { brand: "InVideo", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
-  { brand: "Namecheap", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 10 },
-  { brand: "Hostinger", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
-  { brand: "SSLs.com", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
+  { brand: "Shopify", slug: "shopify", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 50, highlight: true },
+  { brand: "Base44", slug: "base44", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 50, highlight: true },
+  { brand: "TikTok", slug: "tiktok", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 10 },
+  { brand: "CapCut", slug: "capcut", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
+  { brand: "Riverside", slug: "riverside", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
+  { brand: "InVideo", slug: "invideo", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
+  { brand: "Namecheap", slug: "namecheap", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 10 },
+  { brand: "Hostinger", slug: "hostinger", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
+  { brand: "SSLs.com", slug: "ssls", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
 
   // Family safety
-  { brand: "SentryPC", vertical: "family-safety", payoutType: "cpa", payoutDollars: 32 },
+  { brand: "SentryPC", slug: "sentrypc", vertical: "family-safety", payoutType: "cpa", payoutDollars: 32 },
 
   // Health
-  { brand: "Sesame Care", vertical: "health", payoutType: "cpl", payoutDollars: 80, highlight: true },
+  { brand: "Sesame Care", slug: "sesame", vertical: "health", payoutType: "cpl", payoutDollars: 80, highlight: true },
 
   // Home
-  { brand: "GTPLAYER", vertical: "home", payoutType: "rev_share", payoutDollars: null },
+  { brand: "GTPLAYER", slug: "gtplayer", vertical: "home", payoutType: "rev_share", payoutDollars: null },
 
   // Apps
-  { brand: "Nexters", vertical: "apps", payoutType: "cpl", payoutDollars: 2 },
+  { brand: "Nexters", slug: "nexters", vertical: "apps", payoutType: "cpl", payoutDollars: 2 },
 
   // Food & drink
-  { brand: "Wine Express", vertical: "food-and-drink", payoutType: "cpa", payoutDollars: 10 },
+  { brand: "Wine Express", slug: "wineexpress", vertical: "food-and-drink", payoutType: "cpa", payoutDollars: 10 },
 ];
 
 /**

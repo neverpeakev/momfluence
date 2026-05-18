@@ -193,11 +193,11 @@ function VariantC({ signupHref }: { signupHref: string }) {
         <p className="text-xs uppercase tracking-widest text-navy-600 font-semibold">
           $5/month for the door, not the deal
         </p>
-        <h2 className="mt-2 text-3xl text-navy-900 sm:text-4xl">
+        <h2 className="mt-2 text-balance text-3xl text-navy-900 sm:text-4xl">
           The brands inside don&apos;t accept random applicants. The $5 is
           what opens the door.
         </h2>
-        <p className="mt-3 text-base leading-7 text-navy-700">
+        <p className="mt-3 max-w-3xl text-base leading-7 text-navy-700">
           Most affiliate programs make you apply, prove you have a following,
           and wait a week to hear back. Most moms never get approved. We&apos;ve
           already done that work with 22+ premium brands so you skip the line.

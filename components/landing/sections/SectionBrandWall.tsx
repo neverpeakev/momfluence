@@ -16,15 +16,49 @@ import {
   BRANDS,
   HIGHLIGHTED_BRANDS,
   VERTICALS,
+  brandMark,
   payoutLabel,
   type BrandWallBrand,
 } from "@/lib/landing/brand-wall-data";
 import EarningsDisclaimerInline from "@/components/landing/EarningsDisclaimerInline";
 
+function BrandMarkChip({
+  slug,
+  brand,
+  size = 32,
+  fontSize = 11,
+}: {
+  slug: string;
+  brand: string;
+  size?: number;
+  fontSize?: number;
+}) {
+  const m = brandMark(slug, brand);
+  return (
+    <span
+      aria-hidden="true"
+      className="flex shrink-0 items-center justify-center rounded-full font-extrabold"
+      style={{
+        background: m.bg,
+        color: m.fg,
+        width: size,
+        height: size,
+        fontSize,
+        lineHeight: 1,
+      }}
+    >
+      {m.mark}
+    </span>
+  );
+}
+
 function BrandCard({ brand }: { brand: BrandWallBrand }) {
   return (
-    <div className="flex items-center justify-center rounded-xl bg-white p-4 ring-1 ring-navy-100 hover:ring-coral-200 transition-shadow">
-      <p className="text-center text-sm font-semibold text-navy-800">{brand.brand}</p>
+    <div className="flex aspect-[3/2] flex-col items-center justify-center rounded-xl bg-white p-3 ring-1 ring-navy-100 transition-shadow hover:ring-coral-200">
+      <BrandMarkChip slug={brand.slug} brand={brand.brand} />
+      <p className="mt-2 text-center text-[11px] font-semibold leading-tight text-navy-800">
+        {brand.brand}
+      </p>
     </div>
   );
 }
@@ -32,11 +66,14 @@ function BrandCard({ brand }: { brand: BrandWallBrand }) {
 function HighlightCard({ brand }: { brand: BrandWallBrand }) {
   return (
     <div className="rounded-2xl bg-coral-50 p-5 ring-2 ring-coral-200">
-      <p className="text-xs uppercase tracking-widest text-coral-600 font-semibold">
-        {VERTICALS.find((v) => v.slug === brand.vertical)?.label ?? brand.vertical}
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-widest text-coral-600">
+          {VERTICALS.find((v) => v.slug === brand.vertical)?.label ?? brand.vertical}
+        </p>
+        <BrandMarkChip slug={brand.slug} brand={brand.brand} size={36} fontSize={13} />
+      </div>
       <p className="mt-2 text-xl font-semibold text-navy-900">{brand.brand}</p>
-      <p className="mt-2 text-base text-coral-700 font-semibold">{payoutLabel(brand)}</p>
+      <p className="mt-2 text-base font-semibold text-coral-700">{payoutLabel(brand)}</p>
       <p className="mt-2 text-xs text-navy-600">
         {brand.payoutType === "rev_share"
           ? "Recurring monthly commission for as long as the customer stays subscribed."
@@ -60,10 +97,10 @@ export default function SectionBrandWall() {
         <p className="text-xs uppercase tracking-widest text-coral-600 font-semibold">
           {BRANDS.length}+ brands across {VERTICALS.length} categories
         </p>
-        <h2 className="mt-2 text-3xl text-navy-900 sm:text-4xl">
+        <h2 className="mt-2 text-balance text-3xl text-navy-900 sm:text-4xl">
           Real brands. Real payouts. No applications.
         </h2>
-        <p className="mt-3 text-base text-navy-600 sm:text-lg">
+        <p className="mt-3 max-w-2xl text-base text-navy-600 sm:text-lg">
           Every brand below has already approved MomFluence as a partner.
           You don&apos;t apply, you don&apos;t wait, you don&apos;t need a
           following. Pick the brand, generate your link, share.
