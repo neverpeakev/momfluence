@@ -75,10 +75,10 @@ export default function SectionMyriadWaysToShare() {
         <p className="text-xs uppercase tracking-widest text-coral-600 font-semibold">
           You don&apos;t need a following
         </p>
-        <h2 className="mt-2 text-3xl text-navy-900 sm:text-4xl">
+        <h2 className="mt-2 text-balance text-3xl text-navy-900 sm:text-4xl">
           Eight ways to share that don&apos;t require an audience.
         </h2>
-        <p className="mt-3 text-base text-navy-600 sm:text-lg">
+        <p className="mt-3 max-w-2xl text-base text-navy-600 sm:text-lg">
           You don&apos;t need to make videos. You don&apos;t need a TikTok. You
           don&apos;t even have to tell your friends what you&apos;re doing.
           These are the places real moms drop links every day.
@@ -117,7 +117,7 @@ export default function SectionMyriadWaysToShare() {
         whileInView={{ opacity: 1 }}
         viewport={{ once: true, amount: 0.5 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="mt-8 text-sm text-navy-600"
+        className="mt-8 max-w-3xl text-sm text-navy-600"
       >
         <span className="font-semibold text-navy-900">Important:</span> when you
         share an affiliate link, FTC rules require you to disclose that

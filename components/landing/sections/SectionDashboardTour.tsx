@@ -53,10 +53,10 @@ export default function SectionDashboardTour() {
         <p className="text-xs uppercase tracking-widest text-coral-600 font-semibold">
           Inside the $5/mo membership
         </p>
-        <h2 className="mt-2 text-3xl text-navy-900 sm:text-4xl">
+        <h2 className="mt-2 text-balance text-3xl text-navy-900 sm:text-4xl">
           Your dashboard does the bragging.
         </h2>
-        <p className="mt-3 text-base text-navy-600 sm:text-lg">
+        <p className="mt-3 max-w-2xl text-base text-navy-600 sm:text-lg">
           The second you&apos;re in, you see exactly what&apos;s happening:
           clicks, signups, dollars earned this week. No guessing, no chasing
           brands, no spreadsheets.

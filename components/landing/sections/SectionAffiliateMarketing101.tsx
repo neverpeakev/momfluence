@@ -32,13 +32,13 @@ export default function SectionAffiliateMarketing101() {
         <p className="text-xs uppercase tracking-widest text-coral-600 font-semibold">
           Affiliate Marketing 101
         </p>
-        <h2 className="mt-2 text-3xl text-navy-900 sm:text-4xl">
+        <h2 className="mt-2 text-balance text-3xl text-navy-900 sm:text-4xl">
           You&apos;re already recommending stuff. The brands already pay for
           it. We just complete the circuit.
         </h2>
       </motion.div>
 
-      <div className="mt-8 space-y-6 text-base leading-7 text-navy-700">
+      <div className="mt-8 max-w-3xl space-y-6 text-base leading-7 text-navy-700">
         <p>
           Affiliate marketing is when a brand pays you a percentage every time
           someone buys from them through your tracked link. It&apos;s not new.
@@ -67,7 +67,7 @@ export default function SectionAffiliateMarketing101() {
           <p className="text-xs uppercase tracking-widest text-navy-500 font-semibold">
             Without MomFluence
           </p>
-          <h3 className="mt-2 text-xl text-navy-900">
+          <h3 className="mt-2 font-display text-xl font-bold text-navy-900">
             Mom recommends. Brand keeps 100%.
           </h3>
           <ul className="mt-4 space-y-3 text-sm text-navy-700">
@@ -100,7 +100,7 @@ export default function SectionAffiliateMarketing101() {
           <p className="text-xs uppercase tracking-widest text-coral-600 font-semibold">
             With MomFluence
           </p>
-          <h3 className="mt-2 text-xl text-navy-900">
+          <h3 className="mt-2 font-display text-xl font-bold text-navy-900">
             Mom recommends. Brand shares.
           </h3>
           <ul className="mt-4 space-y-3 text-sm text-navy-700">
@@ -136,7 +136,7 @@ export default function SectionAffiliateMarketing101() {
         <p className="text-xs uppercase tracking-widest text-coral-600 font-semibold">
           Real example
         </p>
-        <h3 className="mt-2 text-xl text-navy-900">
+        <h3 className="mt-2 font-display text-xl font-bold text-navy-900">
           Mom shares Hulu with five friends in her group chat.
         </h3>
         <div className="mt-4 grid gap-4 text-sm text-navy-700 sm:grid-cols-3">
