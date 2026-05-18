@@ -12,7 +12,9 @@ type StandardEvent =
   | "InitiateCheckout"
   | "AddPaymentInfo"
   | "Subscribe"
-  | "Lead";
+  | "Lead"
+  | "ViewContent"
+  | "AddToCart";
 
 type CustomEvent =
   | "SignupStarted"
@@ -39,7 +41,9 @@ const STANDARD_EVENTS: ReadonlyArray<StandardEvent> = [
   "InitiateCheckout",
   "AddPaymentInfo",
   "Subscribe",
-  "Lead"
+  "Lead",
+  "ViewContent",
+  "AddToCart",
 ];
 
 /**
@@ -105,4 +109,64 @@ export function fireMetaPurchase(
     },
     eventId
   );
+}
+
+/**
+ * Fires ViewContent for an LP variant. Use from <LPVisitTracker /> on mount.
+ *
+ * Why it matters: gives Meta an early-funnel signal — "this user engaged with
+ * an LP." Combined with later AddToCart / InitiateCheckout / Purchase events,
+ * Meta has more rungs on the optimization ladder, so it can find similar
+ * users with less data.
+ *
+ * Browser event_id deterministically derives from the variant + a per-session
+ * nonce so server-side CAPI (future Phase 2) can dedupe. For now, fbevents.js
+ * generates its own internal eventID if we don't supply one — that's fine.
+ */
+export function fireMetaViewContent(
+  variantSlug: string,
+  creativeId?: string,
+): void {
+  fireMetaEvent("ViewContent", {
+    content_name: `lp_${variantSlug}`,
+    content_category: "landing_page",
+    content_ids: creativeId ? [`lp_${variantSlug}__${creativeId}`] : [`lp_${variantSlug}`],
+    content_type: "product",
+  });
+}
+
+/**
+ * Fires AddToCart when the user starts engaging with the signup form on
+ * /signup. Treats "started the form" as the cart-add equivalent — the
+ * conventional e-commerce intent signal one step before InitiateCheckout.
+ *
+ * Standard event with value=5.00 USD so Meta knows the eventual conversion
+ * value if this user converts.
+ */
+export function fireMetaAddToCart(): void {
+  fireMetaEvent("AddToCart", {
+    value: 5.0,
+    currency: "USD",
+    content_name: "MomFluence Membership",
+    content_type: "product",
+    content_category: "Subscription",
+  });
+}
+
+/**
+ * Fires InitiateCheckout right before the client-side window.location.href
+ * redirect to Stripe Checkout. The conventional commit signal — strongest
+ * intent indicator before Purchase itself.
+ *
+ * Standard event with value=5.00 USD.
+ */
+export function fireMetaInitiateCheckout(): void {
+  fireMetaEvent("InitiateCheckout", {
+    value: 5.0,
+    currency: "USD",
+    content_name: "MomFluence Membership",
+    content_type: "product",
+    content_category: "Subscription",
+    num_items: 1,
+  });
 }
