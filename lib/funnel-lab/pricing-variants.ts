@@ -38,6 +38,17 @@ export function parsePricingVariant(raw: string | undefined | null): PricingVari
 
 /**
  * Random 50/50 assignment. Returns "B" or "C".
+ *
+ * Currently UNUSED — see header comment in SectionPricingABTest.tsx.
+ * Variant B is parked indefinitely; new visitors are assigned "C"
+ * directly in <LPBaseline />. Kept here so reactivating the A/B test
+ * is a one-line change in <LPBaseline />:
+ *
+ *   cookieStore.set(PRICING_VARIANT_COOKIE, "C", ...)        // current
+ *   cookieStore.set(PRICING_VARIANT_COOKIE, randomPricingVariant(), ...)  // re-enable
+ *
+ * Also keep updating SectionPricingABTest.tsx to render based on the
+ * variant value when reactivating.
  */
 export function randomPricingVariant(): PricingVariant {
   return Math.random() < 0.5 ? "B" : "C";

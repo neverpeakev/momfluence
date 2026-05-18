@@ -29,7 +29,6 @@ import {
   PRICING_VARIANT_COOKIE,
   PRICING_VARIANT_MAX_AGE_SECONDS,
   parsePricingVariant,
-  randomPricingVariant,
 } from "@/lib/funnel-lab/pricing-variants";
 
 import SectionHowItWorks from "./sections/SectionHowItWorks";
@@ -58,11 +57,18 @@ interface Props {
 export default async function LPBaseline({ signupHref, closer }: Props) {
   // Set the pricing variant cookie if it's not already present. Sticky for
   // 90 days, so a returning visitor always sees the same pricing pitch.
+  //
+  // As of 2026-05-18, Variant B is parked indefinitely (see header comment
+  // in SectionPricingABTest.tsx). New visitors always get assigned "C".
+  // Returning visitors with a B cookie keep it for now — the section
+  // component force-renders Variant C regardless, and the value still
+  // flows through to Stripe metadata so we can later identify which
+  // visitors saw which variant (B-cookie visitors who never converted
+  // are an audience worth knowing).
   const cookieStore = await cookies();
   const existing = parsePricingVariant(cookieStore.get(PRICING_VARIANT_COOKIE)?.value);
   if (!existing) {
-    const newVariant = randomPricingVariant();
-    cookieStore.set(PRICING_VARIANT_COOKIE, newVariant, {
+    cookieStore.set(PRICING_VARIANT_COOKIE, "C", {
       maxAge: PRICING_VARIANT_MAX_AGE_SECONDS,
       path: "/",
       sameSite: "lax",
