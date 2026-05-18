@@ -4,7 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { fireMetaEvent } from "@/lib/meta-pixel";
+import {
+  fireMetaEvent,
+  fireMetaAddToCart,
+  fireMetaInitiateCheckout,
+} from "@/lib/meta-pixel";
 import {
   parseAttributionFromQuery,
   readAttributionFromCookies,
@@ -26,6 +30,10 @@ export default function SignupInner() {
   // pricing_variant is set server-side in <LPBaseline /> as mf_pricing_variant
   // cookie (90-day max-age) — we read it here directly off document.cookie
   // since it's NOT part of the mf_lp/mf_creative attribution cookies.
+  //
+  // Also fire Meta AddToCart on mount: reaching the signup form is the
+  // strongest pre-checkout intent signal (one rung below InitiateCheckout
+  // on Meta's optimization ladder). PR 3 funnel-event uplift.
   useEffect(() => {
     const fromUrl = parseAttributionFromQuery(sp);
     const fromCookie = readAttributionFromCookies();
@@ -38,6 +46,7 @@ export default function SignupInner() {
     };
     writeAttributionToCookies(merged);
     setAttr(merged);
+    fireMetaAddToCart();
   }, [sp]);
 
   function readPricingVariantCookie(): "B" | "C" | null {
@@ -104,6 +113,11 @@ export default function SignupInner() {
       }
       const { url } = await res.json();
       if (!url) throw new Error("Checkout URL missing");
+      // Fire Meta InitiateCheckout immediately before the Stripe redirect.
+      // Highest-intent pre-Purchase signal in the funnel — Meta uses this
+      // to learn which traffic actually commits vs bounces. PR 3 funnel-
+      // event uplift.
+      fireMetaInitiateCheckout();
       window.location.href = url;
     } catch (e) {
       setLoading(false);
