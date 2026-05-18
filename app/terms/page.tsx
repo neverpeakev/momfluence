@@ -14,7 +14,7 @@ export default function Terms() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
       <h1 className="text-4xl text-navy-900">Terms of Service</h1>
-      <p className="mt-3 text-sm text-navy-500">Last updated: May 8, 2026</p>
+      <p className="mt-3 text-sm text-navy-500">Last updated: May 18, 2026</p>
 
       <div className="mt-10 space-y-10 text-base leading-7 text-navy-700">
         <section>
@@ -61,6 +61,64 @@ export default function Terms() {
             price. If we change our pricing, we will notify you in advance of any change
             taking effect, and you may cancel before the change takes effect if you do not
             agree.
+          </p>
+        </section>
+
+        <section id="membership-credit">
+          <h2 className="text-2xl text-navy-900">Membership credit (when applicable)</h2>
+          <p className="mt-4">
+            Some marketing pages run a pricing-positioning test that describes
+            a one-time $5 credit returned to your dashboard balance once your
+            cumulative commission earnings first cross $25. If you signed up
+            from a page describing this credit, the following terms apply:
+          </p>
+          <ul className="mt-4 list-disc space-y-2 pl-6">
+            <li>
+              <span className="font-semibold text-navy-900">When the credit
+              applies:</span> after your verified, brand-confirmed
+              cumulative commission earnings reach $25.00 for the first time
+              under your account.
+            </li>
+            <li>
+              <span className="font-semibold text-navy-900">What the credit
+              is:</span> a one-time $5.00 credit added to your in-platform
+              dashboard balance. The credit is applied within seven business
+              days of the qualifying earnings threshold being crossed.
+            </li>
+            <li>
+              <span className="font-semibold text-navy-900">What the credit
+              is not:</span> the credit is not a refund returned to your
+              original payment method, not redeemable for cash, and not
+              transferable. Subscription billing continues monthly at $5
+              regardless of whether the credit has been applied.
+            </li>
+            <li>
+              <span className="font-semibold text-navy-900">One credit per
+              account:</span> only one $5 credit is issued per account, ever.
+            </li>
+            <li>
+              <span className="font-semibold text-navy-900">Cancellation:</span>{" "}
+              if you cancel your membership before crossing the $25 earnings
+              threshold, you do not become eligible for the credit. Past
+              earnings remain yours per the standard payout rules.
+            </li>
+            <li>
+              <span className="font-semibold text-navy-900">Identification:</span>{" "}
+              your eligibility for this term depends on which pricing
+              variant you saw at signup. The signup metadata records
+              <span className="font-mono"> pricing_variant=B</span> for
+              accounts under this term. If you&apos;re unsure whether this
+              applies to you, email{" "}
+              <a href="mailto:hello@momfluence.app" className="underline">
+                hello@momfluence.app
+              </a>{" "}
+              and we&apos;ll confirm.
+            </li>
+          </ul>
+          <p className="mt-4">
+            This credit mechanism is a marketing test that may be revised or
+            withdrawn for future signups. Members who signed up under it
+            retain the terms in effect at the time of signup.
           </p>
         </section>
 

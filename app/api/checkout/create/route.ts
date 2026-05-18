@@ -22,10 +22,13 @@ export async function POST(req: NextRequest) {
         typeof v === "string" && /^[a-z0-9-]{1,40}$/.test(v) ? v : undefined;
       const isoLike = (v: unknown): string | undefined =>
         typeof v === "string" && v.length <= 32 && !Number.isNaN(Date.parse(v)) ? v : undefined;
+      const pricingLike = (v: unknown): "B" | "C" | undefined =>
+        v === "B" || v === "C" ? v : undefined;
       attribution = {
         variant: slugLike(a.variant),
         creative: slugLike(a.creative),
         firstSeen: isoLike(a.firstSeen),
+        pricingVariant: pricingLike(a.pricingVariant),
       };
     }
   } catch {

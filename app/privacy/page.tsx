@@ -15,7 +15,7 @@ export default function Privacy() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
       <h1 className="text-4xl text-navy-900">Privacy Policy</h1>
-      <p className="mt-3 text-sm text-navy-500">Last updated: May 8, 2026</p>
+      <p className="mt-3 text-sm text-navy-500">Last updated: May 18, 2026</p>
 
       <div className="mt-10 space-y-10 text-base leading-7 text-navy-700">
         <section>
@@ -88,6 +88,41 @@ export default function Privacy() {
             We use cookies and similar technologies for authentication, session persistence,
             preferences, conversion tracking, and analytics. Some cookies are set by
             third-party services described in &ldquo;Service providers&rdquo; below.
+          </p>
+          <p className="mt-2">
+            <span className="font-semibold text-navy-900">
+              Cookies we set ourselves:
+            </span>
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-6 text-sm">
+            <li>
+              <span className="font-mono">mf_lp</span>,{" "}
+              <span className="font-mono">mf_creative</span>,{" "}
+              <span className="font-mono">mf_first_seen</span> &mdash; record
+              which landing page and which creative variant referred you, so we
+              can correctly attribute commissions and analyze campaign
+              performance (30-day max-age).
+            </li>
+            <li>
+              <span className="font-mono">mf_pricing_variant</span> &mdash;
+              records which pricing positioning (A/B test variant) you saw on
+              first visit so you see consistent pricing across return visits
+              (90-day max-age).
+            </li>
+          </ul>
+
+          <p className="mt-6 font-semibold text-navy-900">Landing-page engagement tracking</p>
+          <p className="mt-2">
+            On our marketing landing pages we measure which sections of the
+            page you scroll past so we can iterate on what helps moms
+            understand the platform. Events recorded include:
+            scroll-past-section events (such as &ldquo;reached How it
+            works&rdquo;), FAQ open events, and call-to-action click events.
+            These events are sent to Meta Conversions API and Meta Pixel for
+            ad-attribution and audience measurement, and to our own analytics
+            for product improvement. The events do not contain free-form
+            personal information &mdash; only standardized event names and the
+            pricing-variant label.
           </p>
         </section>
 

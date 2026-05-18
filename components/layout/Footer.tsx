@@ -60,6 +60,22 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link
+                  href="/disclosures/affiliate-marketing"
+                  className="text-navy-700 no-underline hover:text-navy-900"
+                >
+                  Affiliate disclosure
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/disclosures/earnings"
+                  className="text-navy-700 no-underline hover:text-navy-900"
+                >
+                  Earnings disclaimer
+                </Link>
+              </li>
+              <li>
                 <a
                   href="mailto:hello@momfluence.app"
                   className="text-navy-700 no-underline hover:text-navy-900"

@@ -6,6 +6,16 @@ import { findRuntimeVariant } from "@/lib/funnel-lab/runtime-variants";
 import BrandRibbon from "@/components/landing/BrandRibbon";
 import DashboardPreview from "@/components/landing/DashboardPreview";
 import LPVisitTracker from "@/components/landing/LPVisitTracker";
+import LPBaseline from "@/components/landing/LPBaseline";
+
+/**
+ * Feature flag for the new dub.co-inspired LP baseline. Values:
+ *   "off"    — legacy below-fold (default; zero risk to live ads)
+ *   "live"   — render new <LPBaseline /> for all traffic
+ *
+ * See docs/planning/lp-baseline-upgrade.md
+ */
+const LP_BASELINE_V2 = process.env.NEXT_PUBLIC_LP_BASELINE_V2 ?? "off";
 
 interface Props {
   params: Promise<{ variant: string }>;
@@ -41,12 +51,13 @@ export default async function LandingPage({ params, searchParams }: Props) {
   const creative = sanitize(sp.c ?? sp.creative) ?? v.primaryCreativeId;
   // Attribution carries forward to /signup so cookie-less browsers still get tagged.
   const signupHref = `/signup?lp=${encodeURIComponent(v.slug)}&c=${encodeURIComponent(creative)}`;
+  const useBaselineV2 = LP_BASELINE_V2 === "live";
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
       <LPVisitTracker variant={v.slug} />
 
-      {/* Hero */}
+      {/* Hero — variant-specific, unchanged across baseline v1/v2 */}
       <p className="text-sm uppercase tracking-widest text-coral-600 font-semibold">
         {v.hero.eyebrow}
       </p>
@@ -70,6 +81,21 @@ export default async function LandingPage({ params, searchParams }: Props) {
 
       <BrandRibbon />
 
+      {useBaselineV2 && (
+        <LPBaseline
+          variantSlug={v.slug}
+          signupHref={signupHref}
+          closer={{
+            headline: v.closer.headline,
+            subhead: v.closer.subhead,
+            ctaPrimary: v.hero.ctaPrimary,
+          }}
+        />
+      )}
+
+      {/* Legacy below-fold (rendered ONLY when LP_BASELINE_V2 != "live") */}
+      {!useBaselineV2 && (
+      <>
       {/* Below-fold proof: dashboard receipts */}
       <section className="mt-20">
         <p className="text-xs uppercase tracking-widest text-coral-600 font-semibold">
@@ -158,6 +184,8 @@ export default async function LandingPage({ params, searchParams }: Props) {
           </Link>
         </div>
       </section>
+      </>
+      )}
     </main>
   );
 }
