@@ -561,12 +561,15 @@ After flipping to `"live"`:
 
 ---
 
-## Open questions / decisions parked
+## Decisions locked (2026-05-18)
 
-1. **Phase 2 testimonial timing.** Do we set a hard date for "real moms onboarded" or let it ride opportunistically? *Recommend:* hard date 2 weeks post-launch with paid acquisition of 5-10 founding moms.
-2. **Animated diagram tool.** Lottie? Framer Motion? React Spring? Pure CSS? *Recommend:* Framer Motion for control + bundle size.
-3. **Brand logo sourcing.** Are we cleared to use the brand logos at the scale needed (30-50)? Most affiliate programs grant logo usage for partners. *Recommend:* legal-skim each brand's terms before launching, but standard affiliate logo usage is broadly OK.
-4. **Real dashboard screenshot freshness.** Screenshots may go stale as dashboard UI evolves. *Recommend:* set up an automated screenshot capture (Playwright) that re-runs weekly and updates `/public/lp-baseline/`.
+1. **Phase 2 testimonial timing → T+14 days.** Begin paid acquisition of 5-10 founding moms now; target real-mom testimonials live in `<SectionSocialProof />` by 2026-06-01. Until then, Phase 1 founder-led copy ships unchanged.
+2. **Animation library → Framer Motion.** Used for all section-level entrance/exit animations and the dub-style transitions in §1 (How it works) and §2 (Affiliate Marketing 101). Lottie reserved for designer-produced animated SVGs if/where Framer Motion alone can't express the design.
+3. **Brand logo sourcing → standard affiliate usage is approved.** If a brand has an affiliate program, we are 100% cleared to use their logo in this context (this is the entire premise of affiliate marketing — they want partners showing their logo to drive traffic). No legal-skim gate required for v1.
+
+## Open questions / decisions still parked
+
+1. **Real dashboard screenshot freshness.** Screenshots may go stale as dashboard UI evolves. *Recommend:* set up an automated screenshot capture (Playwright) that re-runs weekly and updates `/public/lp-baseline/`. Defer until v1 ships.
 
 ---
 
