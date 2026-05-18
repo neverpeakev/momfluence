@@ -34,10 +34,32 @@ CAPI-only events bypass AEM entirely — they're full-fidelity server-side. The 
 
 ## How to update
 
-1. Open https://eventsmanager.facebook.com/events_manager2/list/dataset/1468831514190648/aem
-2. Sign in as an admin of the MomFluence Business Manager.
-3. Drag events to match the order above. Save.
-4. Wait ~24 hours for the new priority to propagate through Meta's pipeline.
+**Current status (2026-05-18):** Meta's UI does NOT expose an explicit AEM priority editor for this dataset at any of these URLs:
+
+- `/events_manager2/list/dataset/{id}/aem` → redirects to `/overview`
+- `/events_manager2/list/dataset/{id}/event_configurations` → redirects to `/overview`
+- `/events_manager2/list/dataset/{id}/settings` → no AEM section visible
+- Side nav under Events Manager → no AEM link
+
+This is **expected** for fresh / low-volume datasets. Meta auto-manages AEM priority based on event volume and conversion-event configuration until you cross a volume threshold (~1K conversions/month typically) AND/OR opt into iOS 14+ campaigns that explicitly require AEM configuration. Our pixel is still in the "auto-handled" tier.
+
+**Meta's default auto-priority for our pixel is** (inferred from how Meta ranks events with no manual override):
+
+1. The single event each campaign optimizes for (currently `Purchase` for the `dr-202605` campaign)
+2. Other Standard conversion events in the order they were registered (Purchase, CompleteRegistration, InitiateCheckout, AddPaymentInfo, etc.)
+3. PageView at the bottom
+
+This roughly matches our recommended order above, so **no manual override needed today**.
+
+**When AEM editor surfaces**, the path will be one of:
+- Events Manager → AEM tab (when it appears in the side nav)
+- Domain-level setup at Business Settings → Brand Safety → Domains → momfluence.app
+- After we cross the volume threshold, Meta auto-prompts to configure AEM
+
+Once available:
+1. Sign in as an admin of MomFluence Business Manager
+2. Drag events to match the order above. Save.
+3. Wait ~24 hours for propagation.
 
 ---
 
