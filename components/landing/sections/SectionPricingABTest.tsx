@@ -1,17 +1,27 @@
 "use client";
 
 /**
- * §7 — Pricing A/B test
+ * §7 — Pricing (Variant C only as of 2026-05-18)
  *
- * Reads the mf_pricing_variant cookie set by <LPBaseline /> server-side
- * and renders either Variant B (risk-reversed) or Variant C (Skool-style
- * exclusive). Both share the same proof structure but differ in framing.
+ * Variant C — Skool-style exclusive — is the only pricing positioning
+ * currently shipped to live traffic. Variant B (risk-reversed $5
+ * credit-back) is INDEFINITELY PARKED until two conditions are met:
  *
- * Variant B terms (credit-back): see app/terms#membership-credit for
- * the operational definition. Subscription remains $5/mo billed monthly;
- * once cumulative earnings hit $25, a $5 credit is applied to the next
- * dashboard balance (not a refund to the original payment method, to
- * keep payment processing simple). All described in the Terms.
+ *   1. Variant C is proven not to work (need volume data first)
+ *   2. Head of compliance has reviewed the Terms #membership-credit
+ *      clause that operationalizes the $5 credit-back
+ *
+ * Decision logged in chat 2026-05-18. The Variant B component is kept
+ * in this file (commented out as dead-code) so re-enabling it later is
+ * a one-line revert when both conditions clear. The B/C cookie + Stripe
+ * metadata wiring stays in place so reactivating B is purely a
+ * front-end render flip.
+ *
+ * Variant B terms (when re-enabled): see app/terms#membership-credit
+ * for the operational definition. Subscription remains $5/mo billed
+ * monthly; once cumulative earnings hit $25, a $5 credit is applied to
+ * the next dashboard balance (not a refund to the original payment
+ * method). All described in the Terms.
  */
 
 import { useEffect, useState } from "react";
@@ -47,27 +57,35 @@ function appendPricingVariant(href: string, variant: PricingVariant): string {
 }
 
 export default function SectionPricingABTest({ signupHref }: Props) {
-  const [variant, setVariant] = useState<PricingVariant | null>(null);
+  const [pricingVariantInitialized, setPricingVariantInitialized] = useState(false);
 
   useEffect(() => {
-    const v = readVariantFromCookie() ?? "B";
-    setVariant(v);
+    // Variant C is the only positioning currently in production.
+    // We still read the cookie (or fall back to "C") so the same
+    // pricing_variant tag lands in Stripe metadata — that keeps the
+    // Funnel Lab admin rollup consistent and lets us reactivate the
+    // A/B later without changing the data shape.
+    const v = readVariantFromCookie() ?? "C";
     fireLPPricingAssigned(v);
+    setPricingVariantInitialized(true);
   }, []);
 
-  // SSR-safe placeholder until cookie reads on hydration.
-  if (!variant) {
+  // SSR-safe placeholder until effect runs.
+  if (!pricingVariantInitialized) {
     return (
       <section className="mt-24" id="pricing">
-        <div className="rounded-3xl bg-white p-8 ring-2 ring-coral-200 sm:p-10">
+        <div className="rounded-3xl bg-white p-8 ring-2 ring-navy-300 sm:p-10">
           <div className="h-32 animate-pulse rounded-xl bg-navy-50" />
         </div>
       </section>
     );
   }
 
-  const href = appendPricingVariant(signupHref, variant);
-  return variant === "B" ? <VariantB signupHref={href} /> : <VariantC signupHref={href} />;
+  // Always Variant C until Variant B is re-enabled — see file header.
+  // The signup link always carries pricing_variant=C so Stripe metadata
+  // stays accurate.
+  const href = appendPricingVariant(signupHref, "C");
+  return <VariantC signupHref={href} />;
 }
 
 /* ──────────────────────────────────────────────────────────────────────── */
