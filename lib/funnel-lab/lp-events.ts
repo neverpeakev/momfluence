@@ -25,8 +25,10 @@ export const LP_SECTION_EVENTS = {
   HowItWorks: "LP_Section_View_HowItWorks",
   Education: "LP_Section_View_Education",
   ShareChannels: "LP_Section_View_ShareChannels",
+  EarningsCalc: "LP_Section_View_EarningsCalc",
   DashboardTour: "LP_Section_View_DashboardTour",
   BrandWall: "LP_Section_View_BrandWall",
+  Comparison: "LP_Section_View_Comparison",
   SocialProof: "LP_Section_View_SocialProof",
   Pricing: "LP_Section_View_Pricing",
   FAQ: "LP_Section_View_FAQ",
@@ -42,6 +44,7 @@ export const LP_INTERACTION_EVENTS = {
   ShareChannelClicked: "LP_ShareChannel_Clicked",
   DashboardScreenshotViewed: "LP_DashboardScreenshot_Viewed",
   BrandPayoutExampleClicked: "LP_Brand_PayoutExample_Clicked",
+  EarningsCalcEngaged: "LP_EarningsCalc_Engaged",
   FAQOpened: "LP_FAQ_Opened",
   VideoTestimonialPlayed: "LP_VideoTestimonial_Played",
   ClosingCTAClicked: "LP_ClosingCTA_Clicked",
@@ -78,6 +81,21 @@ export function fireLPPricingCTAClicked(variant: PricingVariant): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fireMetaEvent(LP_INTERACTION_EVENTS.PricingCTAClicked as any, {
     pricing_variant: variant,
+  });
+}
+
+/**
+ * Fire on the user's first interaction with the §3.5 earnings calculator
+ * (slider drag). Strong mid-funnel intent — they're actively quantifying
+ * the offer. Carries the values at the time of first engagement so Meta
+ * sees the rough size of the user's mental wager.
+ */
+export function fireLPEarningsCalcEngaged(friends: number, perFriend: number): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  fireMetaEvent(LP_INTERACTION_EVENTS.EarningsCalcEngaged as any, {
+    calc_friends: friends,
+    calc_per_friend: perFriend,
+    calc_monthly: friends * perFriend,
   });
 }
 

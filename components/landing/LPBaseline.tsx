@@ -29,8 +29,10 @@ import { LP_SECTION_EVENTS } from "@/lib/funnel-lab/lp-events";
 import SectionHowItWorks from "./sections/SectionHowItWorks";
 import SectionAffiliateMarketing101 from "./sections/SectionAffiliateMarketing101";
 import SectionMyriadWaysToShare from "./sections/SectionMyriadWaysToShare";
+import SectionEarningsCalculator from "./sections/SectionEarningsCalculator";
 import SectionDashboardTour from "./sections/SectionDashboardTour";
 import SectionBrandWall from "./sections/SectionBrandWall";
+import SectionComparison from "./sections/SectionComparison";
 import SectionSocialProof from "./sections/SectionSocialProof";
 import SectionPricingABTest from "./sections/SectionPricingABTest";
 import SectionFAQ from "./sections/SectionFAQ";
@@ -69,12 +71,20 @@ export default async function LPBaseline({ signupHref, closer }: Props) {
         <SectionMyriadWaysToShare />
       </LPSectionTracker>
 
+      <LPSectionTracker event={LP_SECTION_EVENTS.EarningsCalc}>
+        <SectionEarningsCalculator />
+      </LPSectionTracker>
+
       <LPSectionTracker event={LP_SECTION_EVENTS.DashboardTour}>
         <SectionDashboardTour />
       </LPSectionTracker>
 
       <LPSectionTracker event={LP_SECTION_EVENTS.BrandWall}>
         <SectionBrandWall />
+      </LPSectionTracker>
+
+      <LPSectionTracker event={LP_SECTION_EVENTS.Comparison}>
+        <SectionComparison />
       </LPSectionTracker>
 
       <LPSectionTracker event={LP_SECTION_EVENTS.SocialProof}>
