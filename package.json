@@ -17,6 +17,7 @@
     "@sparticuz/chromium": "^138.0.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.4",
+    "framer-motion": "^12.39.0",
     "next": "^15.1.0",
     "puppeteer-core": "^23.10.0",
     "react": "^19.0.0",

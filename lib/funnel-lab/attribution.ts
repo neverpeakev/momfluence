@@ -24,6 +24,14 @@ export interface Attribution {
   variant?: string;
   creative?: string;
   firstSeen?: string;
+  /**
+   * LP baseline pricing A/B variant ("B" risk-reversed or "C" exclusive).
+   * Carried into Stripe metadata so /admin/funnel-lab can break conversions
+   * down by variant × creative × pricing. See:
+   *   docs/planning/lp-baseline-upgrade.md §7
+   *   components/landing/sections/SectionPricingABTest.tsx
+   */
+  pricingVariant?: "B" | "C";
 }
 
 /**
@@ -46,9 +54,14 @@ export function parseAttributionFromQuery(
     return (query as Record<string, string | undefined>)[key];
   };
 
+  const rawPricing = get("pricing_variant");
+  const pricingVariant: "B" | "C" | undefined =
+    rawPricing === "B" || rawPricing === "C" ? rawPricing : undefined;
+
   return {
     variant: sanitize(get("lp")),
     creative: sanitize(get("c") ?? get("creative")),
+    pricingVariant,
   };
 }
 
@@ -78,6 +91,9 @@ export function readAttributionFromCookies(): Attribution {
 
 /**
  * Write attribution cookies in the browser. No-op on the server.
+ * Note: the pricing-variant cookie (mf_pricing_variant) is set server-side
+ * by <LPBaseline /> with a 90-day max-age and is intentionally NOT
+ * managed here so the two systems remain decoupled.
  */
 export function writeAttributionToCookies(a: Attribution): void {
   if (typeof document === "undefined") return;
@@ -98,5 +114,6 @@ export function toStripeMetadata(a: Attribution): Record<string, string> {
   if (a.variant) out.lp_variant = a.variant;
   if (a.creative) out.creative_id = a.creative;
   if (a.firstSeen) out.lp_first_seen = a.firstSeen;
+  if (a.pricingVariant) out.pricing_variant = a.pricingVariant;
   return out;
 }

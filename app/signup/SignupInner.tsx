@@ -23,17 +23,32 @@ export default function SignupInner() {
   const [attr, setAttr] = useState<Attribution>({});
 
   // On mount: merge URL params with cookie, persist the merge so checkout API picks it up.
+  // pricing_variant is set server-side in <LPBaseline /> as mf_pricing_variant
+  // cookie (90-day max-age) — we read it here directly off document.cookie
+  // since it's NOT part of the mf_lp/mf_creative attribution cookies.
   useEffect(() => {
     const fromUrl = parseAttributionFromQuery(sp);
     const fromCookie = readAttributionFromCookies();
+    const pricingFromCookie = readPricingVariantCookie();
     const merged: Attribution = {
       variant: fromUrl.variant ?? fromCookie.variant,
       creative: fromUrl.creative ?? fromCookie.creative,
       firstSeen: fromCookie.firstSeen ?? new Date().toISOString(),
+      pricingVariant: fromUrl.pricingVariant ?? pricingFromCookie ?? undefined,
     };
     writeAttributionToCookies(merged);
     setAttr(merged);
   }, [sp]);
+
+  function readPricingVariantCookie(): "B" | "C" | null {
+    if (typeof document === "undefined") return null;
+    const match = document.cookie
+      .split("; ")
+      .find((c) => c.startsWith("mf_pricing_variant="));
+    if (!match) return null;
+    const raw = decodeURIComponent(match.split("=")[1] ?? "");
+    return raw === "B" || raw === "C" ? raw : null;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

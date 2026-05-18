@@ -16,6 +16,18 @@ interface VariantRollup {
   byCreative: Map<string, { signups: number; active: number; revenueUsd: number }>;
 }
 
+/**
+ * Cross-variant breakdown by pricing_variant (LP baseline §7 A/B test).
+ * Tracks signups/active/MRR for variant B (risk-reversed) vs C (exclusive)
+ * across ALL lp_variants combined — the cleanest read on whether the
+ * pricing positioning itself moves the needle.
+ */
+interface PricingRollup {
+  B: { signups: number; active: number; revenueUsd: number };
+  C: { signups: number; active: number; revenueUsd: number };
+  unassigned: { signups: number; active: number; revenueUsd: number };
+}
+
 /** Metadata for a creative_id, fetched from the `creatives` table populated
  *  by /api/funnel-lab/creatives (design-system exporter pushes here). */
 interface CreativeMeta {
@@ -46,12 +58,20 @@ async function fetchCreativeMeta(): Promise<Map<string, CreativeMeta>> {
   return map;
 }
 
-async function fetchStripeRollup(): Promise<Map<string, VariantRollup> | { error: string }> {
+async function fetchStripeRollup(): Promise<
+  | { variants: Map<string, VariantRollup>; pricing: PricingRollup }
+  | { error: string }
+> {
   const secret = process.env.STRIPE_SECRET_KEY;
   if (!secret) return { error: "STRIPE_SECRET_KEY missing — set in Vercel env to enable rollups." };
 
   const stripe = new Stripe(secret.trim(), { maxNetworkRetries: 1, timeout: 15000 });
   const out = new Map<string, VariantRollup>();
+  const pricing: PricingRollup = {
+    B: { signups: 0, active: 0, revenueUsd: 0 },
+    C: { signups: 0, active: 0, revenueUsd: 0 },
+    unassigned: { signups: 0, active: 0, revenueUsd: 0 },
+  };
 
   // Stripe API: subscriptions list, expand customers. We page through up to 5 batches
   // of 100 = 500 most-recent subs. v1 of the lab — when this caps, we add a cursor.
@@ -92,6 +112,20 @@ async function fetchStripeRollup(): Promise<Map<string, VariantRollup> | { error
         bucket.byCreative.set(creative, cv);
 
         out.set(variant, bucket);
+
+        // Pricing-variant cross-cut (LP baseline §7 A/B).
+        const pricingVariant = sub.metadata?.pricing_variant;
+        const pricingBucket =
+          pricingVariant === "B"
+            ? pricing.B
+            : pricingVariant === "C"
+            ? pricing.C
+            : pricing.unassigned;
+        pricingBucket.signups += 1;
+        if (isActive) {
+          pricingBucket.active += 1;
+          pricingBucket.revenueUsd += PRICE_USD_PER_MEMBERSHIP;
+        }
       }
 
       if (!batch.has_more) break;
@@ -103,7 +137,7 @@ async function fetchStripeRollup(): Promise<Map<string, VariantRollup> | { error
     return { error: `Stripe query failed: ${message}` };
   }
 
-  return out;
+  return { variants: out, pricing };
 }
 
 export default async function FunnelLabPage() {
@@ -131,8 +165,16 @@ export default async function FunnelLabPage() {
     fetchStripeRollup(),
     fetchCreativeMeta(),
   ]);
-  const errorMsg = !(rollup instanceof Map) ? rollup.error : null;
-  const data = rollup instanceof Map ? rollup : new Map<string, VariantRollup>();
+  const errorMsg = "error" in rollup ? rollup.error : null;
+  const data = "variants" in rollup ? rollup.variants : new Map<string, VariantRollup>();
+  const pricing: PricingRollup =
+    "pricing" in rollup
+      ? rollup.pricing
+      : {
+          B: { signups: 0, active: 0, revenueUsd: 0 },
+          C: { signups: 0, active: 0, revenueUsd: 0 },
+          unassigned: { signups: 0, active: 0, revenueUsd: 0 },
+        };
 
   // Aggregate totals across variants
   let totalSignups = 0;
@@ -256,6 +298,51 @@ export default async function FunnelLabPage() {
         </table>
       </div>
 
+      {/* Pricing A/B test rollup — cross-cut by variant B vs C across all
+          LP variants. From the LP baseline §7 spec. Shows whether the
+          pricing positioning itself moves the needle independent of which
+          LP variant the user landed on. */}
+      <div className="rounded-2xl bg-white p-5 ring-1 ring-navy-100">
+        <div className="flex items-baseline justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-navy-900">
+              Pricing A/B test (LP baseline §7)
+            </h2>
+            <p className="mt-1 text-xs text-navy-500">
+              Cross-cut across all LP variants. Carries{" "}
+              <span className="font-mono">pricing_variant</span> in Stripe metadata.
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <PricingTile
+            label="Variant B — Risk-reversed"
+            tag="$5 credited after first $25"
+            stats={pricing.B}
+            color="coral"
+          />
+          <PricingTile
+            label="Variant C — Exclusive"
+            tag="$5 for the door, not the deal"
+            stats={pricing.C}
+            color="navy"
+          />
+          <PricingTile
+            label="Pre-baseline (unassigned)"
+            tag="signed up before §7 went live"
+            stats={pricing.unassigned}
+            color="muted"
+          />
+        </div>
+        {pricing.B.signups + pricing.C.signups === 0 && (
+          <p className="mt-3 text-xs italic text-navy-500">
+            No pricing-tagged signups yet. The A/B test starts collecting data
+            once §7 ships with{" "}
+            <span className="font-mono">NEXT_PUBLIC_LP_BASELINE_V2=live</span>.
+          </p>
+        )}
+      </div>
+
       {/* Creatives library — all PNGs pushed via /api/funnel-lab/creatives,
           grouped by section. Unassigned creatives (lp_variant=null) live
           here until manually assigned to a variant. */}
@@ -369,6 +456,47 @@ function StatTile({ label, value }: { label: string; value: string }) {
     <div className="rounded-2xl bg-white p-5 ring-1 ring-navy-100">
       <p className="text-[10px] uppercase tracking-widest text-navy-500">{label}</p>
       <p className="mt-1 font-display text-3xl font-bold text-navy-900">{value}</p>
+    </div>
+  );
+}
+
+function PricingTile({
+  label,
+  tag,
+  stats,
+  color,
+}: {
+  label: string;
+  tag: string;
+  stats: { signups: number; active: number; revenueUsd: number };
+  color: "coral" | "navy" | "muted";
+}) {
+  const ring =
+    color === "coral"
+      ? "ring-coral-200 bg-coral-50"
+      : color === "navy"
+      ? "ring-navy-300 bg-navy-50"
+      : "ring-navy-100 bg-white";
+  const labelColor =
+    color === "coral" ? "text-coral-700" : color === "navy" ? "text-navy-700" : "text-navy-500";
+  return (
+    <div className={`rounded-xl p-4 ring-1 ${ring}`}>
+      <p className={`text-xs font-semibold uppercase tracking-widest ${labelColor}`}>{label}</p>
+      <p className="mt-1 text-[10px] italic text-navy-500">{tag}</p>
+      <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+        <div>
+          <p className="text-[9px] uppercase tracking-widest text-navy-500">Signups</p>
+          <p className="font-mono text-lg text-navy-900">{stats.signups}</p>
+        </div>
+        <div>
+          <p className="text-[9px] uppercase tracking-widest text-navy-500">Active</p>
+          <p className="font-mono text-lg text-emerald-700">{stats.active}</p>
+        </div>
+        <div>
+          <p className="text-[9px] uppercase tracking-widest text-navy-500">MRR</p>
+          <p className="font-mono text-lg text-navy-900">${stats.revenueUsd.toFixed(0)}</p>
+        </div>
+      </div>
     </div>
   );
 }
