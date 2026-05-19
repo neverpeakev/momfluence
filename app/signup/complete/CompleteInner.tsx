@@ -59,26 +59,30 @@ export default function CompleteInner() {
       }
 
       // 2. Check if this momfluencer already has an active membership.
-      //    The momfluencers table has the user's Stripe state; if their
+      //    The momfluencers table has the user's membership state; if their
       //    subscription is already active, send them to dashboard so we
       //    don't open a second checkout session.
+      //
+      //    The Stripe webhook sets membership_status = 'active' on
+      //    checkout.session.completed and 'inactive' on cancellation
+      //    (see app/api/stripe/webhook/route.ts). There's no separate
+      //    'trialing' state in this column today — Stripe trial subs
+      //    still map to 'active' here since the underlying subscription
+      //    is in good standing.
       try {
         const { data: m } = await supabase
           .from("momfluencers")
-          .select("stripe_subscription_status")
+          .select("membership_status")
           .eq("id", user.id)
           .maybeSingle();
-        if (
-          m?.stripe_subscription_status === "active" ||
-          m?.stripe_subscription_status === "trialing"
-        ) {
+        if (m?.membership_status === "active") {
           window.location.replace("/dashboard");
           return;
         }
       } catch {
-        // If the read fails (column doesn't exist yet, RLS denial, etc.),
-        // err on the side of starting checkout — worst case the Stripe
-        // webhook + dashboard gate catch the duplicate.
+        // If the read fails (RLS denial, network blip, etc.), err on the
+        // side of starting checkout — worst case the Stripe webhook +
+        // dashboard gate catch the duplicate.
       }
 
       // 3. Fire Meta SignupStarted + start Stripe checkout. Same shape
