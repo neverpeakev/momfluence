@@ -7,22 +7,23 @@ import HeroSocialProof from "@/components/landing/HeroSocialProof";
 
 export default function PublicLanding() {
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16">
+    <main className="mx-auto max-w-3xl px-6 pt-6 pb-16 sm:pt-10 lg:pt-16">
       <HomepageTracker />
       <p className="text-sm uppercase tracking-widest text-coral-600 font-semibold">
         the simplest side income on the internet
       </p>
-      <h1 className="mt-3 text-5xl text-navy-900">
+      <h1 className="mt-2 text-3xl sm:mt-3 sm:text-4xl lg:text-5xl text-navy-900">
         Make money from your phone.
         <br />
         Without becoming an influencer.
       </h1>
-      <p className="mt-6 text-lg text-navy-600">
+      <p className="mt-3 text-base sm:mt-4 sm:text-lg text-navy-600">
         Pick a brand. Share a link. Get paid every time someone signs up or buys.
-        <br />
+        <br className="hidden sm:block" />
+        <span className="sm:hidden"> </span>
         No followers. No camera. No experience. $5/month — cancel anytime.
       </p>
-      <div className="mt-10 flex flex-wrap gap-4">
+      <div className="mt-5 flex flex-wrap gap-3 sm:mt-7 sm:gap-4 lg:mt-10">
         <Link href="/signup?lp=home" className="btn-primary no-underline">
           Join for $5/mo → start earning
         </Link>
