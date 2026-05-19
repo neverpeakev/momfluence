@@ -25,11 +25,13 @@ import EarningsDisclaimerInline from "@/components/landing/EarningsDisclaimerInl
 function BrandMarkChip({
   slug,
   brand,
+  hasLogo = false,
   size = 32,
   fontSize = 11,
 }: {
   slug: string;
   brand: string;
+  hasLogo?: boolean;
   size?: number;
   fontSize?: number;
 }) {
@@ -47,7 +49,30 @@ function BrandMarkChip({
         lineHeight: 1,
       }}
     >
-      {m.mark}
+      {hasLogo ? (
+        // SVG mask: the chip's foreground color fills a div whose shape is the
+        // brand's SVG. Gives a "white logo on brand-colored coin" feel that
+        // stays visually unified with the letter-chip fallback brands.
+        <span
+          aria-hidden="true"
+          style={{
+            display: "block",
+            width: Math.round(size * 0.55),
+            height: Math.round(size * 0.55),
+            background: m.fg,
+            WebkitMaskImage: `url(/lp-baseline/logos/${slug}.svg)`,
+            WebkitMaskRepeat: "no-repeat",
+            WebkitMaskPosition: "center",
+            WebkitMaskSize: "contain",
+            maskImage: `url(/lp-baseline/logos/${slug}.svg)`,
+            maskRepeat: "no-repeat",
+            maskPosition: "center",
+            maskSize: "contain",
+          }}
+        />
+      ) : (
+        m.mark
+      )}
     </span>
   );
 }
@@ -55,7 +80,7 @@ function BrandMarkChip({
 function BrandCard({ brand }: { brand: BrandWallBrand }) {
   return (
     <div className="flex aspect-[3/2] flex-col items-center justify-center rounded-xl bg-white p-3 ring-1 ring-navy-100 transition-shadow hover:ring-coral-200">
-      <BrandMarkChip slug={brand.slug} brand={brand.brand} />
+      <BrandMarkChip slug={brand.slug} brand={brand.brand} hasLogo={brand.hasLogo} />
       <p className="mt-2 text-center text-[11px] font-semibold leading-tight text-navy-800">
         {brand.brand}
       </p>
@@ -70,7 +95,7 @@ function HighlightCard({ brand }: { brand: BrandWallBrand }) {
         <p className="text-xs font-semibold uppercase tracking-widest text-coral-600">
           {VERTICALS.find((v) => v.slug === brand.vertical)?.label ?? brand.vertical}
         </p>
-        <BrandMarkChip slug={brand.slug} brand={brand.brand} size={36} fontSize={13} />
+        <BrandMarkChip slug={brand.slug} brand={brand.brand} hasLogo={brand.hasLogo} size={36} fontSize={13} />
       </div>
       <p className="mt-2 text-xl font-semibold text-navy-900">{brand.brand}</p>
       <p className="mt-2 text-base font-semibold text-coral-700">{payoutLabel(brand)}</p>
