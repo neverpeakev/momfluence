@@ -71,9 +71,15 @@ const REQUIRED_ENV = [
 export async function GET(request: Request): Promise<NextResponse> {
   const started = Date.now();
 
-  // Verify the cron header so randoms on the internet can't ping this route.
-  // Vercel-fired crons always send x-vercel-cron: 1.
-  const isCron = request.headers.get("x-vercel-cron") === "1";
+  // Vercel-fired crons send "Authorization: Bearer ${CRON_SECRET}" — same
+  // pattern as /api/optimizer/tick. Manual admin-triggered runs can use
+  // x-admin-key instead.
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = request.headers.get("authorization") ?? "";
+  const isCron =
+    cronSecret !== undefined &&
+    cronSecret.length > 0 &&
+    authHeader === `Bearer ${cronSecret.trim()}`;
   const adminKeyHeader = request.headers.get("x-admin-key") ?? "";
   const adminKeyEnv = process.env.INBOX_AGENT_ADMIN_KEY ?? "";
   const isAdmin =
