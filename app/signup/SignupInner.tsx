@@ -15,6 +15,7 @@ import {
   writeAttributionToCookies,
   type Attribution,
 } from "@/lib/funnel-lab/attribution";
+import ContinueWithGoogleButton from "@/components/auth/ContinueWithGoogleButton";
 
 export default function SignupInner() {
   const sp = useSearchParams();
@@ -142,7 +143,18 @@ export default function SignupInner() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+      <ContinueWithGoogleButton
+        redirectTo="/dashboard"
+        label="Sign up with Google"
+        className="mt-8"
+      />
+      <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-navy-400">
+        <span className="h-px flex-1 bg-navy-100" />
+        <span>or use email</span>
+        <span className="h-px flex-1 bg-navy-100" />
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="label" htmlFor="email">Email</label>
           <input
