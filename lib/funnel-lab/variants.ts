@@ -77,7 +77,7 @@ export const VARIANTS = [
       eyebrow: "no followers needed",
       headline: "Your group chat is a goldmine.",
       subhead: "You're not an influencer. You're a mom with friends who actually listen. Real brands will pay you 20–60% when those friends sign up through your link — every month, for as long as they stay.",
-      ctaPrimary: "Get paid — $5/mo to start",
+      ctaPrimary: "Cash in on the chat → $5/mo to join",
       ctaSecondary: "How it works →",
     },
     closer: {
@@ -99,7 +99,7 @@ export const VARIANTS = [
       eyebrow: "did you know?",
       headline: "Moms are getting paid\ncelebrity-tier money\nto recommend things online now.",
       subhead: "Not polished influencers with millions of followers — actual regular moms with regular group chats. Big brands are paying real money for real recommendations. $5/mo to access.",
-      ctaPrimary: "Find out more — $5/mo",
+      ctaPrimary: "Join for $5/mo → start earning",
       ctaSecondary: "Show me how →",
     },
     closer: {
@@ -121,7 +121,7 @@ export const VARIANTS = [
       eyebrow: "yes, you",
       headline: "That recommendation\nin your group chat last week?",
       subhead: "You could've gotten paid for it. You don't need to have millions of followers or be a celebrity to get paid like one. Brands are starting to pay regular moms big bucks to share their products and services online.",
-      ctaPrimary: "Find out more — $5/mo",
+      ctaPrimary: "Get paid next time → $5/mo to join",
       ctaSecondary: "See how it works →",
     },
     closer: {
@@ -143,7 +143,7 @@ export const VARIANTS = [
       eyebrow: "now with a paycheck",
       headline: "You already recommend things\nto your friends every week.",
       subhead: "Now you can get paid for it. No celebrity status or million followers needed. Regular moms making real money for the same stuff they're already sharing.",
-      ctaPrimary: "Find out more — $5/mo",
+      ctaPrimary: "Now get paid for it → $5/mo",
       ctaSecondary: "How much can I make? →",
     },
     closer: {
@@ -165,7 +165,7 @@ export const VARIANTS = [
       eyebrow: "let AI do the writing",
       headline: "Brands are paying regular moms now.\nChatGPT writes the post.",
       subhead: "Pick a brand. We hand you the exact ChatGPT prompt. Six seconds later you've got a Pinterest pin, a Reddit post, or a group-chat-ready recommendation. No million followers needed, no celebrity status.",
-      ctaPrimary: "Find out more — $5/mo",
+      ctaPrimary: "Get the AI prompts → $5/mo",
       ctaSecondary: "See the prompts →",
     },
     closer: {
@@ -187,7 +187,7 @@ export const VARIANTS = [
       eyebrow: "sephora · hulu · target · hbo · walmart · disney+",
       headline: "These brands are paying\nregular moms now.",
       subhead: "Sephora. Hulu. Target. HBO. Walmart. Disney+. They're all paying regular moms now to share their products and services. No million followers required, no celebrity status — just real recommendations from real moms.",
-      ctaPrimary: "Find out more — $5/mo",
+      ctaPrimary: "Get my 50+ brand links → $5/mo",
       ctaSecondary: "See all 50+ brands →",
     },
     closer: {
@@ -209,8 +209,8 @@ export const VARIANTS = [
       eyebrow: "the new economy",
       headline: "Move over skinny\nunrelatable influencers.",
       subhead: "Brands have moved on — they're paying regular moms big bucks now for the same recommendations they used to only pay celebrities for. Real moms. Real money.",
-      ctaPrimary: "Find out more — $5/mo",
-      ctaSecondary: "Get your cut →",
+      ctaPrimary: "Get your cut → $5/mo to join",
+      ctaSecondary: "How it works →",
     },
     closer: {
       headline: "Real moms. Real money. Real easy.",
@@ -231,7 +231,7 @@ export const VARIANTS = [
       eyebrow: "day-one fast-track payout",
       headline: "$5 in.\n$25 out.\nDay one.",
       subhead: "Brands are paying real money for real recommendations from regular moms now. Pay $5 to access. Hit $25 in payouts → cash out same day. Most moms hit it inside a week. No million followers needed.",
-      ctaPrimary: "Find out more — $5/mo",
+      ctaPrimary: "$5 in → $25 out day one",
       ctaSecondary: "How fast really? →",
     },
     closer: {
@@ -253,7 +253,7 @@ export const VARIANTS = [
       eyebrow: "real mom. real dashboard. real venmo.",
       headline: "$720.40 last week.\nFrom 4 group-chat texts.",
       subhead: "A real first-month member's dashboard. 68 clicks. 12 sign-ups. $720.40 in her bank account by Friday. Brands are paying real money for real recommendations — no million followers required, no celebrity status.",
-      ctaPrimary: "Find out more — $5/mo",
+      ctaPrimary: "Start my own receipts → $5/mo",
       ctaSecondary: "Show me more receipts →",
     },
     closer: {
@@ -275,7 +275,7 @@ export const VARIANTS = [
       eyebrow: "you don't need a face, a following, or a niche",
       headline: "Start a faceless content brand.\nWe pay you for the clicks.",
       subhead: "Open a faceless TikTok or Pinterest. Use AI to make posts about the brands you love. Drop your tracked link in the bio. We pay you every time someone signs up — month after month, for as long as they stay.",
-      ctaPrimary: "Start my faceless brand — $5/mo",
+      ctaPrimary: "Start my faceless brand → $5/mo",
       ctaSecondary: "See how others do it →",
     },
     closer: {
