@@ -7,6 +7,7 @@ import BrandRibbon from "@/components/landing/BrandRibbon";
 import DashboardPreview from "@/components/landing/DashboardPreview";
 import LPVisitTracker from "@/components/landing/LPVisitTracker";
 import LPBaseline from "@/components/landing/LPBaseline";
+import HeroSocialProof from "@/components/landing/HeroSocialProof";
 
 /**
  * Feature flag for the new dub.co-inspired LP baseline. Values:
@@ -78,6 +79,8 @@ export default async function LandingPage({ params, searchParams }: Props) {
           {v.hero.ctaSecondary}
         </Link>
       </div>
+
+      <HeroSocialProof />
 
       <BrandRibbon />
 
