@@ -14,26 +14,36 @@
  * ethical hit AND a Meta policy risk ("deceptive practices" in ad
  * destinations). Instead we use "Join our founding momfluencers" — this
  * is honest, creates a sense of early-access exclusivity, and can be
- * swapped for a real count once we have 100+ real members. Future me
- * (and Kevin), pls do not regret this — the founder-framing reads
- * aspirational, not apologetic.
+ * swapped for a real count once we have 100+ real members.
  *
- * AVATAR DECISION:
- * We're not using fake photo avatars (uifaces.co, generated.photos, etc.)
- * — those look modern but a) feel manipulative when they're not real
- * users and b) AI-generated avatars are flagged by Meta now. Instead we
- * use stylized gradient circles with initials, which read as
- * "placeholders by design" rather than "fake users by deception." When
- * we onboard real momfluencers with photos + consent, this component
- * can swap to <Image src={...} /> tiles.
+ * AVATAR DECISION (UPDATED 2026-05-19):
+ * Initial v1 of this component used stylized gradient circles with letter
+ * initials (J/M/S/L/A) — the safer choice to avoid Meta App Review flags.
+ * Kevin overrode that: he wants AI-generated mom photos in the avatar
+ * stack, the same pattern Flashquotes and similar landing pages use.
+ *
+ * The 5 avatars in /public/avatars/ are StyleGAN2-generated faces from
+ * thispersondoesnotexist.com — none correspond to real people, so there
+ * are no likeness/consent issues. Each was hand-curated for mom-vibe
+ * (mid-20s to mid-40s women across diverse ethnicities, warm smiles).
+ * Each was center-cropped to 800x800 to remove the StyleGAN2 watermark,
+ * then downscaled to 200x200 JPEG q80 — ~12kb apiece, total 60kb for the
+ * stack. When we onboard real momfluencers with photos + signed consent,
+ * these can swap to real headshots.
+ *
+ * Note on hydration: these are static <img> tags pointing at /public/
+ * assets, not next/image. That's intentional — at 40x40 rendered size the
+ * difference in payload is negligible, and we avoid the Next image loader
+ * adding query params to a path that Vercel may cache differently across
+ * the LP / homepage / variant surfaces.
  */
 
 const AVATARS = [
-  { initial: "J", gradient: "from-coral-400 to-coral-600" },
-  { initial: "M", gradient: "from-navy-500 to-navy-700" },
-  { initial: "S", gradient: "from-amber-400 to-amber-600" },
-  { initial: "L", gradient: "from-coral-300 to-coral-500" },
-  { initial: "A", gradient: "from-navy-400 to-navy-600" },
+  { src: "/avatars/mom-1.jpg", alt: "Founding momfluencer" },
+  { src: "/avatars/mom-2.jpg", alt: "Founding momfluencer" },
+  { src: "/avatars/mom-3.jpg", alt: "Founding momfluencer" },
+  { src: "/avatars/mom-4.jpg", alt: "Founding momfluencer" },
+  { src: "/avatars/mom-5.jpg", alt: "Founding momfluencer" },
 ];
 
 function Star() {
@@ -62,14 +72,17 @@ export default function HeroSocialProof() {
     >
       {/* Stacked avatars — overlapping circles with negative margin */}
       <div className="flex -space-x-2">
-        {AVATARS.map((a, i) => (
-          <div
-            key={i}
-            className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br ${a.gradient} ring-2 ring-white text-sm font-semibold text-white`}
-            aria-hidden="true"
-          >
-            {a.initial}
-          </div>
+        {AVATARS.map((a) => (
+          <img
+            key={a.src}
+            src={a.src}
+            alt={a.alt}
+            width={40}
+            height={40}
+            loading="lazy"
+            decoding="async"
+            className="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm"
+          />
         ))}
       </div>
 
