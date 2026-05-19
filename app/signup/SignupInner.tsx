@@ -145,12 +145,12 @@ export default function SignupInner() {
       </div>
 
       <ContinueWithGoogleButton
-        redirectTo="/dashboard"
+        redirectTo="/signup/complete"
         label="Sign up with Google"
         className="mt-8"
       />
       <ContinueWithFacebookButton
-        redirectTo="/dashboard"
+        redirectTo="/signup/complete"
         label="Sign up with Facebook"
         className="mt-3"
       />
