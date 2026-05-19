@@ -29,6 +29,10 @@ export interface BrandWallBrand {
   payoutDollars: number | null;
   /** True if this brand gets a payout-example callout card. */
   highlight?: boolean;
+  /** True if /public/lp-baseline/logos/<slug>.svg exists. When true the
+   *  BrandMarkChip mask-renders the SVG in the chip's foreground color
+   *  instead of showing the BRAND_MARKS letter fallback. */
+  hasLogo?: boolean;
 }
 
 /**
@@ -92,14 +96,14 @@ export const VERTICALS = [
 
 export const BRANDS: ReadonlyArray<BrandWallBrand> = [
   // Streaming
-  { brand: "Hulu", slug: "hulu", vertical: "streaming", payoutType: "cpa", payoutDollars: 1.6 },
-  { brand: "Paramount+", slug: "paramount", vertical: "streaming", payoutType: "cpa", payoutDollars: 7.2, highlight: true },
+  { brand: "Hulu", slug: "hulu", vertical: "streaming", payoutType: "cpa", payoutDollars: 1.6, hasLogo: true },
+  { brand: "Paramount+", slug: "paramount", vertical: "streaming", payoutType: "cpa", payoutDollars: 7.2, highlight: true, hasLogo: true },
 
   // Beauty
   { brand: "Geologie", slug: "geologie", vertical: "beauty", payoutType: "cpa", payoutDollars: 10 },
 
   // Savings apps
-  { brand: "Klarna", slug: "klarna", vertical: "savings-apps", payoutType: "cpa", payoutDollars: 35, highlight: true },
+  { brand: "Klarna", slug: "klarna", vertical: "savings-apps", payoutType: "cpa", payoutDollars: 35, highlight: true, hasLogo: true },
   { brand: "Gizmogo", slug: "gizmogo", vertical: "savings-apps", payoutType: "cpa", payoutDollars: 5 },
   { brand: "Rita.ai", slug: "rita", vertical: "savings-apps", payoutType: "rev_share", payoutDollars: null },
 
@@ -108,14 +112,14 @@ export const BRANDS: ReadonlyArray<BrandWallBrand> = [
   { brand: "Meow Mobile", slug: "meowmobile", vertical: "pet-food", payoutType: "cpa", payoutDollars: 25 },
 
   // Creator tools
-  { brand: "Shopify", slug: "shopify", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 50, highlight: true },
+  { brand: "Shopify", slug: "shopify", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 50, highlight: true, hasLogo: true },
   { brand: "Base44", slug: "base44", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 50, highlight: true },
-  { brand: "TikTok", slug: "tiktok", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 10 },
+  { brand: "TikTok", slug: "tiktok", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 10, hasLogo: true },
   { brand: "CapCut", slug: "capcut", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
   { brand: "Riverside", slug: "riverside", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
   { brand: "InVideo", slug: "invideo", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
-  { brand: "Namecheap", slug: "namecheap", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 10 },
-  { brand: "Hostinger", slug: "hostinger", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
+  { brand: "Namecheap", slug: "namecheap", vertical: "creator-tools", payoutType: "cpa", payoutDollars: 10, hasLogo: true },
+  { brand: "Hostinger", slug: "hostinger", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null, hasLogo: true },
   { brand: "SSLs.com", slug: "ssls", vertical: "creator-tools", payoutType: "rev_share", payoutDollars: null },
 
   // Family safety

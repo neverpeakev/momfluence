@@ -24,6 +24,7 @@
  */
 
 import LPSectionTracker from "./LPSectionTracker";
+import MidPageCTA from "./MidPageCTA";
 import { LP_SECTION_EVENTS } from "@/lib/funnel-lab/lp-events";
 
 import SectionHowItWorks from "./sections/SectionHowItWorks";
@@ -57,6 +58,13 @@ export default async function LPBaseline({ signupHref, closer }: Props) {
   // "C" (Variant B parked — see SectionPricingABTest.tsx header).
   // This component is purely a read-through; nothing to do here.
 
+  // Mid-page CTAs and Closing CTA all point at /signup with pricing_variant=C
+  // appended so Stripe metadata stays accurate even before SectionPricingABTest
+  // runs client-side. signupHref already carries ?lp=&c= so we always & here.
+  const signupHrefC = signupHref.includes("?")
+    ? `${signupHref}&pricing_variant=C`
+    : `${signupHref}?pricing_variant=C`;
+
   return (
     <>
       <LPSectionTracker event={LP_SECTION_EVENTS.HowItWorks}>
@@ -71,9 +79,20 @@ export default async function LPBaseline({ signupHref, closer }: Props) {
         <SectionMyriadWaysToShare />
       </LPSectionTracker>
 
-      <LPSectionTracker event={LP_SECTION_EVENTS.EarningsCalc}>
-        <SectionEarningsCalculator />
+      {/* SocialProof moved up (was after Comparison) per 2026-05-18 ordering
+          decision: trust signals (Kevin + Kelly) land BEFORE the catalog +
+          comparison + math evidence, so visitors meet the people behind the
+          platform before reading the data. */}
+      <LPSectionTracker event={LP_SECTION_EVENTS.SocialProof}>
+        <SectionSocialProof />
       </LPSectionTracker>
+
+      <MidPageCTA
+        eyebrow="Founder-backed"
+        headline="If you don&apos;t earn your $5 back, Kevin personally makes it right."
+        cta="Find out more — $5/mo"
+        signupHref={signupHrefC}
+      />
 
       <LPSectionTracker event={LP_SECTION_EVENTS.DashboardTour}>
         <SectionDashboardTour />
@@ -83,13 +102,31 @@ export default async function LPBaseline({ signupHref, closer }: Props) {
         <SectionBrandWall />
       </LPSectionTracker>
 
+      <MidPageCTA
+        eyebrow="All 22 brands, one membership"
+        headline="Skip the applications. Open the door for $5/mo."
+        cta="Get the keys — $5/mo"
+        signupHref={signupHrefC}
+      />
+
       <LPSectionTracker event={LP_SECTION_EVENTS.Comparison}>
         <SectionComparison />
       </LPSectionTracker>
 
-      <LPSectionTracker event={LP_SECTION_EVENTS.SocialProof}>
-        <SectionSocialProof />
+      {/* EarningsCalc moved down (was between ShareChannels and DashboardTour)
+          per 2026-05-18 ordering decision: the visitor's "what does this
+          realistically pay?" question lands AFTER catalog + comparison so the
+          answer fires with full context. */}
+      <LPSectionTracker event={LP_SECTION_EVENTS.EarningsCalc}>
+        <SectionEarningsCalculator />
       </LPSectionTracker>
+
+      <MidPageCTA
+        eyebrow="Like the math?"
+        headline="Lock in your number. Start sharing today."
+        cta="Get yours — $5/mo"
+        signupHref={signupHrefC}
+      />
 
       <LPSectionTracker event={LP_SECTION_EVENTS.Pricing}>
         <SectionPricingABTest signupHref={signupHref} />
