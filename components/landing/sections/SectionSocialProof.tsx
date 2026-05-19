@@ -13,8 +13,16 @@
  * in (dub.co/partners-style cluster) and feels intentional rather than
  * empty. Tiles will hot-swap to real photos as `social-proof-data.ts`
  * fills in.
+ *
+ * Photo wiring: <FounderAvatar /> accepts an optional photoUrl prop.
+ * When the file at /public/lp-baseline/founders/<name>.jpg exists, the
+ * <img> renders; if missing (404 / network error), the onError handler
+ * promotes the avatar back to the initials chip. So PRs can wire a
+ * photoUrl ahead of the asset landing without any visual glitch.
  */
 
+import { useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import EarningsDisclaimerInline from "@/components/landing/EarningsDisclaimerInline";
 
@@ -30,20 +38,44 @@ function FounderAvatar({
   initials,
   ring = "bg-navy-200",
   size = 64,
+  photoUrl,
+  alt,
 }: {
   initials: string;
   ring?: string;
   size?: number;
+  /** Optional path to /public photo. When the file exists, renders as <img>.
+   *  On 404/load failure, the component degrades to the initials chip. */
+  photoUrl?: string;
+  /** Required when photoUrl is set. Should be a real person name for
+   *  screen-reader friendliness, e.g. "Kevin Neal". */
+  alt?: string;
 }) {
-  // Placeholder until real headshots drop into /public/lp-baseline/founders/.
-  // Round chip + emerald "online" status dot, mirroring the agent's spec.
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const showPhoto = Boolean(photoUrl) && !photoFailed;
+
   return (
     <div
-      className={`relative inline-flex shrink-0 items-center justify-center rounded-full font-display font-bold text-navy-700 ${ring}`}
+      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-display font-bold text-navy-700 ${
+        showPhoto ? "bg-navy-100 ring-2 ring-white" : ring
+      }`}
       style={{ width: size, height: size, fontSize: size * 0.4 }}
-      aria-hidden="true"
+      aria-hidden={showPhoto ? undefined : "true"}
     >
-      {initials}
+      {showPhoto && photoUrl ? (
+        <Image
+          src={photoUrl}
+          alt={alt ?? ""}
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+          onError={() => setPhotoFailed(true)}
+          // Photos are small, eager-load so it doesn't pop in on scroll
+          priority
+        />
+      ) : (
+        initials
+      )}
       <span className="absolute -bottom-1 -right-1 inline-block h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white" />
     </div>
   );
@@ -82,7 +114,11 @@ export default function SectionSocialProof() {
           className="h-full rounded-2xl bg-white p-6 ring-1 ring-navy-200"
         >
           <div className="flex items-start gap-4">
-            <FounderAvatar initials="KN" />
+            <FounderAvatar
+              initials="KN"
+              photoUrl="/lp-baseline/founders/kevin.jpg"
+              alt="Kevin Neal, founder"
+            />
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-coral-600">
                 From the founder
@@ -126,7 +162,13 @@ export default function SectionSocialProof() {
           className="h-full rounded-2xl bg-coral-50 p-6 ring-2 ring-coral-200"
         >
           <div className="flex items-start gap-4">
-            <FounderAvatar initials="K" ring="bg-coral-200" />
+            <FounderAvatar
+              initials="K"
+              ring="bg-coral-200"
+              // Wire kelly.jpg the moment we have Kelly's consent + a square crop.
+              // Until then, the coral K chip is the right default.
+              alt="Kelly, founding member"
+            />
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-coral-600">
                 First member
