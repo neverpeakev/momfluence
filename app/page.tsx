@@ -2,10 +2,12 @@ import Link from "next/link";
 import BrandRibbon from "@/components/landing/BrandRibbon";
 import TextDemo from "@/components/landing/TextDemo";
 import DashboardPreview from "@/components/landing/DashboardPreview";
+import HomepageTracker from "@/components/landing/HomepageTracker";
 
 export default function PublicLanding() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
+      <HomepageTracker />
       <p className="text-sm uppercase tracking-widest text-coral-600 font-semibold">
         the simplest side income on the internet
       </p>
@@ -20,7 +22,7 @@ export default function PublicLanding() {
         No followers. No camera. No experience. $5/month — cancel anytime.
       </p>
       <div className="mt-10 flex flex-wrap gap-4">
-        <Link href="/signup" className="btn-primary no-underline">
+        <Link href="/signup?lp=home" className="btn-primary no-underline">
           Start earning — $5/mo
         </Link>
         <Link href="/how-it-works" className="btn-ghost no-underline">
@@ -360,7 +362,7 @@ export default function PublicLanding() {
           Your fast-track first $25 unlocks day one.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
-          <Link href="/signup" className="btn-primary no-underline">
+          <Link href="/signup?lp=home" className="btn-primary no-underline">
             Join MomFluence — $5/mo
           </Link>
           <Link

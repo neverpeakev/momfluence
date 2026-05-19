@@ -62,8 +62,24 @@ export function fireMetaEvent(
   data?: MetaEventData,
   eventId?: string
 ): void {
-  if (typeof window === "undefined" || !window.fbq) {
-    // SSR or pixel hasn't loaded yet — silently skip.
+  if (typeof window === "undefined") {
+    // SSR — nothing to do; client useEffect will retry on mount.
+    return;
+  }
+  if (!window.fbq) {
+    // Pixel hasn't loaded yet. In production this is silent (a slow ad
+    // blocker / ATT-blocked client / pre-hydration tick — all common).
+    // In dev we warn so engineers immediately see attempts to fire events
+    // before `connect.facebook.net/en_US/fbevents.js` is ready — which
+    // usually indicates a useEffect dep array bug or a missing client
+    // component "use client" directive.
+    if (process.env.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[meta-pixel] window.fbq not loaded yet — dropping event "${eventName}". ` +
+          `If you see this repeatedly, check that the Meta Pixel script in app/layout.tsx is rendering on this route and not being blocked by an ad blocker.`
+      );
+    }
     return;
   }
 
