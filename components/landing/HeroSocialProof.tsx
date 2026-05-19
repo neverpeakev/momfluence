@@ -66,12 +66,18 @@ function Star() {
 export default function HeroSocialProof() {
   return (
     <div
-      className="mt-8 inline-flex items-center gap-4 rounded-2xl bg-white px-5 py-3 ring-1 ring-navy-100 shadow-sm"
+      // Layout note: `inline-flex` used to overflow on narrow iPhones because
+      // the avatars (~168px) + caption (~200px) + padding exceeded a 327px
+      // content area. Switched to `flex w-fit max-w-full` so the block shrinks
+      // to fit the viewport, plus shrunk avatars to h-8/w-8 on mobile and
+      // dropped the inter-element gap. Caption wraps onto a second line on
+      // very narrow screens via `whitespace-normal`.
+      className="mt-5 flex w-fit max-w-full items-center gap-3 rounded-2xl bg-white px-4 py-2.5 ring-1 ring-navy-100 shadow-sm sm:mt-7 sm:gap-4 sm:px-5 sm:py-3 lg:mt-8"
       role="group"
       aria-label="Founding momfluencers social proof"
     >
       {/* Stacked avatars — overlapping circles with negative margin */}
-      <div className="flex -space-x-2">
+      <div className="flex shrink-0 -space-x-2">
         {AVATARS.map((a) => (
           <img
             key={a.src}
@@ -81,13 +87,13 @@ export default function HeroSocialProof() {
             height={40}
             loading="lazy"
             decoding="async"
-            className="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm"
+            className="h-8 w-8 rounded-full object-cover ring-2 ring-white shadow-sm sm:h-10 sm:w-10"
           />
         ))}
       </div>
 
       {/* Stars + caption stacked vertically to the right */}
-      <div className="flex flex-col">
+      <div className="flex min-w-0 flex-col">
         <div className="flex gap-0.5">
           <Star />
           <Star />
@@ -95,7 +101,7 @@ export default function HeroSocialProof() {
           <Star />
           <Star />
         </div>
-        <p className="mt-1 text-sm font-medium text-navy-800">
+        <p className="mt-1 text-xs font-medium text-navy-800 sm:text-sm">
           Join our founding momfluencers
         </p>
       </div>

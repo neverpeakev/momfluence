@@ -55,7 +55,7 @@ export default async function LandingPage({ params, searchParams }: Props) {
   const useBaselineV2 = LP_BASELINE_V2 === "live";
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16">
+    <main className="mx-auto max-w-3xl px-6 pt-6 pb-16 sm:pt-10 lg:pt-16">
       <LPVisitTracker variant={v.slug} />
 
       {/* Hero — variant-specific, unchanged across baseline v1/v2 */}
@@ -63,15 +63,15 @@ export default async function LandingPage({ params, searchParams }: Props) {
         {v.hero.eyebrow}
       </p>
       <h1
-        className="mt-3 whitespace-pre-line text-balance text-5xl text-navy-900"
+        className="mt-2 whitespace-pre-line text-balance text-3xl sm:mt-3 sm:text-4xl lg:text-5xl text-navy-900"
         dangerouslySetInnerHTML={{ __html: v.hero.headline.replace(/\n/g, "<br />") }}
       />
       <p
-        className="mt-6 text-lg text-navy-600"
+        className="mt-3 text-base sm:mt-4 sm:text-lg text-navy-600"
         dangerouslySetInnerHTML={{ __html: v.hero.subhead }}
       />
 
-      <div className="mt-10 flex flex-wrap gap-4">
+      <div className="mt-5 flex flex-wrap gap-3 sm:mt-7 sm:gap-4 lg:mt-10">
         <Link href={signupHref} className="btn-primary no-underline">
           {v.hero.ctaPrimary}
         </Link>
