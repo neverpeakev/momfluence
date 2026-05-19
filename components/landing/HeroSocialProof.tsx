@@ -85,7 +85,11 @@ export default function HeroSocialProof() {
             alt={a.alt}
             width={40}
             height={40}
-            loading="lazy"
+            // loading="eager" + fetchpriority="high" — these are above-the-fold,
+            // ~12kb each (60kb total), and the lazy attribute was racing the
+            // browser idle queue causing intermittent blank avatars on cold loads.
+            loading="eager"
+            fetchPriority="high"
             decoding="async"
             className="h-8 w-8 rounded-full object-cover ring-2 ring-white shadow-sm sm:h-10 sm:w-10"
           />
