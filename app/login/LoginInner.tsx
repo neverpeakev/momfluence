@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ContinueWithGoogleButton from "@/components/auth/ContinueWithGoogleButton";
+import ContinueWithFacebookButton from "@/components/auth/ContinueWithFacebookButton";
 
 type Mode = "password" | "magic";
 
@@ -70,6 +71,11 @@ export default function LoginInner() {
             redirectTo={redirect}
             label="Sign in with Google"
             className="mt-8"
+          />
+          <ContinueWithFacebookButton
+            redirectTo={redirect}
+            label="Sign in with Facebook"
+            className="mt-3"
           />
           <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-navy-400">
             <span className="h-px flex-1 bg-navy-100" />

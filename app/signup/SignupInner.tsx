@@ -16,6 +16,7 @@ import {
   type Attribution,
 } from "@/lib/funnel-lab/attribution";
 import ContinueWithGoogleButton from "@/components/auth/ContinueWithGoogleButton";
+import ContinueWithFacebookButton from "@/components/auth/ContinueWithFacebookButton";
 
 export default function SignupInner() {
   const sp = useSearchParams();
@@ -147,6 +148,11 @@ export default function SignupInner() {
         redirectTo="/dashboard"
         label="Sign up with Google"
         className="mt-8"
+      />
+      <ContinueWithFacebookButton
+        redirectTo="/dashboard"
+        label="Sign up with Facebook"
+        className="mt-3"
       />
       <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-navy-400">
         <span className="h-px flex-1 bg-navy-100" />
