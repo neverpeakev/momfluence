@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import ContinueWithGoogleButton from "@/components/auth/ContinueWithGoogleButton";
 
 type Mode = "password" | "magic";
 
@@ -63,7 +64,19 @@ export default function LoginInner() {
             We sent a sign-in link to <strong>{email}</strong>. It&apos;s good for 1 hour.
           </p>
         </div>
-      ) : mode === "password" ? (
+      ) : (
+        <>
+          <ContinueWithGoogleButton
+            redirectTo={redirect}
+            label="Sign in with Google"
+            className="mt-8"
+          />
+          <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-navy-400">
+            <span className="h-px flex-1 bg-navy-100" />
+            <span>or use email</span>
+            <span className="h-px flex-1 bg-navy-100" />
+          </div>
+          {mode === "password" ? (
         <form onSubmit={signInWithPassword} className="mt-8 space-y-4">
           <div>
             <label className="label" htmlFor="email">Email</label>
@@ -137,6 +150,8 @@ export default function LoginInner() {
             </button>
           </div>
         </form>
+          )}
+        </>
       )}
 
       <p className="mt-10 text-sm text-navy-600">
