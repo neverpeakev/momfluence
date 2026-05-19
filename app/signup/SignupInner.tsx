@@ -16,7 +16,13 @@ import {
   type Attribution,
 } from "@/lib/funnel-lab/attribution";
 import ContinueWithGoogleButton from "@/components/auth/ContinueWithGoogleButton";
-import ContinueWithFacebookButton from "@/components/auth/ContinueWithFacebookButton";
+// Facebook SSO temporarily disabled — Meta App Review in progress for email + public_profile
+// permissions on the MomFluence Sign-In Consumer app (App ID 2762454974126506). The OAuth flow
+// works end-to-end but the consent screen rejects with "Sorry, something went wrong" because
+// Meta hasn't yet activated those permissions on the new app. Cron job e4e2799e is polling the
+// Graph API /permissions endpoint every 15 min — when email + public_profile flip to status="live",
+// uncomment the import + JSX block below and ship a follow-up PR to re-enable the button.
+// import ContinueWithFacebookButton from "@/components/auth/ContinueWithFacebookButton";
 
 export default function SignupInner() {
   const sp = useSearchParams();
@@ -149,11 +155,14 @@ export default function SignupInner() {
         label="Sign up with Google"
         className="mt-8"
       />
+      {/* Facebook SSO temporarily hidden pending Meta App Review (App ID 2762454974126506).
+          Re-enable when Graph API /permissions returns email + public_profile with status="live".
       <ContinueWithFacebookButton
         redirectTo="/signup/complete"
         label="Sign up with Facebook"
         className="mt-3"
       />
+      */}
       <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-navy-400">
         <span className="h-px flex-1 bg-navy-100" />
         <span>or use email</span>
