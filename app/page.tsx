@@ -23,7 +23,7 @@ export default function PublicLanding() {
       </p>
       <div className="mt-10 flex flex-wrap gap-4">
         <Link href="/signup?lp=home" className="btn-primary no-underline">
-          Start earning — $5/mo
+          Join for $5/mo → start earning
         </Link>
         <Link href="/how-it-works" className="btn-ghost no-underline">
           How it works →
@@ -363,7 +363,7 @@ export default function PublicLanding() {
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Link href="/signup?lp=home" className="btn-primary no-underline">
-            Join MomFluence — $5/mo
+            Join MomFluence → start earning
           </Link>
           <Link
             href="/how-it-works"
