@@ -34,7 +34,6 @@ import SectionEarningsCalculator from "./sections/SectionEarningsCalculator";
 import SectionDashboardTour from "./sections/SectionDashboardTour";
 import SectionBrandWall from "./sections/SectionBrandWall";
 import SectionComparison from "./sections/SectionComparison";
-import SectionSocialProof from "./sections/SectionSocialProof";
 import SectionPricingABTest from "./sections/SectionPricingABTest";
 import SectionFAQ from "./sections/SectionFAQ";
 import SectionClosingCTA from "./sections/SectionClosingCTA";
@@ -79,13 +78,14 @@ export default async function LPBaseline({ signupHref, closer }: Props) {
         <SectionMyriadWaysToShare />
       </LPSectionTracker>
 
-      {/* SocialProof moved up (was after Comparison) per 2026-05-18 ordering
-          decision: trust signals (Kevin + Kelly) land BEFORE the catalog +
-          comparison + math evidence, so visitors meet the people behind the
-          platform before reading the data. */}
-      <LPSectionTracker event={LP_SECTION_EVENTS.SocialProof}>
-        <SectionSocialProof />
-      </LPSectionTracker>
+      {/* SectionSocialProof removed 2026-05-19: the founder-led note + the
+          "we're early" framing read apologetic + dated next to the dub.co-
+          style proof patterns the rest of the page now uses. The hero-
+          adjacent <HeroSocialProof /> chip (stars + avatar stack + "Join
+          our founding momfluencers") now carries the social-proof load at
+          the much higher-attention top-of-page position. Once we have
+          5+ real members with photos + earnings consent, this slot may
+          come back as a dub.co-style partner-cards grid. */}
 
       <MidPageCTA
         eyebrow="Founder-backed"

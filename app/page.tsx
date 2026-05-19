@@ -3,6 +3,7 @@ import BrandRibbon from "@/components/landing/BrandRibbon";
 import TextDemo from "@/components/landing/TextDemo";
 import DashboardPreview from "@/components/landing/DashboardPreview";
 import HomepageTracker from "@/components/landing/HomepageTracker";
+import HeroSocialProof from "@/components/landing/HeroSocialProof";
 
 export default function PublicLanding() {
   return (
@@ -29,6 +30,8 @@ export default function PublicLanding() {
           How it works →
         </Link>
       </div>
+
+      <HeroSocialProof />
 
       <BrandRibbon />
 
