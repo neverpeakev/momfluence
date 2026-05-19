@@ -23,6 +23,10 @@
     {
       "path": "/api/social/ig-mirror",
       "schedule": "15 14 * * *"
+    },
+    {
+      "path": "/api/cron/inbox-agent",
+      "schedule": "*/30 * * * *"
     }
   ]
 }
