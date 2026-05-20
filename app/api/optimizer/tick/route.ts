@@ -151,11 +151,17 @@ async function handleTick(req: NextRequest) {
       await logTickError(tickId, `Meta not configured: missing ${metaCfg.missing.join(",")}`);
     }
 
-    // Map Meta ads ↔ variants. Convention: ad name starts with the creative id
-    // (e.g., "c11 — group-chat-goldmine"). The campaign launcher names them this way.
+    // Map Meta ads ↔ variants. Convention: ad name starts with the creative id.
+    // Image ads (campaign-builder.ts) use `c\d+` → e.g. "c11 — group-chat-goldmine".
+    // Video ads (video-ad-builder.ts, added 2026-05-20) use `v-YYYYMM-<scene>-<slug>`
+    // → e.g. "v-202605-a-group-chat — group-chat-goldmine". Both prefixes are
+    // accepted here so both formats attribute back to optimizer arms.
     const adByCreative = new Map<string, { id: string; name: string }>();
     for (const ad of metaAds) {
-      const m = ad.name.match(/^(c\d+)\b/i);
+      // Try video-prefix first (more specific); fall back to image-prefix.
+      const videoMatch = ad.name.match(/^(v-\d{4,6}-[a-z]-[a-z0-9-]+)\b/i);
+      const imageMatch = videoMatch ? null : ad.name.match(/^(c\d+)\b/i);
+      const m = videoMatch ?? imageMatch;
       if (m) adByCreative.set(m[1].toLowerCase(), { id: ad.id, name: ad.name });
     }
 
