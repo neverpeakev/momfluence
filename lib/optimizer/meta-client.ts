@@ -203,3 +203,129 @@ export const META_API_VERSION = API_VERSION;
 
 /** Re-export account-id resolver for places that need to construct URLs directly. */
 export { adAccountId };
+
+// ─── Video creative upload (added 2026-05-20) ────────────────────────────────
+//
+// Meta video ad pipeline diverges from images in three meaningful ways:
+//
+//   1. Upload endpoint is /<act>/advideos, not /<act>/adimages. Returns
+//      `{ id: "<video_id>", success: true }`. Multipart-friendly here
+//      (unlike /adimages which needs base64 in form-urlencoded `bytes`).
+//   2. Videos are async — they go into a `processing` status and must
+//      finish encoding before they can be referenced in an ad creative.
+//      Poll /<video_id>?fields=status until `video_status: ready`.
+//   3. Ad creative spec uses object_story_spec.video_data { video_id,
+//      image_url (thumbnail), call_to_action, message, title } instead
+//      of link_data. See lib/optimizer/video-ad-builder.ts.
+//
+// History: tried the image-style base64-in-form-urlencoded route first, but
+// Meta rejected it ("source file required") — /advideos expects a real
+// multipart file_upload, not a base64-encoded `bytes` blob.
+
+export interface MetaVideoUploadResult {
+  id: string;
+  success?: boolean;
+}
+
+/**
+ * Upload an MP4 to /<ad-account>/advideos via multipart/form-data. Returns
+ * the resulting video_id. Caller must then poll `getVideoEncodingStatus`
+ * (or use `waitForVideoReady`) before referencing the video_id in an ad
+ * creative — Meta's encoder takes 10-90s typically.
+ *
+ * @param mp4Bytes - the raw MP4 file contents
+ * @param filename - filename to send to Meta (used in some places for
+ *   display; doesn't affect the resulting video)
+ * @param title - optional title shown in the Meta Asset Library
+ */
+export async function uploadAdVideo(
+  mp4Bytes: Uint8Array,
+  filename: string,
+  title?: string,
+): Promise<MetaVideoUploadResult> {
+  const form = new FormData();
+  // Meta expects the field name `source` for the multipart file upload.
+  // The Blob's type matters — `video/mp4` is what Meta sniffs against.
+  //
+  // The `new Uint8Array(buf)` copy ensures the buffer is backed by a fresh
+  // ArrayBuffer (not SharedArrayBuffer), satisfying TS's strict BlobPart type.
+  const arrayBuf = new ArrayBuffer(mp4Bytes.byteLength);
+  new Uint8Array(arrayBuf).set(mp4Bytes);
+  form.append(
+    "source",
+    new Blob([arrayBuf], { type: "video/mp4" }),
+    filename,
+  );
+  if (title) form.append("title", title);
+
+  // NOTE: don't set Content-Type manually — letting fetch generate it
+  // means the multipart boundary is correct. Setting "application/json"
+  // (like metaFetch does by default) would break the upload.
+  const url = `${BASE}/${adAccountId()}/advideos`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token()}` },
+    body: form,
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`Meta /advideos upload failed: ${res.status} ${text.slice(0, 800)}`);
+  }
+  const data = JSON.parse(text) as MetaVideoUploadResult;
+  if (!data.id) {
+    throw new Error(`Meta /advideos returned no id: ${text.slice(0, 400)}`);
+  }
+  return data;
+}
+
+export interface MetaVideoStatus {
+  /** "ready" | "processing" | "error" — string because Meta has been known to add new values. */
+  video_status: string;
+  /** Present only when video_status === "error". */
+  error_message?: string;
+}
+
+/** One-shot status check. Use `waitForVideoReady` when you actually need to poll. */
+export async function getVideoEncodingStatus(videoId: string): Promise<MetaVideoStatus> {
+  return metaFetch<MetaVideoStatus>(`/${videoId}`, {
+    qs: { fields: "status" },
+  }).then((raw) => {
+    // Meta returns `{ status: { video_status: "...", processing_progress: ... } }`
+    // when you query `fields=status`. Some API versions return `video_status`
+    // at the top level. Normalize.
+    const r = raw as unknown as { status?: { video_status?: string; error?: { message?: string } }; video_status?: string };
+    const vs = r.status?.video_status ?? r.video_status ?? "unknown";
+    const err = r.status?.error?.message;
+    return { video_status: vs, error_message: err };
+  });
+}
+
+/**
+ * Poll `getVideoEncodingStatus` every `pollIntervalMs` until `video_status`
+ * is "ready" or timeout. Returns the final status.
+ *
+ * Typical encoding takes 15-60s for a 15-second 1080×1920 H.264 file.
+ * Default timeout 5 minutes — Meta has been known to take longer when
+ * the platform is under load, but anything past 5 min usually means the
+ * encoder hit an error.
+ */
+export async function waitForVideoReady(
+  videoId: string,
+  opts: { timeoutMs?: number; pollIntervalMs?: number; onTick?: (s: MetaVideoStatus) => void } = {},
+): Promise<MetaVideoStatus> {
+  const timeoutMs = opts.timeoutMs ?? 5 * 60 * 1000;
+  const pollIntervalMs = opts.pollIntervalMs ?? 5000;
+  const t0 = Date.now();
+  // First check is immediate — sometimes Meta returns "ready" on the very
+  // first poll if encoding finished before the upload response returned.
+  while (Date.now() - t0 < timeoutMs) {
+    const s = await getVideoEncodingStatus(videoId);
+    opts.onTick?.(s);
+    if (s.video_status === "ready") return s;
+    if (s.video_status === "error") {
+      throw new Error(`Meta video ${videoId} encoding failed: ${s.error_message ?? "no message"}`);
+    }
+    await new Promise((r) => setTimeout(r, pollIntervalMs));
+  }
+  throw new Error(`Meta video ${videoId} did not become ready within ${timeoutMs}ms (last poll: still processing)`);
+}

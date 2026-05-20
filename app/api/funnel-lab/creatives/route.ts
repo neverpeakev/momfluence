@@ -63,20 +63,54 @@ export async function OPTIONS(req: NextRequest) {
   return withCors(new NextResponse(null, { status: 204 }), req.headers.get("origin"));
 }
 
+// 2026-05-20: opened up to video. `mime` was `z.literal("image/png")` and the
+// upload field was `png_base64`. We now accept image/png (legacy), image/jpeg,
+// video/mp4, video/webm, video/quicktime — matching the bucket's allowed MIMEs
+// (see migration 20260514000000_creatives_table.sql + the SQL amend on the
+// `creatives` storage bucket on 2026-05-19). New uploads should send the
+// generic `data_base64` field; `png_base64` stays as an alias so existing
+// Claude Design exporters keep working without changes.
 const Body = z.object({
   creative_id: z.string().min(1).max(120).regex(/^[a-z0-9-]+$/),
   label:       z.string().min(1).max(200),
   section:     z.enum(["polished", "screenshot", "ugly", "hook", "other"]).default("other"),
   lp_variant:  z.string().min(1).max(80).nullable().optional(),
   format:      z.string().min(1).max(20),
-  mime:        z.literal("image/png"),
+  mime:        z.enum([
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "video/mp4",
+    "video/webm",
+    "video/quicktime",
+  ]),
   filename:    z.string().min(1).max(120),
-  png_base64:  z.string().min(100),
+  // Either field accepted. New callers should use `data_base64`. `png_base64`
+  // kept as alias so existing Claude Design exporter scripts don't break.
+  data_base64: z.string().min(100).optional(),
+  png_base64:  z.string().min(100).optional(),
   source:      z.string().max(80).optional(),
   designed_at: z.string().max(20).optional(),
   rendered_at: z.string().max(20).optional(),
   ts:          z.string().datetime().optional(),
-});
+}).refine(
+  (b) => Boolean(b.data_base64 ?? b.png_base64),
+  { message: "one of `data_base64` or `png_base64` is required" },
+);
+
+/** Per-mime: signature bytes (first N bytes) we expect for a sane upload,
+ *  plus the file extension we use when writing to storage. */
+const MIME_HINT: Record<string, { ext: string; magic?: number[][] }> = {
+  "image/png":        { ext: "png",  magic: [[0x89, 0x50, 0x4e, 0x47]] }, // \x89PNG
+  "image/jpeg":       { ext: "jpg",  magic: [[0xff, 0xd8, 0xff]] },
+  "image/webp":       { ext: "webp", magic: [[0x52, 0x49, 0x46, 0x46]] }, // RIFF (full webp check needs offset 8-11=WEBP)
+  // Videos: ISO BMFF (mp4/mov/m4v) all start with `....ftyp` — bytes 4..7 = "ftyp".
+  // Some encoders pad with leading zeros (e.g. \0\0\0 length prefix); we check
+  // bytes 4..7 rather than 0..3.
+  "video/mp4":        { ext: "mp4",  magic: [[0x66, 0x74, 0x79, 0x70]] }, // "ftyp" at offset 4
+  "video/quicktime":  { ext: "mov",  magic: [[0x66, 0x74, 0x79, 0x70]] }, // QuickTime is also ftyp-based
+  "video/webm":       { ext: "webm", magic: [[0x1a, 0x45, 0xdf, 0xa3]] }, // EBML
+};
 
 const STORAGE_BUCKET = "creatives";
 
@@ -148,15 +182,34 @@ export async function POST(req: NextRequest) {
     return withCors(NextResponse.json({ error: `bad request: ${msg}` }, { status: 400 }), origin);
   }
 
-  // Decode base64 PNG
+  // Decode base64 payload. Accept either `data_base64` (generic) or `png_base64`
+  // (legacy alias). The Zod refinement above guarantees at least one is set.
+  const dataField = parsed.data_base64 ?? parsed.png_base64!;
   let bytes: Buffer;
   try {
-    bytes = Buffer.from(parsed.png_base64, "base64");
-    if (bytes.length < 8 || bytes[0] !== 0x89 || bytes[1] !== 0x50 || bytes[2] !== 0x4e || bytes[3] !== 0x47) {
-      return withCors(NextResponse.json({ error: "png_base64 is not a PNG" }, { status: 400 }), origin);
-    }
+    bytes = Buffer.from(dataField, "base64");
   } catch {
-    return withCors(NextResponse.json({ error: "could not decode png_base64" }, { status: 400 }), origin);
+    return withCors(NextResponse.json({ error: "could not decode payload" }, { status: 400 }), origin);
+  }
+
+  // Sanity-check the magic bytes per MIME so callers can't lie about content
+  // type. The check is at byte-offset 0 for images and offset 4 for ftyp-based
+  // video containers — see MIME_HINT comments.
+  const hint = MIME_HINT[parsed.mime];
+  if (!hint) {
+    return withCors(NextResponse.json({ error: `unsupported mime: ${parsed.mime}` }, { status: 400 }), origin);
+  }
+  if (hint.magic && bytes.length >= 12) {
+    const offset = parsed.mime.startsWith("video/mp4") || parsed.mime === "video/quicktime" ? 4 : 0;
+    const matched = hint.magic.some((sig) =>
+      sig.every((b, i) => bytes[offset + i] === b),
+    );
+    if (!matched) {
+      return withCors(
+        NextResponse.json({ error: `payload doesn't match magic bytes for ${parsed.mime}` }, { status: 400 }),
+        origin,
+      );
+    }
   }
 
   // Service-role client for storage + db writes (bypasses RLS).
@@ -170,14 +223,22 @@ export async function POST(req: NextRequest) {
   const now = new Date();
   const yyyy = String(now.getUTCFullYear());
   const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const storagePath = `${yyyy}/${mm}/${parsed.creative_id}.png`;
+  // Storage path uses the actual file extension derived from the mime type
+  // (e.g. .png for images, .mp4 for videos). The bucket was opened up to
+  // video/* MIMEs on 2026-05-19; see migration history.
+  const isVideo = parsed.mime.startsWith("video/");
+  const storagePath = isVideo
+    ? `videos/${parsed.creative_id}.${hint.ext}`
+    : `${yyyy}/${mm}/${parsed.creative_id}.${hint.ext}`;
 
   const { error: uploadErr } = await admin.storage
     .from(STORAGE_BUCKET)
     .upload(storagePath, bytes, {
-      contentType: "image/png",
+      contentType: parsed.mime,
       upsert: true,
-      cacheControl: "31536000",
+      // Videos: shorter cache (1d) so we can roll a v2 without cache-busting
+      // every endpoint. Images: 1-year immutable (creative_id is content-addressed).
+      cacheControl: isVideo ? "86400" : "31536000",
     });
   if (uploadErr) {
     return withCors(NextResponse.json({ error: `storage upload failed: ${uploadErr.message}` }, { status: 500 }), origin);
