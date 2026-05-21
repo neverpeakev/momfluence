@@ -68,6 +68,9 @@ const Body = z.object({
   data_base64:  z.string().min(100).optional(),
   // Optional filename for Meta's asset library; default falls back to creative_id.mp4
   filename:     z.string().min(1).max(120).optional(),
+  // Optional override of the destination ad set — defaults to env META_AD_SET_ID.
+  // Needed when pushing into experiment ad sets spawned by /meta-spawn-experiment.
+  target_ad_set_id: z.string().optional(),
 }).refine(
   (b) => Boolean(b.storage_path ?? b.data_base64),
   { message: "one of `storage_path` or `data_base64` is required" },
@@ -228,6 +231,7 @@ export async function POST(req: NextRequest) {
       ctaType: parsed.cta_type,
       thumbnailUrl: parsed.thumbnail_url,
       thumbnailImageHash,
+      targetAdSetId: parsed.target_ad_set_id,
     });
     return NextResponse.json({
       ok: true,
