@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   fireMetaEvent,
   fireMetaAddToCart,
+  fireMetaCompleteRegistration,
   fireMetaInitiateCheckout,
 } from "@/lib/meta-pixel";
 import {
@@ -100,6 +101,13 @@ export default function SignupInner() {
       }
       return;
     }
+
+    // Account successfully created. Fire CompleteRegistration to give Meta
+    // the mid-funnel conversion signal it can optimize against — this is
+    // what the new ad set (PR #82) targets via promoted_object.custom_event_type
+    // = COMPLETE_REGISTRATION. Without this fire there's literally nothing
+    // for Meta to optimize toward at this stage of the funnel.
+    fireMetaCompleteRegistration();
 
     fireMetaEvent("SignupStarted", { content_name: "MomFluence Membership" });
 

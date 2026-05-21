@@ -22,6 +22,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
   fireMetaEvent,
+  fireMetaCompleteRegistration,
   fireMetaInitiateCheckout,
 } from "@/lib/meta-pixel";
 import { readAttributionFromCookies } from "@/lib/funnel-lab/attribution";
@@ -85,9 +86,15 @@ export default function CompleteInner() {
         // dashboard gate catch the duplicate.
       }
 
-      // 3. Fire Meta SignupStarted + start Stripe checkout. Same shape
-      //    as SignupInner.handleSubmit() for funnel-event consistency.
+      // 3. Fire Meta CompleteRegistration + SignupStarted + start Stripe
+      //    checkout. CompleteRegistration is the mid-funnel signal the
+      //    COMPLETE_REGISTRATION-optimized ad set is built around; without
+      //    it Meta has nothing to learn against during the early weeks before
+      //    Purchase events accumulate. SignupStarted is our internal/custom
+      //    event for funnel-step analytics. Same firing shape as
+      //    SignupInner.handleSubmit() for consistency.
       setPhase("starting_checkout");
+      fireMetaCompleteRegistration(user.id);
       fireMetaEvent("SignupStarted", { content_name: "MomFluence Membership" });
 
       const attr = readAttributionFromCookies();

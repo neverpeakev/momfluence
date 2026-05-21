@@ -186,3 +186,40 @@ export function fireMetaInitiateCheckout(): void {
     num_items: 1,
   });
 }
+
+/**
+ * Fires CompleteRegistration the moment the user successfully creates an
+ * account (right after supabase.auth.signUp() succeeds for the email/password
+ * flow, or right after the OAuth callback session lands for the social flow).
+ *
+ * This is the mid-funnel optimization signal Meta needs to learn against in
+ * the initial weeks when we don't yet have enough Purchase events for the
+ * Purchase optimization model to exit the learning phase. CompleteRegistration
+ * fires roughly 5× more often than Purchase (everyone who signs up, not just
+ * everyone who pays through Stripe) and is a stronger intent signal than
+ * ViewContent (the user has filled a form, not just landed on a page).
+ *
+ * The optional `eventId` parameter lets the caller dedupe against a future
+ * server-side CAPI mirror — e.g. an `/api/checkout/create` mirror that fires
+ * the same event with the same id. Today we only fire browser-side; the
+ * server-side mirror is a planned follow-up.
+ *
+ * Pass the user's auth user id (or any stable identifier for the registration
+ * event) as `eventId` if you want the dedupe pattern set up.
+ */
+export function fireMetaCompleteRegistration(eventId?: string): void {
+  fireMetaEvent(
+    "CompleteRegistration",
+    {
+      value: 5.0,
+      currency: "USD",
+      content_name: "MomFluence Membership",
+      content_category: "Subscription",
+      // status: 'completed' is a Meta-documented standard parameter for
+      // CompleteRegistration; helps Meta understand we mean "successfully
+      // signed up" vs "abandoned partway".
+      status: "completed",
+    },
+    eventId,
+  );
+}
