@@ -139,16 +139,40 @@ const Body = z.object({
   // zero-conversion-history throttle while staying in a sales campaign).
   promoted_object: z.object({
     pixel_id: z.string().optional(),
+    // Verbatim from Meta's 400-error response list — Marketing API uses
+    // different names than the pixel-JS standard events:
+    //   pixel JS "ViewContent" → Marketing API "CONTENT_VIEW"
+    //   pixel JS "InitiateCheckout" → Marketing API "INITIATED_CHECKOUT"
+    // (note the past tense on "INITIATED_CHECKOUT" — annoying but real)
     custom_event_type: z.enum([
-      // Common Meta standard events; extend as needed
-      "VIEW_CONTENT",
-      "LEAD",
-      "COMPLETE_REGISTRATION",
+      "AD_IMPRESSION",
+      "RATE",
+      "TUTORIAL_COMPLETION",
+      "CONTACT",
+      "CUSTOMIZE_PRODUCT",
+      "DONATE",
+      "FIND_LOCATION",
+      "SCHEDULE",
+      "START_TRIAL",
+      "SUBMIT_APPLICATION",
+      "SUBSCRIBE",
       "ADD_TO_CART",
-      "INITIATE_CHECKOUT",
+      "ADD_TO_WISHLIST",
+      "INITIATED_CHECKOUT",
       "ADD_PAYMENT_INFO",
       "PURCHASE",
-      "SUBSCRIBE",
+      "LEAD",
+      "COMPLETE_REGISTRATION",
+      "CONTENT_VIEW",
+      "SEARCH",
+      "SERVICE_BOOKING_REQUEST",
+      "MESSAGING_CONVERSATION_STARTED_7D",
+      "LEVEL_ACHIEVED",
+      "ACHIEVEMENT_UNLOCKED",
+      "SPENT_CREDITS",
+      "LISTING_INTERACTION",
+      "D2_RETENTION",
+      "D7_RETENTION",
       "OTHER",
     ]).optional(),
     custom_conversion_id: z.string().optional(),
