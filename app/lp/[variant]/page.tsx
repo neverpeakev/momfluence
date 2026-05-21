@@ -55,23 +55,30 @@ export default async function LandingPage({ params, searchParams }: Props) {
   const useBaselineV2 = LP_BASELINE_V2 === "live";
 
   return (
-    <main className="mx-auto max-w-3xl px-6 pt-6 pb-16 sm:pt-10 lg:pt-16">
+    <main className="mx-auto max-w-3xl px-6 pt-4 pb-16 sm:pt-6 lg:pt-10">
       <LPVisitTracker variant={v.slug} />
 
-      {/* Hero — variant-specific, unchanged across baseline v1/v2 */}
-      <p className="text-sm uppercase tracking-widest text-coral-600 font-semibold">
+      {/*
+        Hero — variant-specific. Sized down one notch from the
+        homepage hero (which uses text-5xl at lg) because LP variants
+        have longer 2- and 3-line headlines, and on shorter viewports
+        the brand ribbon + social proof get pushed below the fold
+        otherwise. Goal: ribbon ALWAYS sits above the fold on a
+        typical iPhone (740 visible) and a normal laptop (840+).
+      */}
+      <p className="text-xs uppercase tracking-widest text-coral-600 font-semibold sm:text-sm">
         {v.hero.eyebrow}
       </p>
       <h1
-        className="mt-2 whitespace-pre-line text-balance text-3xl sm:mt-3 sm:text-4xl lg:text-5xl text-navy-900"
+        className="mt-1 whitespace-pre-line text-balance text-2xl sm:mt-2 sm:text-3xl lg:text-4xl text-navy-900"
         dangerouslySetInnerHTML={{ __html: v.hero.headline.replace(/\n/g, "<br />") }}
       />
       <p
-        className="mt-3 text-base sm:mt-4 sm:text-lg text-navy-600"
+        className="mt-2 text-sm sm:mt-3 sm:text-base lg:text-lg text-navy-600"
         dangerouslySetInnerHTML={{ __html: v.hero.subhead }}
       />
 
-      <div className="mt-5 flex flex-wrap gap-3 sm:mt-7 sm:gap-4 lg:mt-10">
+      <div className="mt-4 flex flex-wrap gap-3 sm:mt-5 sm:gap-4 lg:mt-7">
         <Link href={signupHref} className="btn-primary no-underline">
           {v.hero.ctaPrimary}
         </Link>
