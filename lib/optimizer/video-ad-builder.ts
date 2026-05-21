@@ -105,6 +105,10 @@ export interface PushVideoInput {
   ctaType?: string;      // e.g. "SIGN_UP" (default), "LEARN_MORE", "GET_OFFER"
   /** Optional destination override; default is `${siteOrigin}/lp/<variant>?c=<creativeId>`. */
   destinationUrl?: string;
+  /** Optional ad-set override; default is env META_AD_SET_ID. Useful when
+   *  spawning experiment ad sets (PR #82) and pushing new video creatives
+   *  into them rather than the legacy single ad set. */
+  targetAdSetId?: string;
 }
 
 export interface PushVideoResult {
@@ -198,7 +202,7 @@ export async function pushVideoCreativeToAdSet(
     method: "POST",
     body: JSON.stringify({
       name: `${input.creativeId} — ${input.lpVariant}`,
-      adset_id: adSetId(),
+      adset_id: input.targetAdSetId ?? adSetId(),
       creative: { creative_id: adCreative.id },
       status: "PAUSED",
     }),
