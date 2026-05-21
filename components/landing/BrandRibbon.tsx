@@ -78,7 +78,7 @@ export default function BrandRibbon() {
       // Tighter mt + py on mobile so the marquee lands above the fold on
       // iPhone-sized viewports right under the hero CTA + social proof chip.
       // Larger viewports get more breathing room.
-      className="relative mt-6 -mx-6 overflow-hidden border-y border-navy-100 bg-navy-50/40 py-5 sm:mt-10 sm:py-7 lg:mt-12 lg:py-8"
+      className="relative mt-3 -mx-6 overflow-hidden border-y border-navy-100 bg-navy-50/40 py-4 sm:mt-5 sm:py-6 lg:mt-7 lg:py-7"
     >
       {/* Left edge fade — softens the cut-off so chips appear to materialize. */}
       <div
