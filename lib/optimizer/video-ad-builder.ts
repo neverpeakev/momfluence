@@ -91,8 +91,14 @@ export interface PushVideoInput {
   mp4Bytes: Uint8Array;
   /** Filename to send to Meta. */
   filename: string;
-  /** Optional thumbnail URL. If omitted, Meta auto-generates from frame 0. */
+  /** Optional thumbnail URL. As of late 2025 Meta no longer auto-generates
+   *  a thumbnail from frame 0 — one of `thumbnailUrl` or `thumbnailImageHash`
+   *  is now required, or the /adcreatives call fails with code 1443226. */
   thumbnailUrl?: string;
+  /** Optional thumbnail image_hash (preferred over URL — pre-uploaded via
+   *  the caller's /adimages step; image_hash references are more stable than
+   *  Meta fetching an URL at creative-creation time). */
+  thumbnailImageHash?: string;
   /** Ad copy. */
   message: string;       // primary text shown above the video
   title?: string;        // optional sub-headline below
@@ -152,10 +158,17 @@ export async function pushVideoCreativeToAdSet(
   //    object_story_spec.video_data { video_id, image_url, call_to_action,
   //    message, title } — NOT link_data.
   //
-  //    Meta requires `image_url` on video_data (the post thumbnail). If we
-  //    don't supply one, Meta uses an auto-generated frame; we let that
-  //    happen by default. To force a specific thumb, pass thumbnailUrl in.
+  //    Meta REQUIRES image_hash OR image_url on video_data (the post
+  //    thumbnail). Auto-frame-0 generation is gone as of late 2025
+  //    (error 1443226). image_hash is preferred (more stable than URL,
+  //    Meta doesn't need to re-fetch). Caller is responsible for upload-
+  //    ing the thumbnail to /adimages and passing the resulting hash.
   const ctaType = input.ctaType ?? "SIGN_UP";
+  if (!input.thumbnailUrl && !input.thumbnailImageHash) {
+    throw new Error(
+      `pushVideoCreativeToAdSet for ${input.creativeId}: one of thumbnailUrl or thumbnailImageHash is required (Meta no longer auto-generates video thumbnails)`,
+    );
+  }
   const adCreative = await meta<{ id: string }>(`/${adAccountId()}/adcreatives`, {
     method: "POST",
     body: JSON.stringify({
@@ -164,7 +177,11 @@ export async function pushVideoCreativeToAdSet(
         page_id: fbPageId(),
         video_data: {
           video_id: upload.id,
-          ...(input.thumbnailUrl ? { image_url: input.thumbnailUrl } : {}),
+          ...(input.thumbnailImageHash
+            ? { image_hash: input.thumbnailImageHash }
+            : input.thumbnailUrl
+              ? { image_url: input.thumbnailUrl }
+              : {}),
           message: input.message,
           ...(input.title ? { title: input.title } : {}),
           call_to_action: { type: ctaType, value: { link: destination } },
