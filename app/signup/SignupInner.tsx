@@ -86,7 +86,7 @@ export default function SignupInner() {
     setLoading(true);
     const supabase = createClient();
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
     });
@@ -107,7 +107,12 @@ export default function SignupInner() {
     // what the new ad set (PR #82) targets via promoted_object.custom_event_type
     // = COMPLETE_REGISTRATION. Without this fire there's literally nothing
     // for Meta to optimize toward at this stage of the funnel.
-    fireMetaCompleteRegistration();
+    //
+    // Passing authUserId lets the helper construct the canonical event_id
+    // (`complete_registration_${userId}`) which the server-side CAPI mirror
+    // (lib/meta-capi.ts, called from /api/checkout/create below) will use
+    // to dedupe — Meta lands one event in Events Manager, not two.
+    fireMetaCompleteRegistration(signUpData.user?.id);
 
     fireMetaEvent("SignupStarted", { content_name: "MomFluence Membership" });
 

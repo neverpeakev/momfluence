@@ -189,3 +189,160 @@ export async function fireServerSidePurchase(
     return { ok: false, eventId, skippedReason: `exception: ${message}` };
   }
 }
+
+// ─── CompleteRegistration (added 2026-05-21) ────────────────────────────────
+//
+// Mirrors fireServerSidePurchase, fired from /api/checkout/create the moment
+// the auth user is verified server-side (i.e. right after browser-side
+// fireMetaCompleteRegistration fires from /signup or /signup/complete).
+//
+// Meta dedupes by event_id: `complete_registration_${authUserId}`. Browser
+// and server both use the exact same id — see lib/meta-pixel.ts fireMeta-
+// CompleteRegistration which derives the same string from authUserId.
+//
+// Why this matters: the new ad set (PR #82) optimizes for COMPLETE_REGISTRATION
+// events. The browser pixel fires it client-side, but ad-blockers + iOS
+// tracking prevention can drop ~30-50% of those events. CAPI server-side
+// mirror catches the dropped ones — the difference between Meta seeing 100
+// CR events vs. 60 is the difference between optimizer exiting learning and
+// staying stuck.
+
+interface FireServerSideCompleteRegistrationInput {
+  /** Supabase auth.user.id — used as the dedupe key */
+  authUserId: string;
+  /** Required so Meta can build the user_data identity */
+  email: string;
+  /** Unix seconds — defaults to "now" if not provided */
+  eventTimeUnixSeconds?: number;
+  /** e.g. "https://momfluence.app/signup" — the page the browser pixel fired from */
+  eventSourceUrl?: string;
+  /** Optional — request IP if forwarded from middleware */
+  clientIpAddress?: string;
+  clientUserAgent?: string;
+  testEventCode?: string;
+}
+
+export interface FireServerSideCompleteRegistrationResult {
+  ok: boolean;
+  eventId: string;
+  metaStatus?: number;
+  metaBody?: string;
+  skippedReason?: string;
+}
+
+/**
+ * Fire CompleteRegistration to Meta CAPI server-side.
+ *
+ * Best-effort. Logs but never throws. Caller does not need to await this —
+ * /api/checkout/create fires-and-forgets so the Stripe session creation
+ * latency isn't increased by Meta's RTT.
+ */
+export async function fireServerSideCompleteRegistration(
+  input: FireServerSideCompleteRegistrationInput,
+): Promise<FireServerSideCompleteRegistrationResult> {
+  // SAME canonical event_id format that the browser pixel uses in
+  // lib/meta-pixel.ts fireMetaCompleteRegistration — Meta will dedupe these
+  // two events as ONE inside the 24h window.
+  const eventId = `complete_registration_${input.authUserId}`;
+
+  const token = process.env.META_MARKETING_API_TOKEN;
+  if (!token) {
+    console.error(
+      "[meta-capi] META_MARKETING_API_TOKEN not set; skipping server-side CompleteRegistration event",
+    );
+    return { ok: false, eventId, skippedReason: "META_MARKETING_API_TOKEN not set" };
+  }
+
+  try {
+    const hashedEmail = sha256Hex(normalizeEmail(input.email));
+    const hashedExternalId = sha256Hex(input.authUserId);
+
+    const userData: MetaUserData = {
+      em: [hashedEmail],
+      external_id: [hashedExternalId],
+    };
+    if (input.clientIpAddress) userData.client_ip_address = input.clientIpAddress;
+    if (input.clientUserAgent) userData.client_user_agent = input.clientUserAgent;
+
+    // CompleteRegistration uses the same custom_data shape as Purchase but
+    // with `status` instead of being purely transactional. Value = $5 so Meta
+    // associates the registration with the eventual subscription value.
+    interface CompleteRegistrationEvent {
+      event_name: "CompleteRegistration";
+      event_time: number;
+      event_id: string;
+      event_source_url: string;
+      action_source: "website";
+      user_data: MetaUserData;
+      custom_data: {
+        currency: string;
+        value: number;
+        content_name: string;
+        content_category: string;
+        status: string;
+      };
+    }
+
+    const metaEvent: CompleteRegistrationEvent = {
+      event_name: "CompleteRegistration",
+      event_time: input.eventTimeUnixSeconds ?? Math.floor(Date.now() / 1000),
+      event_id: eventId,
+      event_source_url: input.eventSourceUrl ?? "https://momfluence.app/signup",
+      action_source: "website",
+      user_data: userData,
+      custom_data: {
+        currency: "USD",
+        value: 5.0,
+        content_name: "MomFluence Membership",
+        content_category: "Subscription",
+        status: "completed",
+      },
+    };
+
+    const url = `${META_GRAPH_BASE}/${META_PIXEL_ID}/events?access_token=${encodeURIComponent(
+      token.trim(),
+    )}`;
+
+    const requestBody: { data: CompleteRegistrationEvent[]; test_event_code?: string } = {
+      data: [metaEvent],
+    };
+    if (input.testEventCode) {
+      requestBody.test_event_code = input.testEventCode;
+    }
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(
+        `[meta-capi] CompleteRegistration POST failed: ${res.status} ${body.slice(0, 500)}`,
+      );
+      return {
+        ok: false,
+        eventId,
+        metaStatus: res.status,
+        metaBody: body.slice(0, 500),
+      };
+    }
+
+    const testTag = input.testEventCode ? ` [TEST ${input.testEventCode}]` : "";
+    console.log(
+      `[meta-capi] CompleteRegistration event sent (event_id=${eventId})${testTag}`,
+    );
+    const ackBody = await res.text().catch(() => "");
+    return {
+      ok: true,
+      eventId,
+      metaStatus: res.status,
+      metaBody: ackBody.slice(0, 500),
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[meta-capi] unexpected error firing CompleteRegistration: ${message}`);
+    return { ok: false, eventId, skippedReason: `exception: ${message}` };
+  }
+}

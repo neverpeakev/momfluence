@@ -199,15 +199,18 @@ export function fireMetaInitiateCheckout(): void {
  * everyone who pays through Stripe) and is a stronger intent signal than
  * ViewContent (the user has filled a form, not just landed on a page).
  *
- * The optional `eventId` parameter lets the caller dedupe against a future
- * server-side CAPI mirror — e.g. an `/api/checkout/create` mirror that fires
- * the same event with the same id. Today we only fire browser-side; the
- * server-side mirror is a planned follow-up.
+ * The `authUserId` parameter is used to build a canonical event_id —
+ * `complete_registration_${authUserId}` — that is ALSO produced by the
+ * server-side CAPI mirror in lib/meta-capi.ts. Meta dedupes within 24h, so
+ * the browser pixel + CAPI POST land as ONE event in Events Manager. This
+ * pattern matches what Purchase already does (`purchase_${session_id}`).
  *
- * Pass the user's auth user id (or any stable identifier for the registration
- * event) as `eventId` if you want the dedupe pattern set up.
+ * If authUserId is omitted, the helper still fires the event but without an
+ * event_id — Meta will count it as its own event with no dedupe. Useful only
+ * as a fallback for very early in the flow before the auth row is available.
  */
-export function fireMetaCompleteRegistration(eventId?: string): void {
+export function fireMetaCompleteRegistration(authUserId?: string): void {
+  const eventId = authUserId ? `complete_registration_${authUserId}` : undefined;
   fireMetaEvent(
     "CompleteRegistration",
     {

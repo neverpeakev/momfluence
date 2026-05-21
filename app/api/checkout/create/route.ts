@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { toStripeMetadata, type Attribution } from "@/lib/funnel-lab/attribution";
+import { fireServerSideCompleteRegistration } from "@/lib/meta-capi";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -68,6 +69,32 @@ export async function POST(req: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  // Fire Meta CAPI CompleteRegistration server-side, in parallel with the
+  // browser pixel firing the same event from /signup or /signup/complete.
+  // Meta dedupes by event_id = `complete_registration_${user.id}` (matches
+  // lib/meta-pixel.ts fireMetaCompleteRegistration's canonical id).
+  //
+  // Fire-and-forget: do NOT await. The Stripe checkout creation must not be
+  // delayed by Meta's RTT, and a CAPI failure must never block the user from
+  // hitting Stripe. The CAPI helper swallows errors internally and logs to
+  // Vercel — see lib/meta-capi.ts.
+  //
+  // Source URL guess: this endpoint is called from both /signup and
+  // /signup/complete. We default to /signup since it's the more common path,
+  // accepting a tiny attribution mismatch in Meta Events Manager for the
+  // OAuth completion case. The browser pixel fires with the actual page URL
+  // and Meta dedupes via event_id anyway, so the source URL only affects
+  // the analytics breakdown by URL.
+  if (user.email) {
+    void fireServerSideCompleteRegistration({
+      authUserId: user.id,
+      email: user.email,
+      eventSourceUrl: "https://momfluence.app/signup",
+      clientIpAddress: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined,
+      clientUserAgent: req.headers.get("user-agent") || undefined,
+    });
   }
 
   // Disable retries so the underlying error surfaces on the first failure.
