@@ -229,7 +229,12 @@ export const VARIANTS = [
     primaryCreativeId: "c18",
     hero: {
       eyebrow: "day-one fast-track payout",
-      headline: "$5 in.\n$25 out.\nDay one.",
+      // v6 rewrite — old 3-line headline ("$5 in. / $25 out. / Day one.")
+      // looked clever but ate 3× the vertical space of the other variants and
+      // pushed everything below it down the page. New version is single-line,
+      // direct, in second-person command voice, and matches the subhead's
+      // actual claim (vs the old "Day one." overpromise).
+      headline: "Hit $25 — cash out same day.",
       subhead: "Brands are paying real money for real recommendations from regular moms now. Pay $5 to access. Hit $25 in payouts → cash out same day. Most moms hit it inside a week. No million followers needed.",
       ctaPrimary: "Start earning",
       ctaSecondary: "How fast really? →",
