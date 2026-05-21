@@ -92,6 +92,12 @@ async function metaFetch(path: string, init: RequestInit = {}): Promise<{ status
 }
 
 const Body = z.object({
+  // Optional override — by default we target env META_AD_SET_ID (the legacy
+  // single-ad-set assumption). Once we started spawning experiment ad sets
+  // (PR #82), the optimizer needs to be able to update any of them.
+  target_ad_set_id: z.string().optional(),
+  // Activate/pause shortcut (separate from any other field changes).
+  status: z.enum(["ACTIVE", "PAUSED", "ARCHIVED"]).optional(),
   daily_budget_usd: z.number().min(1).max(10000).optional(),
   bid_amount_usd: z.number().min(0.01).max(1000).optional(),
   bid_strategy: z.enum([
@@ -224,7 +230,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: `bad request: ${msg}` }, { status: 400 });
   }
 
-  const setId = adSetId();
+  const setId = parsed.target_ad_set_id ?? adSetId();
 
   // Pre-change snapshot
   let before: AdSetSnapshot;
@@ -238,6 +244,7 @@ export async function POST(req: NextRequest) {
   // Meta wants budget + bid amount in CENTS as a STRING.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const patch: Record<string, any> = {};
+  if (parsed.status) patch.status = parsed.status;
   if (parsed.daily_budget_usd !== undefined) {
     patch.daily_budget = String(Math.round(parsed.daily_budget_usd * 100));
   }
