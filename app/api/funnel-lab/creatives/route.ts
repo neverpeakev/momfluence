@@ -136,11 +136,15 @@ async function authorize(req: NextRequest): Promise<AuthResult> {
     // fall through to bearer paths
   }
 
-  // (2) Shared push secret
+  // (2) Shared push secret OR CRON_SECRET (added 2026-05-20 so the same
+  // token that authorizes /api/optimizer/tick + /api/funnel-lab/push-video
+  // also works for the creatives ingest endpoint — keeps the agentic push
+  // flow auth-uniform).
   const token = bearerFrom(req);
   if (token) {
     const pushSecret = process.env.FUNNEL_LAB_PUSH_TOKEN;
     if (pushSecret && token === pushSecret) return { ok: true, via: "push-secret" };
+    if (process.env.CRON_SECRET && token === process.env.CRON_SECRET) return { ok: true, via: "push-secret" };
 
     // (3) Service-role JWT — try to use it; if it lets us read a privileged table, accept.
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

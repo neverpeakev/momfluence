@@ -54,7 +54,15 @@ const Body = z.object({
   message:     z.string().min(1).max(2000),
   title:       z.string().max(200).optional(),
   cta_type:    z.string().max(40).optional(),
-  thumbnail_url: z.string().url().optional(),
+  // Thumbnail (one of) — Meta now REQUIRES a thumbnail for video creatives
+  // (error 1443226 "Your ad needs a video thumbnail"). One of three modes:
+  //   1. thumbnail_url   — direct public URL we pass straight through
+  //   2. thumbnail_data_base64 — base64 PNG/JPEG we upload to /adimages first
+  //                              to get an image_hash (the resilient path)
+  //   3. neither         — request fails. The auto-frame-0 fallback Meta
+  //                        used to provide is gone as of late 2025.
+  thumbnail_url:         z.string().url().optional(),
+  thumbnail_data_base64: z.string().min(100).optional(),
   // Source — exactly one required.
   storage_path: z.string().min(1).max(200).optional(),
   data_base64:  z.string().min(100).optional(),
@@ -63,6 +71,9 @@ const Body = z.object({
 }).refine(
   (b) => Boolean(b.storage_path ?? b.data_base64),
   { message: "one of `storage_path` or `data_base64` is required" },
+).refine(
+  (b) => Boolean(b.thumbnail_url ?? b.thumbnail_data_base64),
+  { message: "one of `thumbnail_url` or `thumbnail_data_base64` is required (Meta requires a video thumbnail)" },
 );
 
 function bearerFrom(req: NextRequest): string | null {
@@ -161,6 +172,50 @@ export async function POST(req: NextRequest) {
 
   const filename = parsed.filename ?? `${parsed.creative_id}.mp4`;
 
+  // If a thumbnail blob was provided, upload it to Meta /adimages first to get
+  // an image_hash, then pass that into pushVideoCreativeToAdSet via the new
+  // `thumbnailImageHash` field on the builder. Meta requires either
+  // image_hash or image_url on video_data; we prefer image_hash for stability
+  // (image_url can hit fetch rate-limits when Meta tries to download it).
+  let thumbnailImageHash: string | undefined;
+  if (parsed.thumbnail_data_base64) {
+    const thumbBuf = Buffer.from(parsed.thumbnail_data_base64, "base64");
+    if (thumbBuf.byteLength < 100 || thumbBuf.byteLength > 8 * 1024 * 1024) {
+      return NextResponse.json(
+        { ok: false, error: `thumbnail_data_base64 decoded size ${thumbBuf.byteLength}B outside [100B, 8MB]` },
+        { status: 400 },
+      );
+    }
+    try {
+      // Same flow as campaign-builder.uploadAdImage but inline here so we
+      // don't have to import + restructure.
+      const formBody = new URLSearchParams();
+      formBody.append("bytes", thumbBuf.toString("base64"));
+      const accountId = (process.env.META_AD_ACCOUNT_ID ?? "").startsWith("act_")
+        ? process.env.META_AD_ACCOUNT_ID!
+        : `act_${process.env.META_AD_ACCOUNT_ID}`;
+      const res = await fetch(`https://graph.facebook.com/v20.0/${accountId}/adimages`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.META_MARKETING_API_TOKEN}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: formBody.toString(),
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error(`/adimages → ${res.status}: ${text.slice(0, 400)}`);
+      const data = JSON.parse(text) as { images: Record<string, { hash: string }> };
+      const first = Object.values(data.images ?? {})[0];
+      if (!first?.hash) throw new Error(`/adimages returned no hash: ${text.slice(0, 300)}`);
+      thumbnailImageHash = first.hash;
+    } catch (e) {
+      return NextResponse.json(
+        { ok: false, error: `thumbnail upload failed: ${e instanceof Error ? e.message : e}` },
+        { status: 502 },
+      );
+    }
+  }
+
   try {
     const result = await pushVideoCreativeToAdSet({
       creativeId: parsed.creative_id,
@@ -172,6 +227,7 @@ export async function POST(req: NextRequest) {
       title: parsed.title,
       ctaType: parsed.cta_type,
       thumbnailUrl: parsed.thumbnail_url,
+      thumbnailImageHash,
     });
     return NextResponse.json({
       ok: true,
