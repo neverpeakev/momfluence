@@ -97,7 +97,9 @@ export const VARIANTS = [
     primaryCreativeId: "c12",
     hero: {
       eyebrow: "did you know?",
-      headline: "Moms are getting paid\ncelebrity-tier money\nto recommend things online now.",
+      // v6: was 3 lines ("Moms are getting paid / celebrity-tier money /
+      // to recommend things online now.") — too long, pushed ribbon below fold.
+      headline: "Moms are getting paid like influencers now.",
       subhead: "Not polished influencers with millions of followers — actual regular moms with regular group chats. Big brands are paying real money for real recommendations. $5/mo to access.",
       ctaPrimary: "Start earning",
       ctaSecondary: "Show me how →",
@@ -119,7 +121,9 @@ export const VARIANTS = [
     primaryCreativeId: "c13",
     hero: {
       eyebrow: "yes, you",
-      headline: "That recommendation\nin your group chat last week?",
+      // v6: was "That recommendation in your group chat last week?" — keep
+      // the question hook (psychological pull) but tighten.
+      headline: "That rec you sent last week? Worth real money.",
       subhead: "You could've gotten paid for it. You don't need to have millions of followers or be a celebrity to get paid like one. Brands are starting to pay regular moms big bucks to share their products and services online.",
       ctaPrimary: "Start earning",
       ctaSecondary: "See how it works →",
@@ -141,7 +145,11 @@ export const VARIANTS = [
     primaryCreativeId: "c14",
     hero: {
       eyebrow: "now with a paycheck",
-      headline: "You already recommend things\nto your friends every week.",
+      // v6: was 2 lines ("You already recommend things to your friends
+      // every week.") — same beat as the sales-video hook ("you already
+      // do this. now you get paid.") which Kevin called the strongest
+      // copy in the whole set. Lean into it.
+      headline: "You already do this for free.",
       subhead: "Now you can get paid for it. No celebrity status or million followers needed. Regular moms making real money for the same stuff they're already sharing.",
       ctaPrimary: "Start earning",
       ctaSecondary: "How much can I make? →",
@@ -163,7 +171,9 @@ export const VARIANTS = [
     primaryCreativeId: "c15",
     hero: {
       eyebrow: "let AI do the writing",
-      headline: "Brands are paying regular moms now.\nChatGPT writes the post.",
+      // v6: was 2 lines. "ChatGPT writes. You collect." mirrors the
+      // closer-headline pattern ("AI writes. You get paid.") which works.
+      headline: "ChatGPT writes. You collect.",
       subhead: "Pick a brand. We hand you the exact ChatGPT prompt. Six seconds later you've got a Pinterest pin, a Reddit post, or a group-chat-ready recommendation. No million followers needed, no celebrity status.",
       ctaPrimary: "Start earning",
       ctaSecondary: "See the prompts →",
@@ -185,7 +195,8 @@ export const VARIANTS = [
     primaryCreativeId: "c16",
     hero: {
       eyebrow: "sephora · hulu · target · hbo · walmart · disney+",
-      headline: "These brands are paying\nregular moms now.",
+      // v6: collapse 2 lines into 1.
+      headline: "These brands pay regular moms now.",
       subhead: "Sephora. Hulu. Target. HBO. Walmart. Disney+. They're all paying regular moms now to share their products and services. No million followers required, no celebrity status — just real recommendations from real moms.",
       ctaPrimary: "Start earning",
       ctaSecondary: "See all 50+ brands →",
@@ -207,7 +218,8 @@ export const VARIANTS = [
     primaryCreativeId: "c17",
     hero: {
       eyebrow: "the new economy",
-      headline: "Move over skinny\nunrelatable influencers.",
+      // v6: collapse 2 lines into 1 — punchy enough as single line.
+      headline: "Move over, skinny influencers.",
       subhead: "Brands have moved on — they're paying regular moms big bucks now for the same recommendations they used to only pay celebrities for. Real moms. Real money.",
       ctaPrimary: "Start earning",
       ctaSecondary: "How it works →",
@@ -256,7 +268,8 @@ export const VARIANTS = [
     primaryCreativeId: "c19",
     hero: {
       eyebrow: "real mom. real dashboard. real venmo.",
-      headline: "$720.40 last week.\nFrom 4 group-chat texts.",
+      // v6: collapse 2 lines into 1. Specific number + source = strong.
+      headline: "$720 last week — from 4 group-chat texts.",
       subhead: "A real first-month member's dashboard. 68 clicks. 12 sign-ups. $720.40 in her bank account by Friday. Brands are paying real money for real recommendations — no million followers required, no celebrity status.",
       ctaPrimary: "Start earning",
       ctaSecondary: "Show me more receipts →",
@@ -278,13 +291,16 @@ export const VARIANTS = [
     primaryCreativeId: "c20",
     hero: {
       eyebrow: "you don't need a face, a following, or a niche",
-      headline: "Start a faceless content brand.\nWe pay you for the clicks.",
+      // v6: was 2 lines. Punchier 1-line — leans on the "no face" angle.
+      headline: "No face. No followers. Real money.",
       subhead: "Open a faceless TikTok or Pinterest. Use AI to make posts about the brands you love. Drop your tracked link in the bio. We pay you every time someone signs up — month after month, for as long as they stay.",
       ctaPrimary: "Start earning",
       ctaSecondary: "See how others do it →",
     },
     closer: {
-      headline: "No face. No follower count. Real money.",
+      // v6: was a near-dup of the hero ("No face. No followers. Real money.").
+      // Closer now lands a different beat — the "build once, earn forever" promise.
+      headline: "Build it once. Earn for months.",
       subhead: "$5 to access. AI does the heavy lifting.",
     },
   },
