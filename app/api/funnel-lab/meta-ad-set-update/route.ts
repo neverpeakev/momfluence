@@ -133,6 +133,26 @@ const Body = z.object({
   ]).optional(),
   billing_event: z.enum(["IMPRESSIONS", "LINK_CLICKS", "THRUPLAY"]).optional(),
   clear_promoted_object: z.boolean().optional(),
+  // Direct promoted_object override — useful when the campaign objective is
+  // locked to OFFSITE_CONVERSIONS but we want to change WHICH pixel event
+  // Meta optimizes against (e.g. PURCHASE → VIEW_CONTENT to escape the
+  // zero-conversion-history throttle while staying in a sales campaign).
+  promoted_object: z.object({
+    pixel_id: z.string().optional(),
+    custom_event_type: z.enum([
+      // Common Meta standard events; extend as needed
+      "VIEW_CONTENT",
+      "LEAD",
+      "COMPLETE_REGISTRATION",
+      "ADD_TO_CART",
+      "INITIATE_CHECKOUT",
+      "ADD_PAYMENT_INFO",
+      "PURCHASE",
+      "SUBSCRIBE",
+      "OTHER",
+    ]).optional(),
+    custom_conversion_id: z.string().optional(),
+  }).optional(),
   // Targeting override — passed through to Meta as-is. Caller is responsible
   // for the shape (e.g. { age_min, age_max, genders, geo_locations, targeting_automation }).
   targeting: z.record(z.unknown()).optional(),
@@ -209,6 +229,8 @@ export async function POST(req: NextRequest) {
   // When switching to LANDING_PAGE_VIEW (or other non-conversion goals), we typically want to
   // clear it. Meta lets us set promoted_object: {} to clear.
   if (parsed.clear_promoted_object) patch.promoted_object = {};
+  // Explicit promoted_object update takes precedence over clear.
+  if (parsed.promoted_object) patch.promoted_object = parsed.promoted_object;
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({
