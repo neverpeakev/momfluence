@@ -55,38 +55,34 @@ export default async function LandingPage({ params, searchParams }: Props) {
   const useBaselineV2 = LP_BASELINE_V2 === "live";
 
   return (
-    <main className="mx-auto max-w-3xl px-6 pt-2 pb-16 sm:pt-3 lg:pt-4">
+    <main className="mx-auto max-w-3xl px-6 pt-3 pb-16 sm:pt-4 lg:pt-6">
       <LPVisitTracker variant={v.slug} />
 
       {/*
-        BrandRibbon hoisted to be the FIRST content after the nav so
-        the marquee of brand chips is GUARANTEED above the fold on
-        every variant regardless of headline length (was below the
-        hero, where 2-3 line headlines pushed it past the fold on
-        shorter viewports). Functions as immediate trust-signal for
-        cold ad traffic: "yes, these brands really work with this".
+        Hero layout — variant-specific. Sized aggressively small so
+        ribbon + chips marquee sits visible "just barely under" the
+        social-proof chip on a typical iPhone-sized viewport (~740px
+        visible). Order: eyebrow → headline → subhead → CTAs →
+        HeroSocialProof → BrandRibbon. The headline + subhead are
+        the biggest space variables — variant copy was rewritten on
+        2026-05-21 to keep every headline to 1-2 lines max (no
+        3-liners; the old 'Moms are getting paid celebrity-tier
+        money to recommend things online now' style was killing the
+        above-fold ribbon visibility).
       */}
-      <BrandRibbon />
-
-      {/*
-        Hero — variant-specific. Sized down one notch from the
-        homepage hero (which uses text-5xl at lg) because LP variants
-        have longer 2- and 3-line headlines, and on shorter viewports
-        the social proof chip can otherwise get pushed below the fold.
-      */}
-      <p className="mt-4 text-xs uppercase tracking-widest text-coral-600 font-semibold sm:mt-6 sm:text-sm lg:mt-8">
+      <p className="text-xs uppercase tracking-widest text-coral-600 font-semibold sm:text-sm">
         {v.hero.eyebrow}
       </p>
       <h1
-        className="mt-1 whitespace-pre-line text-balance text-2xl sm:mt-2 sm:text-3xl lg:text-4xl text-navy-900"
+        className="mt-1 whitespace-pre-line text-balance text-xl sm:mt-1 sm:text-2xl lg:text-3xl text-navy-900"
         dangerouslySetInnerHTML={{ __html: v.hero.headline.replace(/\n/g, "<br />") }}
       />
       <p
-        className="mt-2 text-sm sm:mt-3 sm:text-base lg:text-lg text-navy-600"
+        className="mt-2 text-sm sm:mt-2 sm:text-base text-navy-600"
         dangerouslySetInnerHTML={{ __html: v.hero.subhead }}
       />
 
-      <div className="mt-4 flex flex-wrap gap-3 sm:mt-5 sm:gap-4 lg:mt-7">
+      <div className="mt-3 flex flex-wrap gap-3 sm:mt-4 sm:gap-4">
         <Link href={signupHref} className="btn-primary no-underline">
           {v.hero.ctaPrimary}
         </Link>
@@ -96,6 +92,8 @@ export default async function LandingPage({ params, searchParams }: Props) {
       </div>
 
       <HeroSocialProof />
+
+      <BrandRibbon />
 
       {useBaselineV2 && (
         <LPBaseline
