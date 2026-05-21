@@ -55,18 +55,26 @@ export default async function LandingPage({ params, searchParams }: Props) {
   const useBaselineV2 = LP_BASELINE_V2 === "live";
 
   return (
-    <main className="mx-auto max-w-3xl px-6 pt-4 pb-16 sm:pt-6 lg:pt-10">
+    <main className="mx-auto max-w-3xl px-6 pt-2 pb-16 sm:pt-3 lg:pt-4">
       <LPVisitTracker variant={v.slug} />
+
+      {/*
+        BrandRibbon hoisted to be the FIRST content after the nav so
+        the marquee of brand chips is GUARANTEED above the fold on
+        every variant regardless of headline length (was below the
+        hero, where 2-3 line headlines pushed it past the fold on
+        shorter viewports). Functions as immediate trust-signal for
+        cold ad traffic: "yes, these brands really work with this".
+      */}
+      <BrandRibbon />
 
       {/*
         Hero — variant-specific. Sized down one notch from the
         homepage hero (which uses text-5xl at lg) because LP variants
         have longer 2- and 3-line headlines, and on shorter viewports
-        the brand ribbon + social proof get pushed below the fold
-        otherwise. Goal: ribbon ALWAYS sits above the fold on a
-        typical iPhone (740 visible) and a normal laptop (840+).
+        the social proof chip can otherwise get pushed below the fold.
       */}
-      <p className="text-xs uppercase tracking-widest text-coral-600 font-semibold sm:text-sm">
+      <p className="mt-4 text-xs uppercase tracking-widest text-coral-600 font-semibold sm:mt-6 sm:text-sm lg:mt-8">
         {v.hero.eyebrow}
       </p>
       <h1
@@ -88,8 +96,6 @@ export default async function LandingPage({ params, searchParams }: Props) {
       </div>
 
       <HeroSocialProof />
-
-      <BrandRibbon />
 
       {useBaselineV2 && (
         <LPBaseline
