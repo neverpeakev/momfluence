@@ -99,19 +99,39 @@ async function publishToIg(
   const creationId = (JSON.parse(cText) as { id?: string }).id;
   if (!creationId) throw new Error(`IG /media returned no creation_id: ${cText.slice(0, 200)}`);
 
-  // Step 2: poll until FINISHED (image fetched + processed)
-  for (let i = 0; i < 8; i++) {
-    await new Promise((r) => setTimeout(r, 1500));
+  // Step 2: poll until FINISHED (image fetched + processed).
+  // The status endpoint can return 400 / code 100 subcode 33 ("object does
+  // not exist") for a few seconds after the container is created while
+  // Meta finishes registering it server-side. Tolerate transient HTTP
+  // errors within the poll window and only surface the most recent error
+  // if every attempt fails — otherwise a one-off blip during the first
+  // poll kills the whole publish.
+  let lastStatusError: string | null = null;
+  let finished = false;
+  for (let i = 0; i < 10; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
     const sRes = await fetch(
       `${META_BASE}/${creationId}?fields=status_code&access_token=${encodeURIComponent(pageToken)}`
     );
     const sText = await sRes.text();
-    if (!sRes.ok) throw new Error(`IG status check → ${sRes.status}: ${sText.slice(0, 200)}`);
+    if (!sRes.ok) {
+      lastStatusError = `IG status check → ${sRes.status}: ${sText.slice(0, 300)}`;
+      continue;
+    }
     const { status_code } = JSON.parse(sText) as { status_code?: string };
-    if (status_code === "FINISHED") break;
+    if (status_code === "FINISHED") {
+      finished = true;
+      break;
+    }
     if (status_code === "ERROR" || status_code === "EXPIRED") {
       throw new Error(`IG container ${creationId} status=${status_code} for ${slug}`);
     }
+  }
+  if (!finished) {
+    throw new Error(
+      lastStatusError ??
+        `IG container ${creationId} did not reach FINISHED within poll window for ${slug}`
+    );
   }
 
   // Step 3: publish
