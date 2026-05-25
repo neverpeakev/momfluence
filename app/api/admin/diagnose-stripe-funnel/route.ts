@@ -220,6 +220,127 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // 4. Optional full activity dump — answers "did anyone actually pay via Apple
+  //    Pay / Link / Google Pay / PayPal and we missed it because the card-number
+  //    field looks blank?" Definitive proof: list every Customer, PaymentIntent,
+  //    Subscription, and successful Charge in the account over the window.
+  let fullActivity: Record<string, unknown> | undefined;
+  if (url.searchParams.get("full") === "true") {
+    fullActivity = {};
+    try {
+      const customers = await stripe.customers.list({ limit: 100, created: { gte: sinceUnix } });
+      fullActivity.customers = customers.data.map((c) => ({
+        id: c.id,
+        email: c.email,
+        created: c.created,
+        created_iso: new Date(c.created * 1000).toISOString(),
+        name: c.name,
+        balance: c.balance,
+        currency: c.currency,
+        default_source: c.default_source,
+        invoice_prefix: c.invoice_prefix,
+        livemode: c.livemode,
+        deleted: c.deleted ?? false,
+        metadata: c.metadata,
+      }));
+      fullActivity.customersCount = customers.data.length;
+    } catch (err) {
+      fullActivity.customersError = err instanceof Error ? err.message : String(err);
+    }
+
+    try {
+      const pis = await stripe.paymentIntents.list({ limit: 100, created: { gte: sinceUnix } });
+      fullActivity.paymentIntents = pis.data.map((p) => ({
+        id: p.id,
+        created: p.created,
+        created_iso: new Date(p.created * 1000).toISOString(),
+        status: p.status,
+        amount: p.amount,
+        amount_received: p.amount_received,
+        currency: p.currency,
+        customer: typeof p.customer === "string" ? p.customer : (p.customer?.id ?? null),
+        payment_method: typeof p.payment_method === "string" ? p.payment_method : (p.payment_method?.id ?? null),
+        payment_method_types: p.payment_method_types,
+        last_payment_error: p.last_payment_error?.message ?? null,
+      }));
+      fullActivity.paymentIntentsCount = pis.data.length;
+    } catch (err) {
+      fullActivity.paymentIntentsError = err instanceof Error ? err.message : String(err);
+    }
+
+    try {
+      const subs = await stripe.subscriptions.list({ limit: 100, created: { gte: sinceUnix }, status: "all" });
+      fullActivity.subscriptions = subs.data.map((s) => ({
+        id: s.id,
+        created: s.created,
+        created_iso: new Date(s.created * 1000).toISOString(),
+        status: s.status,
+        customer: typeof s.customer === "string" ? s.customer : s.customer.id,
+        items_count: s.items?.data?.length ?? 0,
+        // current_period_start/end live on subscription items in v15+ types.
+        // Pull from the first item if present.
+        current_period_start: s.items?.data?.[0]?.current_period_start ?? null,
+        current_period_end: s.items?.data?.[0]?.current_period_end ?? null,
+        canceled_at: s.canceled_at,
+        cancel_at: s.cancel_at,
+        livemode: s.livemode,
+      }));
+      fullActivity.subscriptionsCount = subs.data.length;
+    } catch (err) {
+      fullActivity.subscriptionsError = err instanceof Error ? err.message : String(err);
+    }
+
+    try {
+      const charges = await stripe.charges.list({ limit: 100, created: { gte: sinceUnix } });
+      fullActivity.charges = charges.data.map((c) => ({
+        id: c.id,
+        created: c.created,
+        created_iso: new Date(c.created * 1000).toISOString(),
+        status: c.status,
+        paid: c.paid,
+        amount: c.amount,
+        amount_captured: c.amount_captured,
+        currency: c.currency,
+        customer: typeof c.customer === "string" ? c.customer : (c.customer?.id ?? null),
+        payment_intent: typeof c.payment_intent === "string" ? c.payment_intent : (c.payment_intent?.id ?? null),
+        payment_method_details_type: c.payment_method_details?.type ?? null,
+        receipt_email: c.receipt_email,
+        billing_email: c.billing_details?.email,
+        refunded: c.refunded,
+        disputed: c.disputed,
+        failure_message: c.failure_message,
+      }));
+      fullActivity.chargesCount = charges.data.length;
+    } catch (err) {
+      fullActivity.chargesError = err instanceof Error ? err.message : String(err);
+    }
+
+    // Lookup the abandoned-signup emails by Customer.search to be EXTRA sure
+    // they weren't created as Customers under a wallet auth (Link auto-creates
+    // a Customer in some flows). Customer.search is eventually-consistent but
+    // good enough for a one-off audit.
+    const probeEmails = (url.searchParams.get("probe_emails") || "").split(",").map((s) => s.trim()).filter(Boolean);
+    if (probeEmails.length > 0) {
+      try {
+        const probes: Record<string, unknown> = {};
+        for (const em of probeEmails) {
+          const escaped = em.replace(/'/g, "\\'");
+          const r = await stripe.customers.search({ query: `email:'${escaped}'`, limit: 5 });
+          probes[em] = r.data.map((c) => ({
+            id: c.id,
+            email: c.email,
+            created: c.created,
+            created_iso: new Date(c.created * 1000).toISOString(),
+            deleted: c.deleted ?? false,
+          }));
+        }
+        fullActivity.customersByEmail = probes;
+      } catch (err) {
+        fullActivity.customersByEmailError = err instanceof Error ? err.message : String(err);
+      }
+    }
+  }
+
   return NextResponse.json({
     via: authVia,
     queryWindow: {
@@ -232,5 +353,6 @@ export async function GET(req: NextRequest) {
     recentSessions,
     recentError,
     sessionsByClientRef,
+    fullActivity,
   });
 }
