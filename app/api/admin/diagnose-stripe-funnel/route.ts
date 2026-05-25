@@ -505,6 +505,56 @@ export async function GET(req: NextRequest) {
       deepAudit.webhookEndpointsError = err instanceof Error ? err.message : String(err);
     }
 
+    // Apple Pay domain registration — Apple Pay won't render on a custom
+    // Checkout subdomain (e.g. checkout.momfluence.app) unless the domain is
+    // explicitly registered with Stripe + the Apple Pay association file is
+    // served from /.well-known/apple-developer-merchantid-domain-association.
+    // If we have 0 domains registered, Apple Pay never shows up on the
+    // custom subdomain — which would explain why NO setup_intents exist
+    // (wallet auth never even tried).
+    try {
+      // The Apple Pay domains endpoint exists at /v1/apple_pay/domains.
+      // Stripe-node may not expose it as a typed namespace in all versions;
+      // hit it via stripe.request as a fallback.
+      const reqFn = (stripe as unknown as { request: (m: string, p: string, q: unknown) => Promise<{ data: Array<{ id: string; domain_name: string; livemode: boolean }> }> }).request;
+      const domains = await reqFn.call(stripe, "GET", "/v1/apple_pay/domains", {});
+      deepAudit.applePayDomains = domains.data.map((d) => ({
+        id: d.id,
+        domain_name: d.domain_name,
+        livemode: d.livemode,
+      }));
+      deepAudit.applePayDomainsCount = domains.data.length;
+    } catch (err) {
+      deepAudit.applePayDomainsError = err instanceof Error ? err.message : String(err);
+    }
+
+    // Payment-method config (which methods are enabled on Checkout). Stripe
+    // moved most of this to payment_method_configurations in 2024+; if any
+    // configuration exists, we want to know what methods it enables.
+    try {
+      const reqFn = (stripe as unknown as { request: (m: string, p: string, q: unknown) => Promise<{ data: Array<Record<string, unknown>> }> }).request;
+      const pmConfigs = await reqFn.call(stripe, "GET", "/v1/payment_method_configurations", {});
+      deepAudit.paymentMethodConfigurations = pmConfigs.data.map((c) => {
+        const enabled: string[] = [];
+        for (const [k, v] of Object.entries(c)) {
+          if (v && typeof v === "object" && "display_preference" in (v as Record<string, unknown>)) {
+            const pref = (v as { display_preference?: { value?: string } }).display_preference;
+            if (pref?.value === "on") enabled.push(k);
+          }
+        }
+        return {
+          id: c.id,
+          name: c.name,
+          active: c.active,
+          is_default: c.is_default,
+          livemode: c.livemode,
+          methods_on: enabled,
+        };
+      });
+    } catch (err) {
+      deepAudit.paymentMethodConfigurationsError = err instanceof Error ? err.message : String(err);
+    }
+
     // Balance — does the account show fees / refunds / negative txns that
     // could indicate prior payments we don't see in the Charge list?
     try {
