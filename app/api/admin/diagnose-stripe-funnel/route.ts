@@ -507,17 +507,24 @@ export async function GET(req: NextRequest) {
 
     // Apple Pay domain registration — Apple Pay won't render on a custom
     // Checkout subdomain (e.g. checkout.momfluence.app) unless the domain is
-    // explicitly registered with Stripe + the Apple Pay association file is
-    // served from /.well-known/apple-developer-merchantid-domain-association.
-    // If we have 0 domains registered, Apple Pay never shows up on the
-    // custom subdomain — which would explain why NO setup_intents exist
-    // (wallet auth never even tried).
+    // explicitly registered with Stripe. Hit /v1/apple_pay/domains via raw
+    // fetch since the typed stripe-node namespace varies by version.
+    const stripeApi = async <T>(path: string): Promise<T> => {
+      const r = await fetch(`https://api.stripe.com${path}`, {
+        headers: {
+          Authorization: `Bearer ${secret.trim()}`,
+          "Stripe-Version": "2024-06-20",
+        },
+      });
+      if (!r.ok) {
+        const t = await r.text().catch(() => "");
+        throw new Error(`${r.status} ${t.slice(0, 200)}`);
+      }
+      return (await r.json()) as T;
+    };
+
     try {
-      // The Apple Pay domains endpoint exists at /v1/apple_pay/domains.
-      // Stripe-node may not expose it as a typed namespace in all versions;
-      // hit it via stripe.request as a fallback.
-      const reqFn = (stripe as unknown as { request: (m: string, p: string, q: unknown) => Promise<{ data: Array<{ id: string; domain_name: string; livemode: boolean }> }> }).request;
-      const domains = await reqFn.call(stripe, "GET", "/v1/apple_pay/domains", {});
+      const domains = await stripeApi<{ data: Array<{ id: string; domain_name: string; livemode: boolean }> }>("/v1/apple_pay/domains?limit=20");
       deepAudit.applePayDomains = domains.data.map((d) => ({
         id: d.id,
         domain_name: d.domain_name,
@@ -528,12 +535,8 @@ export async function GET(req: NextRequest) {
       deepAudit.applePayDomainsError = err instanceof Error ? err.message : String(err);
     }
 
-    // Payment-method config (which methods are enabled on Checkout). Stripe
-    // moved most of this to payment_method_configurations in 2024+; if any
-    // configuration exists, we want to know what methods it enables.
     try {
-      const reqFn = (stripe as unknown as { request: (m: string, p: string, q: unknown) => Promise<{ data: Array<Record<string, unknown>> }> }).request;
-      const pmConfigs = await reqFn.call(stripe, "GET", "/v1/payment_method_configurations", {});
+      const pmConfigs = await stripeApi<{ data: Array<Record<string, unknown>> }>("/v1/payment_method_configurations?limit=20");
       deepAudit.paymentMethodConfigurations = pmConfigs.data.map((c) => {
         const enabled: string[] = [];
         for (const [k, v] of Object.entries(c)) {
