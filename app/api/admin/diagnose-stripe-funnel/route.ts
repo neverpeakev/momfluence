@@ -341,6 +341,185 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // 5. DEEP audit: places Stripe can silently suppress without surfacing in the
+  //    standard Customer/PI/Sub/Charge tables. This is for the "shadow-ban"
+  //    hypothesis — i.e. could Stripe Radar / Reviews / capability throttling
+  //    be blocking payments before they ever reach the merchant's normal
+  //    dashboard surfaces?
+  //
+  //    What we pull:
+  //      - The raw Events firehose (last 30d). Every state change Stripe knows
+  //        about. radar.early_fraud_warning, review.opened, payment_intent.
+  //        payment_failed, setup_intent.setup_failed, account.updated, etc.
+  //        all surface here even when the merchant Dashboard suppresses them.
+  //      - Radar early_fraud_warnings list directly.
+  //      - Reviews list (manual review queue Radar puts payments into).
+  //      - SetupIntents (wallet auth happens via SetupIntent in some flows —
+  //        if Apple Pay is silently failing to tokenize, we'd see failed
+  //        SetupIntents).
+  //      - Disputes (zero expected since we have zero successful payments,
+  //        but listed for completeness).
+  //      - Account.retrieve with expanded fields that aren't in the standard
+  //        retrieval.
+  //
+  //    Note: Stripe DOES sometimes silently block payment-method attempts via
+  //    Radar's "Block" rules. Those blocks DO emit a `radar.early_fraud_warning`
+  //    or `payment_intent.payment_failed` event, even when the merchant's
+  //    dashboard normalizes them out of the Payments view. The Events API is
+  //    the firehose that catches them all.
+  let deepAudit: Record<string, unknown> | undefined;
+  if (url.searchParams.get("deep") === "true") {
+    deepAudit = {};
+
+    try {
+      // Pull ALL events in the window — no type filter. Capped at 300 events
+      // (3 pages of 100). 30 days of low-volume traffic should fit comfortably.
+      const allEvents: Array<{ id: string; type: string; created: number; created_iso: string; data_object_id?: string; data_object_status?: string }> = [];
+      let starting_after: string | undefined;
+      for (let page = 0; page < 5; page++) {
+        const res = await stripe.events.list({
+          limit: 100,
+          created: { gte: sinceUnix },
+          ...(starting_after ? { starting_after } : {}),
+        });
+        for (const e of res.data) {
+          const obj = e.data?.object as { id?: string; status?: string } | undefined;
+          allEvents.push({
+            id: e.id,
+            type: e.type,
+            created: e.created,
+            created_iso: new Date(e.created * 1000).toISOString(),
+            data_object_id: obj?.id,
+            data_object_status: obj?.status,
+          });
+        }
+        if (!res.has_more || res.data.length === 0) break;
+        starting_after = res.data[res.data.length - 1].id;
+      }
+      // Group by type for human-readable summary
+      const byType: Record<string, number> = {};
+      for (const e of allEvents) byType[e.type] = (byType[e.type] || 0) + 1;
+      deepAudit.events = allEvents;
+      deepAudit.eventsByType = byType;
+      deepAudit.eventsCount = allEvents.length;
+    } catch (err) {
+      deepAudit.eventsError = err instanceof Error ? err.message : String(err);
+    }
+
+    try {
+      const efws = await stripe.radar.earlyFraudWarnings.list({ limit: 100, created: { gte: sinceUnix } });
+      deepAudit.earlyFraudWarnings = efws.data.map((e) => ({
+        id: e.id,
+        created: e.created,
+        fraud_type: e.fraud_type,
+        actionable: e.actionable,
+        charge: typeof e.charge === "string" ? e.charge : e.charge.id,
+        payment_intent: typeof e.payment_intent === "string" ? e.payment_intent : (e.payment_intent?.id ?? null),
+      }));
+      deepAudit.efwCount = efws.data.length;
+    } catch (err) {
+      deepAudit.efwError = err instanceof Error ? err.message : String(err);
+    }
+
+    try {
+      const reviews = await stripe.reviews.list({ limit: 100, created: { gte: sinceUnix } });
+      deepAudit.reviews = reviews.data.map((r) => ({
+        id: r.id,
+        created: r.created,
+        open: r.open,
+        opened_reason: r.opened_reason,
+        closed_reason: r.closed_reason,
+        charge: typeof r.charge === "string" ? r.charge : (r.charge?.id ?? null),
+        payment_intent: typeof r.payment_intent === "string" ? r.payment_intent : (r.payment_intent?.id ?? null),
+        reason: r.reason,
+      }));
+      deepAudit.reviewsCount = reviews.data.length;
+    } catch (err) {
+      deepAudit.reviewsError = err instanceof Error ? err.message : String(err);
+    }
+
+    try {
+      const sis = await stripe.setupIntents.list({ limit: 100, created: { gte: sinceUnix } });
+      deepAudit.setupIntents = sis.data.map((s) => ({
+        id: s.id,
+        created: s.created,
+        created_iso: new Date(s.created * 1000).toISOString(),
+        status: s.status,
+        customer: typeof s.customer === "string" ? s.customer : (s.customer?.id ?? null),
+        payment_method_types: s.payment_method_types,
+        last_setup_error: s.last_setup_error?.message ?? null,
+        last_setup_error_code: s.last_setup_error?.code ?? null,
+      }));
+      deepAudit.setupIntentsCount = sis.data.length;
+    } catch (err) {
+      deepAudit.setupIntentsError = err instanceof Error ? err.message : String(err);
+    }
+
+    try {
+      const disputes = await stripe.disputes.list({ limit: 100, created: { gte: sinceUnix } });
+      deepAudit.disputes = disputes.data.map((d) => ({
+        id: d.id,
+        created: d.created,
+        status: d.status,
+        reason: d.reason,
+        amount: d.amount,
+        currency: d.currency,
+        charge: typeof d.charge === "string" ? d.charge : d.charge.id,
+      }));
+      deepAudit.disputesCount = disputes.data.length;
+    } catch (err) {
+      deepAudit.disputesError = err instanceof Error ? err.message : String(err);
+    }
+
+    // Account.retrieve with expanded settings + capabilities pending requirements
+    try {
+      const expandedAccount = (await (stripe.accounts.retrieve as unknown as ((p?: { expand: string[] }) => Promise<Stripe.Account>))({
+        expand: ["settings.payouts", "settings.payments", "settings.dashboard"],
+      }));
+      deepAudit.accountExpanded = {
+        id: expandedAccount.id,
+        future_requirements: expandedAccount.future_requirements,
+        settings_payments_statement_descriptor: expandedAccount.settings?.payments?.statement_descriptor,
+        settings_payouts_schedule: expandedAccount.settings?.payouts?.schedule,
+        settings_dashboard: expandedAccount.settings?.dashboard,
+        controller: expandedAccount.controller,
+      };
+    } catch (err) {
+      deepAudit.accountExpandedError = err instanceof Error ? err.message : String(err);
+    }
+
+    // Webhook endpoints — Stripe will list any active/disabled webhook
+    // endpoints. If our endpoint is "disabled" (Stripe can auto-disable on
+    // repeated 4xx/5xx), that would silently break the post-payment flow.
+    try {
+      const whs = await stripe.webhookEndpoints.list({ limit: 25 });
+      deepAudit.webhookEndpoints = whs.data.map((w) => ({
+        id: w.id,
+        url: w.url,
+        status: w.status,
+        enabled_events_count: w.enabled_events?.length ?? 0,
+        api_version: w.api_version,
+        livemode: w.livemode,
+      }));
+    } catch (err) {
+      deepAudit.webhookEndpointsError = err instanceof Error ? err.message : String(err);
+    }
+
+    // Balance — does the account show fees / refunds / negative txns that
+    // could indicate prior payments we don't see in the Charge list?
+    try {
+      const balance = await stripe.balance.retrieve();
+      deepAudit.balance = {
+        available: balance.available,
+        pending: balance.pending,
+        connect_reserved: balance.connect_reserved,
+        livemode: balance.livemode,
+      };
+    } catch (err) {
+      deepAudit.balanceError = err instanceof Error ? err.message : String(err);
+    }
+  }
+
   return NextResponse.json({
     via: authVia,
     queryWindow: {
@@ -354,5 +533,6 @@ export async function GET(req: NextRequest) {
     recentError,
     sessionsByClientRef,
     fullActivity,
+    deepAudit,
   });
 }
