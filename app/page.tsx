@@ -21,11 +21,11 @@ export default function PublicLanding() {
         Pick a brand. Share a link. Get paid every time someone signs up or buys.
         <br className="hidden sm:block" />
         <span className="sm:hidden"> </span>
-        No followers. No camera. No experience. $5/month — cancel anytime.
+        No followers. No camera. No experience. $5 refundable application deposit.
       </p>
       <div className="mt-5 flex flex-wrap gap-3 sm:mt-7 sm:gap-4 lg:mt-10">
         <Link href="/signup?lp=home" className="btn-primary no-underline">
-          Join for $5/mo → start earning
+          Apply for a spot — $5 →
         </Link>
         <Link href="/how-it-works" className="btn-ghost no-underline">
           How it works →
@@ -85,7 +85,7 @@ export default function PublicLanding() {
           <div>
             <h3 className="text-2xl text-navy-900">Then your dashboard does the bragging.</h3>
             <p className="mt-3 text-base text-navy-600">
-              The second you&apos;re in (it&apos;s $5/month), you see exactly what&apos;s
+              The second you&apos;re accepted (refundable $5 deposit), you see exactly what&apos;s
               happening: clicks, sign-ups, and dollars earned this week. No guessing,
               no chasing brands, no spreadsheets.
             </p>
@@ -324,7 +324,7 @@ export default function PublicLanding() {
           >
             <summary className="faq-summary flex items-center justify-between gap-4">
               <span className="text-base font-semibold text-navy-900 sm:text-lg">
-                What happens if I cancel my $5/mo membership?
+                Is the $5 really refundable?
               </span>
               <span
                 aria-hidden="true"
@@ -335,14 +335,15 @@ export default function PublicLanding() {
             </summary>
             <div className="faq-body space-y-3 pt-4 text-base text-navy-700">
               <p>
-                Earnings on your tracked links{" "}
-                <span className="font-semibold text-navy-900">pause</span>{" "}
-                until you reactivate.
+                <span className="font-semibold text-navy-900">Yes — completely.</span>{" "}
+                If we don&apos;t accept your application, your $5 is refunded
+                automatically within 5-10 business days. No questions, no
+                paperwork, no support tickets.
               </p>
               <p>
-                Anything you&apos;ve already earned stays in your account, but
-                new commissions don&apos;t accrue while inactive. Cancel anytime,
-                reactivate anytime.
+                If we DO accept you, the $5 is credited to your account and
+                added to your first payout — so your first cashout is $5 bigger
+                than what you actually earned.
               </p>
             </div>
           </details>
@@ -361,13 +362,13 @@ export default function PublicLanding() {
       </section>
 
       <section className="mt-24 rounded-3xl bg-navy-900 p-10 text-center sm:p-14">
-        <h2 className="text-4xl text-white">$5/month. Cancel anytime.</h2>
+        <h2 className="text-4xl text-white">Apply for a spot. $5 refundable.</h2>
         <p className="mt-4 text-base text-navy-200">
-          Your fast-track first $25 unlocks day one.
+          Credited to your first payout if accepted — refunded in full if not.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Link href="/signup?lp=home" className="btn-primary no-underline">
-            Join MomFluence → start earning
+            Apply for a spot — $5 →
           </Link>
           <Link
             href="/how-it-works"

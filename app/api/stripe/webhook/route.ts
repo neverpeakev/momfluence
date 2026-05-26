@@ -78,7 +78,17 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        // v2 is single-sided — no manual application review, set status='approved' on first payment.
+        // Handle both modes:
+        //   mode='payment'      → one-time $5 application fee (current flow,
+        //                         2026-05-25 apply-for-a-spot pivot)
+        //   mode='subscription' → legacy $5/mo subscription (Kelly, kevin+test5
+        //                         and any user still on the old flow)
+        //
+        // In both cases we set status='approved' + membership_status='active'.
+        // For the apply-for-a-spot flow, "approved" means: their application
+        // payment cleared. The automated review (V2) will run separately and
+        // can downgrade to 'rejected' + initiate refund if criteria fail.
+        const isApplicationFee = session.mode === "payment";
         const { error } = await supabase
           .from("momfluencers")
           .upsert(
@@ -94,9 +104,18 @@ export async function POST(req: NextRequest) {
             { onConflict: "id" }
           );
 
+        if (!error) {
+          console.log(
+            `[stripe webhook] momfluencer activated (mode=${session.mode}, isApplicationFee=${isApplicationFee})`,
+            authUserId
+          );
+        }
+
         if (error) {
           console.error("[stripe webhook] failed to upsert momfluencer:", error.message);
-        } else if (customerId) {
+        }
+
+        if (!error && customerId) {
           // Fire Meta CAPI Purchase server-side, in parallel with the browser pixel
           // and Stape CAPIG. Meta dedupes on event_id = `purchase_${session.id}`
           // (same id /welcome's fireMetaPurchase passes). See

@@ -4,20 +4,51 @@ import { createClient } from "@/lib/supabase/server";
 import { toStripeMetadata, type Attribution } from "@/lib/funnel-lab/attribution";
 import { fireServerSideCompleteRegistration } from "@/lib/meta-capi";
 
+/**
+ * Apply-for-a-spot checkout (2026-05-25 pivot).
+ *
+ * Previously: mode='subscription', $5/mo recurring via STRIPE_PRICE_ID_MEMBERSHIP.
+ * Now: mode='payment', one-time $5 application fee via inline price_data
+ * (no env var needed — Stripe creates the Price on the fly).
+ *
+ * Why one-time over subscription:
+ *   1. "Refundable deposit" framing requires a single charge, not recurring
+ *   2. Eliminates month-2 churn risk on a positioning that promised refund
+ *   3. Lets the user feel they've paid once and earned permanent access
+ *   4. Stripe still creates Customer + Charge — webhook handler unchanged
+ *
+ * Existing $5/mo subscribers (Kelly, kevin+test5) are unaffected — their
+ * Stripe subscriptions continue independently. Only NEW signups go through
+ * this one-time path.
+ *
+ * Application fields (instagram_handle, tiktok_handle, why, geo) are saved
+ * to the momfluencer row before the Stripe redirect so we have them for
+ * the auto-review step. Status stays 'pending' until checkout.session.
+ * completed webhook flips it to 'approved'.
+ */
+
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
+interface ApplicationFields {
+  instagram_handle: string | null;
+  tiktok_handle: string | null;
+  why: string;
+  geo: "us" | "ca" | "other";
+}
+
+const APPLICATION_FEE_CENTS = 500; // $5.00 USD
+
 export async function POST(req: NextRequest) {
   const secret = process.env.STRIPE_SECRET_KEY;
-  const priceId = process.env.STRIPE_PRICE_ID_MEMBERSHIP;
 
   // Best-effort parse — body is optional. If parsing fails, we just send no attribution.
   let attribution: Attribution = {};
+  let application: ApplicationFields | null = null;
   try {
     const body = await req.json();
     if (body?.attribution && typeof body.attribution === "object") {
-      // Re-sanitize on the server even though the client sanitized — defense in depth.
       const a = body.attribution as Record<string, unknown>;
       const slugLike = (v: unknown): string | undefined =>
         typeof v === "string" && /^[a-z0-9-]{1,40}$/.test(v) ? v : undefined;
@@ -32,15 +63,26 @@ export async function POST(req: NextRequest) {
         pricingVariant: pricingLike(a.pricingVariant),
       };
     }
+    if (body?.application && typeof body.application === "object") {
+      const ap = body.application as Record<string, unknown>;
+      const handleLike = (v: unknown): string | null =>
+        typeof v === "string" && v.length > 0 && v.length <= 60 && /^[a-z0-9._-]+$/i.test(v) ? v : null;
+      const geoLike = (v: unknown): "us" | "ca" | "other" =>
+        v === "us" || v === "ca" || v === "other" ? v : "other";
+      const whyClean = typeof ap.why === "string" ? ap.why.trim().slice(0, 1000) : "";
+      application = {
+        instagram_handle: handleLike(ap.instagram_handle),
+        tiktok_handle: handleLike(ap.tiktok_handle),
+        why: whyClean,
+        geo: geoLike(ap.geo),
+      };
+    }
   } catch {
     // ignore — no body, attribution stays empty
   }
 
-  if (!secret || !priceId) {
-    console.error("[/api/checkout/create] env-missing", {
-      hasSecret: Boolean(secret),
-      hasPriceId: Boolean(priceId)
-    });
+  if (!secret) {
+    console.error("[/api/checkout/create] env-missing STRIPE_SECRET_KEY");
     return NextResponse.json(
       { error: "Checkout is not configured. Please try again shortly." },
       { status: 503 }
@@ -49,7 +91,6 @@ export async function POST(req: NextRequest) {
 
   // Defense-in-depth: strip any whitespace/newlines from env var paste artifacts.
   const cleanSecret = secret.trim();
-  const cleanPriceId = priceId.trim();
 
   // Diagnostic-only fingerprint of the secret (never log the secret itself).
   const secretPrefix = cleanSecret.slice(0, 7); // e.g. "sk_live" or "sk_test"
@@ -60,7 +101,6 @@ export async function POST(req: NextRequest) {
   const secretContainsSpace = / /.test(secret);
   const secretContainsCR = secret.includes("\r");
   const secretSkLiveCount = (secret.match(/sk_live_/g) || []).length;
-  const priceIdTrimmedSame = priceId === cleanPriceId;
 
   const supabase = await createClient();
   const {
@@ -69,6 +109,31 @@ export async function POST(req: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  // Save application fields to the momfluencer row before redirecting to
+  // Stripe. The row already exists (created by the auth.users insert trigger)
+  // — we just enrich it with the application data so the reviewer step has
+  // what it needs when checkout.session.completed fires the webhook.
+  if (application) {
+    const { error: updateErr } = await supabase
+      .from("momfluencers")
+      .update({
+        instagram_handle: application.instagram_handle,
+        tiktok_handle: application.tiktok_handle,
+        notes_internal: JSON.stringify({
+          application_why: application.why,
+          application_geo: application.geo,
+          application_submitted_at: new Date().toISOString(),
+        }),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+    if (updateErr) {
+      // Non-fatal — checkout can still proceed without the application fields
+      // saved, but log so we notice if the pattern persists.
+      console.error("[/api/checkout/create] application save failed:", updateErr.message);
+    }
   }
 
   // Fire Meta CAPI CompleteRegistration server-side, in parallel with the
@@ -110,14 +175,38 @@ export async function POST(req: NextRequest) {
 
   try {
     const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      line_items: [{ price: cleanPriceId, quantity: 1 }],
+      // One-time application fee, not a subscription. This is the core of
+      // the apply-for-a-spot pivot — see file docblock for rationale.
+      mode: "payment",
+      line_items: [
+        {
+          // Inline price_data — no need to pre-create a Stripe Product/Price.
+          // Stripe creates them on the fly. The product_data.name + description
+          // is what Stripe renders at the top of the Checkout page, so it's
+          // the LAST piece of copy the user reads before paying. Critical.
+          price_data: {
+            currency: "usd",
+            unit_amount: APPLICATION_FEE_CENTS,
+            product_data: {
+              name: "MomFluence Affiliate Application — $5",
+              description:
+                "Refundable deposit. Credited to your first payout if accepted, fully refunded if not. Decision in under 24 hours.",
+            },
+          },
+          quantity: 1,
+        },
+      ],
       customer_email: user.email ?? undefined,
       client_reference_id: user.id,
-      success_url: "https://momfluence.app/welcome?session_id={CHECKOUT_SESSION_ID}",
+      // Send the user to the review screen first (psychological "we're
+      // reviewing your application" wait) — that page redirects to /welcome
+      // once the auto-review completes.
+      success_url: "https://momfluence.app/application-status?session_id={CHECKOUT_SESSION_ID}",
       cancel_url: "https://momfluence.app/?cancelled=true",
       allow_promotion_codes: true,
-      subscription_data: {
+      // Payment-mode sessions need payment_intent_data for metadata to land
+      // on the resulting PaymentIntent (subscription_data isn't applicable).
+      payment_intent_data: {
         metadata: sessionMeta,
       },
       metadata: sessionMeta,
@@ -169,8 +258,6 @@ export async function POST(req: NextRequest) {
       secretContainsSpace,
       secretContainsCR,
       secretSkLiveCount,
-      priceId: cleanPriceId,
-      priceIdTrimmedSame
     };
 
     // Multi-line console output — short lines avoid log-viewer truncation.
@@ -186,7 +273,6 @@ export async function POST(req: NextRequest) {
     console.error("[checkout-debug] causeHostname:", diag.causeHostname);
     console.error("[checkout-debug] secretPrefix:", diag.secretPrefix);
     console.error("[checkout-debug] secretLen:", diag.secretLen);
-    console.error("[checkout-debug] priceIdTrimmedSame:", diag.priceIdTrimmedSame);
 
     return NextResponse.json(
       { error: e.message || "Checkout creation failed.", diagnostic: diag },

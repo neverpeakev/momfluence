@@ -95,10 +95,15 @@ export default function CompleteInner() {
       //    SignupInner.handleSubmit() for consistency.
       setPhase("starting_checkout");
       fireMetaCompleteRegistration(user.id);
-      fireMetaEvent("SignupStarted", { content_name: "MomFluence Membership" });
+      fireMetaEvent("SignupStarted", { content_name: "MomFluence Application" });
 
       const attr = readAttributionFromCookies();
       try {
+        // OAuth flow: we don't have application fields (instagram/tiktok/why/geo)
+        // from the OAuth handshake — they'll fill those in after acceptance on
+        // the profile page. For now we just submit the bare application.
+        // TODO V2: surface a mini-application form on /signup/complete before
+        // the Stripe redirect to collect socials + why.
         const res = await fetch("/api/checkout/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -126,12 +131,12 @@ export default function CompleteInner() {
   return (
     <main className="mx-auto max-w-md px-6 py-20">
       <h1 className="text-3xl">
-        {phase === "error" ? "Couldn't finish signup" : "Almost there…"}
+        {phase === "error" ? "Couldn't finish application" : "Almost there…"}
       </h1>
       <p className="mt-3 text-base text-navy-700">
         {phase === "checking" && "Reading your account…"}
         {phase === "starting_checkout" &&
-          "Account ready — bouncing you to Stripe to set up your $5/mo membership."}
+          "Account ready — sending you to submit your $5 refundable application deposit."}
         {phase === "error" && err}
       </p>
       {phase === "error" && (
