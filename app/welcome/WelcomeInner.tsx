@@ -33,20 +33,31 @@ export default function WelcomeInner() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-20">
       <p className="text-sm uppercase tracking-widest text-coral-600 font-semibold">
-        Welcome
+        Application accepted
       </p>
-      <h1 className="mt-3 text-5xl text-navy-900">You&apos;re in!</h1>
+      <h1 className="mt-3 text-5xl text-navy-900">Welcome in.</h1>
       <p className="mt-6 text-lg text-navy-600">
-        Your $5/mo membership is active. Let&apos;s get your profile set up so we can start
-        tagging links to you.
+        You made it through. We&apos;re glad you&apos;re here — let&apos;s get your profile
+        set up so we can start tagging links to you.
       </p>
 
-      <div className="mt-6 rounded-xl bg-coral-50 px-4 py-3 ring-1 ring-coral-200">
+      <div className="mt-6 rounded-xl bg-navy-900 px-5 py-4 text-white shadow-lg">
+        <p className="text-xs font-semibold uppercase tracking-wider text-coral-300">
+          $5 deposit credited
+        </p>
+        <p className="mt-2 text-base leading-relaxed">
+          Your $5 application deposit is locked in and ready to add to your first
+          payout. <span className="font-semibold">Whatever you earn first, your
+          cashout will be $5 bigger.</span>
+        </p>
+      </div>
+
+      <div className="mt-4 rounded-xl bg-coral-50 px-4 py-3 ring-1 ring-coral-200">
         <p className="text-sm text-navy-800">
-          <span className="font-semibold text-coral-700">Quick reminder:</span> an
-          active <span className="font-semibold">$5/mo membership</span> is
-          required to earn commissions on your tracked links. If you ever cancel
-          or your card fails, earnings pause until you reactivate.
+          <span className="font-semibold text-coral-700">How it works:</span>{" "}
+          tag your link to brands, share it where your audience already lives, and
+          we pay you commission when someone you sent buys. Hit $25 in earnings
+          and you can cash out.
         </p>
       </div>
 
@@ -68,10 +79,10 @@ export default function WelcomeInner() {
           </p>
         </div>
         <div className="card">
-          <h3 className="text-lg">Your first $25</h3>
+          <h3 className="text-lg">Your first cashout</h3>
           <p className="mt-2 text-sm text-navy-600">
-            Every new member gets a fast-track payout — available day one.
-            Earn $25 and you can cash out.
+            Earn $25 and you can cash out. Your $5 deposit is added on top — so your
+            first cashout will be <span className="font-semibold">$30</span>.
           </p>
         </div>
         <div className="card">

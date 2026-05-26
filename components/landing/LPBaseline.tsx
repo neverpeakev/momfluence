@@ -89,8 +89,8 @@ export default async function LPBaseline({ signupHref, closer }: Props) {
 
       <MidPageCTA
         eyebrow="Founder-backed"
-        headline="If you don&apos;t earn your $5 back, Kevin personally makes it right."
-        cta="Find out more — $5/mo"
+        headline="Apply for a spot. $5 refundable. Credited to your first payout."
+        cta="Apply for a spot — $5"
         signupHref={signupHrefC}
       />
 
@@ -103,9 +103,9 @@ export default async function LPBaseline({ signupHref, closer }: Props) {
       </LPSectionTracker>
 
       <MidPageCTA
-        eyebrow="All 22 brands, one membership"
-        headline="Skip the applications. Open the door for $5/mo."
-        cta="Get the keys — $5/mo"
+        eyebrow="All 22 brands, one application"
+        headline="Apply once. Refundable $5 deposit. Open the door."
+        cta="Apply for a spot — $5"
         signupHref={signupHrefC}
       />
 
@@ -123,8 +123,8 @@ export default async function LPBaseline({ signupHref, closer }: Props) {
 
       <MidPageCTA
         eyebrow="Like the math?"
-        headline="Lock in your number. Start sharing today."
-        cta="Get yours — $5/mo"
+        headline="Lock in your spot. Refundable $5 deposit. Start sharing today."
+        cta="Apply for a spot — $5"
         signupHref={signupHrefC}
       />
 
