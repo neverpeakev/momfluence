@@ -306,6 +306,11 @@ export async function POST(req: NextRequest) {
   }
 
   // Step 4: create the campaign.
+  // is_adset_budget_sharing_enabled=false → use per-ad-set budget (the
+  // lifetime_budget we set on the ad set below). If we set true, ad sets
+  // would share 20% of their budgets — not what we want for a single-ad-set
+  // test. Meta requires this field explicitly when not using campaign-level
+  // budget (CBO).
   const createCampaignRes = await metaFetch(`/${adAccountId()}/campaigns`, {
     method: "POST",
     body: JSON.stringify({
@@ -314,6 +319,7 @@ export async function POST(req: NextRequest) {
       status: "ACTIVE",
       special_ad_categories: [],
       buying_type: "AUCTION",
+      is_adset_budget_sharing_enabled: false,
     }),
   });
   if (createCampaignRes.status !== 200) {
