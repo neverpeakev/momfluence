@@ -42,7 +42,10 @@
  */
 
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createSsrClient } from "@/lib/supabase/server";
+import {
+  createClient as createSsrClient,
+  createServiceRoleClient,
+} from "@/lib/supabase/server";
 import { z } from "zod";
 import {
   isConfigured,
@@ -81,15 +84,25 @@ async function authorize(req: NextRequest): Promise<Auth> {
     const sb = await createSsrClient();
     const { data: { user } } = await sb.auth.getUser();
     if (user) {
-      const { data: me } = await sb
+      // Use service-role client for the is_admin lookup. The user's own
+      // session occasionally fails to propagate auth.uid() into Postgres
+      // (suspected: custom auth domain + cookie-name mismatch). Using
+      // service-role bypasses RLS so the admin check is deterministic.
+      const admin = createServiceRoleClient();
+      const { data: me } = await admin
         .from("momfluencers")
-        .select("is_admin")
+        .select("is_admin,email")
         .eq("id", user.id)
         .maybeSingle();
       if (me?.is_admin) return { ok: true, via: "cookie" };
-      return { ok: false, status: 403, error: "signed in but not admin" };
+      return {
+        ok: false,
+        status: 403,
+        error: `signed in as ${me?.email ?? user.id} but not admin`,
+      };
     }
-  } catch {
+  } catch (e) {
+    console.error("[create-traffic-campaign] auth error:", e instanceof Error ? e.message : e);
     // fall through to bearer-token check
   }
 
