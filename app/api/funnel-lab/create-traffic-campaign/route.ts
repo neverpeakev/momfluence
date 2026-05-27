@@ -143,6 +143,11 @@ const Body = z.object({
   end_days_from_now: z.number().int().min(1).max(180).default(30),
   source_ad_set_id: z.string().optional(),
   dry_run: z.boolean().default(false),
+  // For retry runs — skip campaign+adset creation, just add ads to an existing
+  // ad set. Used when a prior call created campaign+adset but the ad
+  // cloning failed (e.g. objective-mismatch error from /copies on the first
+  // attempt before we switched to the creative-id approach).
+  existing_ad_set_id: z.string().optional(),
 });
 
 interface AdInsightRow {
@@ -305,105 +310,157 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, dry_run: true, plan });
   }
 
-  // Step 4: create the campaign.
-  // is_adset_budget_sharing_enabled=false → use per-ad-set budget (the
-  // lifetime_budget we set on the ad set below). If we set true, ad sets
-  // would share 20% of their budgets — not what we want for a single-ad-set
-  // test. Meta requires this field explicitly when not using campaign-level
-  // budget (CBO).
-  const createCampaignRes = await metaFetch(`/${adAccountId()}/campaigns`, {
-    method: "POST",
-    body: JSON.stringify({
-      name: campaignName,
-      objective: "OUTCOME_TRAFFIC",
+  // Reuse path — if caller passes existing_ad_set_id, skip campaign+adset
+  // creation and jump straight to ad creation. Used to recover from earlier
+  // failed runs that created a campaign+adset shell but couldn't populate
+  // ads (e.g. the cross-objective /copies error before the switch to
+  // creative-id approach).
+  let newCampaignId: string;
+  let newAdSetId: string;
+  if (parsed.existing_ad_set_id) {
+    newAdSetId = parsed.existing_ad_set_id;
+    // Resolve campaign_id from the existing ad set for reporting.
+    const lookupRes = await metaFetch(
+      `/${parsed.existing_ad_set_id}?fields=campaign_id`
+    );
+    if (lookupRes.status !== 200) {
+      return NextResponse.json(
+        {
+          ok: false,
+          step: "resolve_existing_campaign",
+          error: `${lookupRes.status}: ${lookupRes.text.slice(0, 400)}`,
+        },
+        { status: 502 }
+      );
+    }
+    const lookupData = JSON.parse(lookupRes.text) as { campaign_id?: string };
+    newCampaignId = lookupData.campaign_id ?? "(unknown)";
+  } else {
+    // Normal path — create campaign + ad set.
+    newCampaignId = await (async () => {
+      const r = await createCampaign();
+      if (!r.ok) throw new Error(r.errorJson);
+      return r.id;
+    })().catch((e) => {
+      throw e;
+    });
+    newAdSetId = await (async () => {
+      const r = await createAdSet(newCampaignId);
+      if (!r.ok) throw new Error(r.errorJson);
+      return r.id;
+    })().catch((e) => {
+      throw e;
+    });
+  }
+
+  // (the existing step 4/5 inline logic below will be replaced by the
+  //  helpers above — declare them after to keep diff minimal.)
+
+  // Helper: create campaign. (Kept as inline closure for clarity.)
+  async function createCampaign(): Promise<
+    { ok: true; id: string } | { ok: false; errorJson: string }
+  > {
+    const r = await metaFetch(`/${adAccountId()}/campaigns`, {
+      method: "POST",
+      body: JSON.stringify({
+        name: campaignName,
+        objective: "OUTCOME_TRAFFIC",
+        status: "ACTIVE",
+        special_ad_categories: [],
+        buying_type: "AUCTION",
+        is_adset_budget_sharing_enabled: false,
+      }),
+    });
+    if (r.status !== 200) {
+      return { ok: false, errorJson: r.text.slice(0, 1200) };
+    }
+    return { ok: true, id: (JSON.parse(r.text) as { id: string }).id };
+  }
+  async function createAdSet(
+    campaignId: string
+  ): Promise<{ ok: true; id: string } | { ok: false; errorJson: string }> {
+    const body: Record<string, unknown> = {
+      name: adSetName,
+      campaign_id: campaignId,
       status: "ACTIVE",
-      special_ad_categories: [],
-      buying_type: "AUCTION",
-      is_adset_budget_sharing_enabled: false,
-    }),
-  });
-  if (createCampaignRes.status !== 200) {
-    return NextResponse.json(
-      {
-        ok: false,
-        step: "create_campaign",
-        meta_response: createCampaignRes.text.slice(0, 1200),
-        plan,
-      },
-      { status: 502 }
-    );
+      lifetime_budget: String(lifetimeBudgetCents),
+      bid_strategy: "COST_CAP",
+      bid_amount: bidAmountCents,
+      optimization_goal: "LANDING_PAGE_VIEWS",
+      billing_event: "IMPRESSIONS",
+      targeting: sourceData.targeting,
+      start_time: startTime,
+      end_time: endTime,
+    };
+    const r = await metaFetch(`/${adAccountId()}/adsets`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    if (r.status !== 200) {
+      return { ok: false, errorJson: r.text.slice(0, 1200) };
+    }
+    return { ok: true, id: (JSON.parse(r.text) as { id: string }).id };
   }
-  const newCampaignId = (JSON.parse(createCampaignRes.text) as { id: string }).id;
 
-  // Step 5: create the ad set with copied targeting + promoted_object.
-  const adSetBody: Record<string, unknown> = {
-    name: adSetName,
-    campaign_id: newCampaignId,
-    status: "ACTIVE",
-    lifetime_budget: String(lifetimeBudgetCents),
-    bid_strategy: "COST_CAP",
-    bid_amount: bidAmountCents,
-    optimization_goal: "LANDING_PAGE_VIEWS",
-    billing_event: "IMPRESSIONS",
-    targeting: sourceData.targeting,
-    start_time: startTime,
-    end_time: endTime,
-  };
-  // Intentionally do NOT copy source's promoted_object for LANDING_PAGE_VIEWS
-  // optimization. The source ad set's promoted_object is custom_event_type=
-  // PURCHASE (for conversions). Carrying that over to a Traffic campaign
-  // either gets rejected by Meta or causes the ad set to chase Purchase
-  // events instead of LP views. LANDING_PAGE_VIEWS optimization measures
-  // PageView events via the pixel automatically — no promoted_object
-  // needed at the ad set level for Traffic objectives.
-  const createAdSetRes = await metaFetch(`/${adAccountId()}/adsets`, {
-    method: "POST",
-    body: JSON.stringify(adSetBody),
-  });
-  if (createAdSetRes.status !== 200) {
-    return NextResponse.json(
-      {
-        ok: false,
-        step: "create_ad_set",
-        new_campaign_id: newCampaignId,
-        meta_response: createAdSetRes.text.slice(0, 1200),
-        requested_body: adSetBody,
-      },
-      { status: 502 }
-    );
-  }
-  const newAdSetId = (JSON.parse(createAdSetRes.text) as { id: string }).id;
-
-  // Step 6: clone each picked ad into the new ad set, status=ACTIVE.
+  // Step 6: create new ads in the new ad set, referencing each source ad's
+  // creative_id. We can't use POST /<ad_id>/copies because Meta blocks
+  // cross-objective copies (source ads live in a Conversions/Sales
+  // campaign; this new campaign is Traffic). Creatives ARE reusable across
+  // objectives — we just need to fetch each source's creative_id and
+  // create a fresh ad with creative: { creative_id }.
   const cloneResults: Array<
-    | { source_ad_id: string; source_name?: string; new_ad_id: string }
+    | { source_ad_id: string; source_name?: string; new_ad_id: string; creative_id: string }
     | { source_ad_id: string; source_name?: string; error: string }
   > = [];
   for (const ad of pickedAds) {
-    const cloneRes = await metaFetch(`/${ad.id}/copies`, {
-      method: "POST",
-      body: JSON.stringify({
-        adset_id: newAdSetId,
-        status_option: "ACTIVE",
-        rename_options: { rename_suffix: " — Traffic Test" },
-      }),
-    });
-    if (cloneRes.status === 200) {
-      const data = JSON.parse(cloneRes.text) as {
-        copied_ad_id?: string;
-        ad_id?: string;
-        id?: string;
-      };
+    // First — fetch source ad's creative_id
+    const detailRes = await metaFetch(`/${ad.id}?fields=creative{id},name`);
+    if (detailRes.status !== 200) {
       cloneResults.push({
         source_ad_id: ad.id,
         source_name: ad.name,
-        new_ad_id: data.copied_ad_id ?? data.ad_id ?? data.id ?? "",
+        error: `fetch_creative ${detailRes.status}: ${detailRes.text.slice(0, 200)}`,
+      });
+      continue;
+    }
+    const detail = JSON.parse(detailRes.text) as {
+      creative?: { id?: string };
+      name?: string;
+    };
+    const creativeId = detail.creative?.id;
+    if (!creativeId) {
+      cloneResults.push({
+        source_ad_id: ad.id,
+        source_name: ad.name,
+        error: "source ad has no creative id",
+      });
+      continue;
+    }
+
+    // Create a fresh ad in the new ad set referencing the same creative
+    const newAdName = `${detail.name ?? ad.name ?? ad.id} — Traffic Test`;
+    const createAdRes = await metaFetch(`/${adAccountId()}/ads`, {
+      method: "POST",
+      body: JSON.stringify({
+        name: newAdName,
+        adset_id: newAdSetId,
+        creative: { creative_id: creativeId },
+        status: "ACTIVE",
+      }),
+    });
+    if (createAdRes.status === 200) {
+      const data = JSON.parse(createAdRes.text) as { id?: string };
+      cloneResults.push({
+        source_ad_id: ad.id,
+        source_name: ad.name,
+        creative_id: creativeId,
+        new_ad_id: data.id ?? "",
       });
     } else {
       cloneResults.push({
         source_ad_id: ad.id,
         source_name: ad.name,
-        error: `${cloneRes.status}: ${cloneRes.text.slice(0, 300)}`,
+        error: `create_ad ${createAdRes.status}: ${createAdRes.text.slice(0, 300)}`,
       });
     }
   }
