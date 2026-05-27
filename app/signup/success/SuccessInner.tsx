@@ -55,7 +55,7 @@ export default function SuccessInner({ email, paid }: Props) {
         const { error } = await supabase.auth.signInWithOtp({
           email: email!,
           options: {
-            emailRedirectTo: "https://momfluence.app/onboarding",
+            emailRedirectTo: "https://momfluence.app/welcome",
             // Do NOT shouldCreateUser=false — we DO want it to create the user
             // if the webhook hasn't yet (race condition safety).
           },
@@ -130,10 +130,10 @@ export default function SuccessInner({ email, paid }: Props) {
             <p className="font-semibold text-navy-900">What&apos;s next</p>
             <ol className="mt-2 ml-4 list-decimal space-y-1">
               <li>Open the email and click the link</li>
-              <li>Tell us your social handles + why you want to join</li>
-              <li>We review applications under 24 hours</li>
-              <li>If approved → access to the offer catalog and your $5 is credited to your first payout</li>
-              <li>If not approved → automatic refund</li>
+              <li>Land on your welcome page — you&apos;re in</li>
+              <li>Tell us your social handles in your profile so we can verify</li>
+              <li>Once verified, your $5 becomes your first month at $5/mo</li>
+              <li>Not verified → automatic refund within 24 hours</li>
             </ol>
           </div>
         </>
