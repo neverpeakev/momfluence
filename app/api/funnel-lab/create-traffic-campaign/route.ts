@@ -292,7 +292,7 @@ export async function POST(req: NextRequest) {
       end_time: endTime,
       status: "ACTIVE",
       targeting: "(copied from source ad set)",
-      promoted_object: sourceData.promoted_object ?? null,
+      promoted_object: "(skipped — LANDING_PAGE_VIEWS doesn't need it)",
     },
     ads: pickedAds.map((a) => ({
       source_ad_id: a.id,
@@ -343,9 +343,13 @@ export async function POST(req: NextRequest) {
     start_time: startTime,
     end_time: endTime,
   };
-  if (sourceData.promoted_object) {
-    adSetBody.promoted_object = sourceData.promoted_object;
-  }
+  // Intentionally do NOT copy source's promoted_object for LANDING_PAGE_VIEWS
+  // optimization. The source ad set's promoted_object is custom_event_type=
+  // PURCHASE (for conversions). Carrying that over to a Traffic campaign
+  // either gets rejected by Meta or causes the ad set to chase Purchase
+  // events instead of LP views. LANDING_PAGE_VIEWS optimization measures
+  // PageView events via the pixel automatically — no promoted_object
+  // needed at the ad set level for Traffic objectives.
   const createAdSetRes = await metaFetch(`/${adAccountId()}/adsets`, {
     method: "POST",
     body: JSON.stringify(adSetBody),
