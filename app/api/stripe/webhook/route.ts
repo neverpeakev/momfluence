@@ -49,26 +49,118 @@ export async function POST(req: NextRequest) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        const authUserId =
-          session.client_reference_id ||
-          (session.metadata?.auth_user_id as string | undefined);
 
-        if (!authUserId) {
-          console.error(
-            "[stripe webhook] checkout.session.completed missing auth_user_id",
-            session.id
-          );
-          break;
-        }
+        // Two flows write through this handler:
+        //  A. Authenticated apply flow (legacy /api/checkout/create):
+        //     client_reference_id = auth_user_id (set by SignupInner /
+        //     CompleteInner before redirect to Stripe)
+        //  B. Anonymous apply flow (NEW /api/apply/start, 2026-05-27):
+        //     metadata.source = "apply_anonymous", no client_reference_id.
+        //     Create the auth.users row here from session.customer_details.email
+        //     before upserting momfluencers.
+        const isAnonymousApply = session.metadata?.source === "apply_anonymous";
 
         const customerId =
           typeof session.customer === "string"
             ? session.customer
             : session.customer?.id ?? null;
 
-        // Resolve the auth user's email so we can satisfy momfluencers.email NOT NULL.
-        const { data: userResp } = await supabase.auth.admin.getUserById(authUserId);
-        const email = userResp?.user?.email ?? session.customer_email ?? null;
+        let authUserId: string | undefined =
+          session.client_reference_id ||
+          (session.metadata?.auth_user_id as string | undefined) ||
+          undefined;
+        let email: string | null = null;
+
+        if (isAnonymousApply) {
+          // Stripe's customer_details.email is populated when customer_creation='always'
+          // and Stripe collected the email at the top of the checkout page.
+          email =
+            session.customer_details?.email ??
+            session.customer_email ??
+            null;
+
+          if (!email) {
+            console.error(
+              "[stripe webhook] apply_anonymous missing email on session",
+              session.id
+            );
+            break;
+          }
+
+          // Create-or-find the Supabase auth user for this email.
+          // admin.createUser with email_confirm=true marks the email as
+          // verified (the payment IS the verification — Stripe just charged
+          // them) AND skips Supabase's signup-confirmation email so the user
+          // only gets ONE email: the magic-link sent from /signup/success.
+          //
+          // If the user already exists, createUser errors with status 422
+          // ("A user with this email address has already been registered").
+          // In that case, look them up via listUsers.
+          const createRes = await supabase.auth.admin.createUser({
+            email,
+            email_confirm: true,
+            user_metadata: { source: "apply_anonymous" },
+          });
+
+          if (createRes.error) {
+            // Most likely: user already exists from a prior signup attempt.
+            // Look them up so we can still link the Stripe Customer + payment.
+            const errMsg = createRes.error.message.toLowerCase();
+            const alreadyExists =
+              errMsg.includes("already") ||
+              errMsg.includes("registered") ||
+              errMsg.includes("exists");
+            if (alreadyExists) {
+              // listUsers doesn't support email filter directly — fetch and filter.
+              const { data: list } = await supabase.auth.admin.listUsers({
+                page: 1,
+                perPage: 1000,
+              });
+              const existing = list?.users.find(
+                (u) => u.email?.toLowerCase() === email!.toLowerCase()
+              );
+              if (existing) {
+                authUserId = existing.id;
+              } else {
+                console.error(
+                  "[stripe webhook] apply_anonymous user already exists but listUsers couldn't find by email",
+                  { email, sessionId: session.id }
+                );
+                break;
+              }
+            } else {
+              console.error(
+                "[stripe webhook] apply_anonymous createUser failed:",
+                createRes.error.message
+              );
+              break;
+            }
+          } else if (createRes.data.user) {
+            authUserId = createRes.data.user.id;
+          }
+        } else {
+          // Authenticated flow — auth_user_id from client_reference_id.
+          if (!authUserId) {
+            console.error(
+              "[stripe webhook] checkout.session.completed missing auth_user_id",
+              session.id
+            );
+            break;
+          }
+
+          // Resolve the auth user's email so we can satisfy momfluencers.email NOT NULL.
+          const { data: userResp } =
+            await supabase.auth.admin.getUserById(authUserId);
+          email = userResp?.user?.email ?? session.customer_email ?? null;
+        }
+
+        if (!authUserId) {
+          console.error(
+            "[stripe webhook] could not resolve authUserId",
+            session.id
+          );
+          break;
+        }
 
         if (!email) {
           console.error(

@@ -21,11 +21,11 @@ export default function PublicLanding() {
         Pick a brand. Share a link. Get paid every time someone signs up or buys.
         <br className="hidden sm:block" />
         <span className="sm:hidden"> </span>
-        No followers. No camera. No experience. $5 refundable application deposit.
+        No followers. No camera. No experience. $5 to apply — refunded if not approved.
       </p>
       <div className="mt-5 flex flex-wrap gap-3 sm:mt-7 sm:gap-4 lg:mt-10">
         <Link href="/signup?lp=home" className="btn-primary no-underline">
-          Apply for a spot — $5 →
+          Apply to join — $5 →
         </Link>
         <Link href="/how-it-works" className="btn-ghost no-underline">
           How it works →

@@ -136,7 +136,7 @@ export default function CompleteInner() {
       <p className="mt-3 text-base text-navy-700">
         {phase === "checking" && "Reading your account…"}
         {phase === "starting_checkout" &&
-          "Account ready — sending you to submit your $5 refundable application deposit."}
+          "Account ready — sending you to apply ($5, refunded if not approved)."}
         {phase === "error" && err}
       </p>
       {phase === "error" && (
