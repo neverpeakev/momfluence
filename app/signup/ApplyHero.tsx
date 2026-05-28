@@ -168,12 +168,10 @@ export default function ApplyHero() {
         </Link>
       </p>
 
-      {(attr.variant || attr.creative) && (
-        <p className="mt-2 text-[10px] text-navy-400">
-          Funnel attribution · variant: {attr.variant ?? "—"} · creative:{" "}
-          {attr.creative ?? "—"}
-        </p>
-      )}
+      {/* Funnel attribution still tracked via cookies + Stripe metadata —
+          just not displayed to users. The legacy SignupInner had a visible
+          debug line that leaked into production; removed 2026-05-27 after
+          founder flagged it. */}
     </main>
   );
 }
