@@ -37,6 +37,8 @@ import {
   type Attribution,
 } from "@/lib/funnel-lab/attribution";
 import { fireMetaAddToCart, fireMetaInitiateCheckout } from "@/lib/meta-pixel";
+import ContinueWithGoogleButton from "@/components/auth/ContinueWithGoogleButton";
+import ContinueWithFacebookButton from "@/components/auth/ContinueWithFacebookButton";
 import LegacySignupInner from "./_legacy-SignupInner";
 
 export default function ApplyHero() {
@@ -127,8 +129,28 @@ export default function ApplyHero() {
 
       {err && <p className="mt-4 text-sm text-coral-700">{err}</p>}
 
-      {/* Disclosure — card form, OAuth, email/password. All routes available
-          but hidden by default so the hero stays clean. */}
+      {/* SSO — surfaced as a tier-2 CTA (not buried in the disclosure).
+          Routes through /signup/complete which calls /api/checkout/create
+          and fires CompleteRegistration in the browser + via CAPI. */}
+      <div className="mt-5">
+        <div className="mb-3 flex items-center gap-3 text-xs uppercase tracking-widest text-navy-400">
+          <span className="h-px flex-1 bg-navy-100" />
+          <span>or sign in with</span>
+          <span className="h-px flex-1 bg-navy-100" />
+        </div>
+        <ContinueWithGoogleButton
+          redirectTo="/signup/complete"
+          label="Continue with Google"
+        />
+        <ContinueWithFacebookButton
+          redirectTo="/signup/complete"
+          label="Continue with Facebook"
+          className="mt-3"
+        />
+      </div>
+
+      {/* Disclosure — card form + email/password fallback. Hidden by default
+          so the hero stays clean. Wallet + SSO covers ~95% of users. */}
       <details className="mt-6 group">
         <summary className="cursor-pointer list-none text-sm font-medium text-navy-700 hover:text-navy-900 select-none">
           <span className="inline-flex items-center gap-1">
@@ -149,12 +171,12 @@ export default function ApplyHero() {
 
           <div className="my-4 flex items-center gap-3 text-xs uppercase tracking-widest text-navy-400">
             <span className="h-px flex-1 bg-navy-100" />
-            <span>or sign up first</span>
+            <span>or apply with email</span>
             <span className="h-px flex-1 bg-navy-100" />
           </div>
 
-          {/* Legacy SignupInner — full form + OAuth. Kept inside this
-              disclosure so the hero stays focused. */}
+          {/* Email/password fallback. Kept inside the disclosure so the hero
+              stays focused. */}
           <div className="-mx-6 sm:mx-0">
             <LegacySignupInner />
           </div>

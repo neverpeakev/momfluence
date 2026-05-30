@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   fireMetaEvent,
-  fireMetaAddToCart,
   fireMetaCompleteRegistration,
   fireMetaInitiateCheckout,
 } from "@/lib/meta-pixel";
@@ -16,25 +15,14 @@ import {
   writeAttributionToCookies,
   type Attribution,
 } from "@/lib/funnel-lab/attribution";
-import ContinueWithGoogleButton from "@/components/auth/ContinueWithGoogleButton";
-import ContinueWithFacebookButton from "@/components/auth/ContinueWithFacebookButton";
-
 /**
- * Apply-for-a-spot signup flow (2026-05-25 reframe).
+ * Email/password fallback embedded inside ApplyHero's "Other ways to apply"
+ * disclosure. Renders ONLY the application form (no hero copy, no SSO — those
+ * are owned by ApplyHero itself so we don't duplicate them inside the disclosure).
  *
- * Previous version positioned this as a $5/mo subscription. New positioning:
- *   - It's an APPLICATION (loads college/job/exclusive-program schema)
- *   - $5 is a REFUNDABLE DEPOSIT, credited to first payout
- *   - We REVIEW applications and accept ~80% (selective framing)
- *
- * Three things this reframe is doing psychologically:
- *   1. Reverses the "wrong direction of money" problem by making $5 a
- *      qualification fee, not a purchase. Application fees are a known
- *      mental schema ($75 college apps, $300 passport renewals).
- *   2. Loads scarcity / selection bias — "they might not accept me" makes
- *      the spot feel valuable in a way a subscription never does.
- *   3. The bouncer copy filters in only high-agency moms. Moms who bounce
- *      at $5 of refundable risk weren't going to do the work anyway.
+ * On submit: creates the Supabase user, fires CompleteRegistration in browser
+ * + CAPI, then posts to /api/checkout/create with the application payload
+ * (instagram, tiktok, why, geo) and redirects to Stripe Checkout.
  */
 
 type Geo = "us" | "ca" | "other";
@@ -65,7 +53,7 @@ export default function SignupInner() {
     };
     writeAttributionToCookies(merged);
     setAttr(merged);
-    fireMetaAddToCart();
+    // AddToCart is fired by the parent ApplyHero on mount — don't double-fire here.
   }, [sp]);
 
   function readPricingVariantCookie(): "B" | "C" | null {
@@ -164,62 +152,7 @@ export default function SignupInner() {
   }
 
   return (
-    <main className="mx-auto max-w-md px-6 py-16">
-      <p className="text-xs font-semibold uppercase tracking-widest text-coral-600">
-        Apply for a spot
-      </p>
-      <h1 className="mt-2 text-4xl text-navy-900 leading-tight">
-        We don&apos;t accept everyone.
-      </h1>
-      <p className="mt-3 text-base text-navy-700">
-        MomFluence is a curated affiliate hub for moms. We accept moms who can
-        actually do the work — about <span className="font-semibold">80% of
-        applications</span> get in.
-      </p>
-
-      {/* The bouncer block — the qualifier copy. This is the single most
-          important content unit on the page. Two jobs:
-          (1) Reframe $5 from purchase → application deposit
-          (2) Make the friction itself the filter for high-agency moms */}
-      <div className="mt-6 rounded-2xl bg-navy-900 px-5 py-5 text-white shadow-lg">
-        <p className="text-sm font-semibold uppercase tracking-wider text-coral-300">
-          $5 refundable deposit
-        </p>
-        <p className="mt-2 text-base leading-relaxed">
-          We credit it back into your first payout — so your first cashout is
-          <span className="font-semibold"> $5 bigger</span> than what you actually
-          earn. Average accepted member earns <span className="font-semibold">
-          $25–$200/mo</span>.
-        </p>
-        <p className="mt-4 text-sm leading-relaxed text-navy-100">
-          <span className="font-semibold text-white">Don&apos;t apply</span> if
-          $5 — less than a coffee, fully refundable — feels like too much risk.
-          Honestly: if a refundable $5 stops you, you&apos;re probably not the
-          mom who&apos;ll follow through on the work that earns the $200. We&apos;d
-          rather save your time and keep the spot for someone who will.
-        </p>
-        <p className="mt-3 text-sm leading-relaxed text-coral-200">
-          For the moms who ARE ready — let&apos;s go.
-        </p>
-      </div>
-
-      <div className="mt-8">
-        <ContinueWithGoogleButton
-          redirectTo="/signup/complete"
-          label="Apply with Google"
-        />
-        <ContinueWithFacebookButton
-          redirectTo="/signup/complete"
-          label="Apply with Facebook"
-          className="mt-3"
-        />
-        <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-navy-400">
-          <span className="h-px flex-1 bg-navy-100" />
-          <span>or apply with email</span>
-          <span className="h-px flex-1 bg-navy-100" />
-        </div>
-      </div>
-
+    <div className="px-6 sm:px-0">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="label" htmlFor="email">Email</label>
@@ -356,25 +289,12 @@ export default function SignupInner() {
         {err && <p className="text-sm text-coral-700">{err}</p>}
 
         <button type="submit" disabled={loading} className="btn-primary w-full no-underline">
-          {loading ? "Submitting application…" : "Apply for a spot — $5"}
+          {loading ? "Submitting…" : "Apply with email — $5"}
         </button>
         <p className="text-center text-xs text-navy-500">
-          Decision in under 24 hours. Refunded in full if not accepted.
+          $5 refunded in full if not approved. Otherwise it covers month one.
         </p>
-
-        {(attr.variant || attr.creative) && (
-          <p className="text-[10px] text-navy-400">
-            Funnel attribution captured · variant: {attr.variant ?? "—"} · creative: {attr.creative ?? "—"}
-          </p>
-        )}
       </form>
-
-      <p className="mt-10 text-sm text-navy-600">
-        Already have an account?{" "}
-        <Link href="/login" className="text-coral-600 hover:text-coral-700">
-          Sign in
-        </Link>
-      </p>
-    </main>
+    </div>
   );
 }

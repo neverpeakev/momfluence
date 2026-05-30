@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { fireServerSidePurchase } from "@/lib/meta-capi";
+import {
+  fireServerSideCompleteRegistration,
+  fireServerSidePurchase,
+} from "@/lib/meta-capi";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -208,6 +211,22 @@ export async function POST(req: NextRequest) {
         }
 
         if (!error && customerId) {
+          // Anonymous apply flow (ApplyHero → /api/apply/start → Stripe) never
+          // fires CompleteRegistration in the browser — the user has no Supabase
+          // session before Stripe, so the pixel CR helper has no authUserId. We
+          // fire it here once the webhook resolves authUserId post-payment. The
+          // canonical event_id matches what the browser pixel WOULD have fired
+          // (`complete_registration_${authUserId}`) so the authenticated SSO/
+          // email flows still dedupe correctly if a user happens to hit both.
+          if (isAnonymousApply) {
+            void fireServerSideCompleteRegistration({
+              authUserId,
+              email,
+              eventTimeUnixSeconds: event.created,
+              eventSourceUrl: "https://momfluence.app/signup",
+            });
+          }
+
           // Fire Meta CAPI Purchase server-side, in parallel with the browser pixel
           // and Stape CAPIG. Meta dedupes on event_id = `purchase_${session.id}`
           // (same id /welcome's fireMetaPurchase passes). See
