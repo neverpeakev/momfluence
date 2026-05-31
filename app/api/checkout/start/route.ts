@@ -78,24 +78,26 @@ export async function POST(req: NextRequest) {
   // from customer_details.email post-payment.
   const sessionMeta = { source: "membership", ...toStripeMetadata(attribution) };
 
-  // Use the canonical Price if configured; otherwise build the $5/mo recurring
-  // price inline so checkout works without any dashboard setup.
-  const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = priceId
-    ? { price: priceId, quantity: 1 }
-    : {
-        quantity: 1,
-        price_data: {
-          currency: "usd",
-          unit_amount: 500,
-          recurring: { interval: "month" },
-          product_data: { name: "MomFluence Membership" },
-        },
-      };
-
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [lineItem],
+      // Use the canonical Price if configured; otherwise build the $5/mo
+      // recurring price inline so checkout works without any dashboard setup.
+      // Inlined (no named type) because stripe-node's namespaced
+      // SessionCreateParams type isn't exported in this version.
+      line_items: [
+        priceId
+          ? { price: priceId, quantity: 1 }
+          : {
+              quantity: 1,
+              price_data: {
+                currency: "usd",
+                unit_amount: 500,
+                recurring: { interval: "month" },
+                product_data: { name: "MomFluence Membership" },
+              },
+            },
+      ],
       success_url:
         "https://momfluence.app/signup/success?session_id={CHECKOUT_SESSION_ID}",
       cancel_url: "https://momfluence.app/?cancelled=1",
