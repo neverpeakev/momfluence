@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import BrandRibbon from "@/components/landing/BrandRibbon";
 import TextDemo from "@/components/landing/TextDemo";
 import DashboardPreview from "@/components/landing/DashboardPreview";
 import HomepageTracker from "@/components/landing/HomepageTracker";
 import HeroSocialProof from "@/components/landing/HeroSocialProof";
+import MembershipCheckout from "@/components/MembershipCheckout";
 
 export default function PublicLanding() {
   return (
@@ -21,18 +23,30 @@ export default function PublicLanding() {
         Pick a brand. Share a link. Get paid every time someone signs up or buys.
         <br className="hidden sm:block" />
         <span className="sm:hidden"> </span>
-        No followers. No camera. No experience. $5 to apply — refunded if not approved.
+        No followers. No camera. No experience.
       </p>
-      <div className="mt-5 flex flex-wrap gap-3 sm:mt-7 sm:gap-4 lg:mt-10">
-        <Link href="/signup?lp=home" className="btn-primary no-underline">
-          Apply to join — $5 →
-        </Link>
-        <Link href="/how-it-works" className="btn-ghost no-underline">
-          How it works →
-        </Link>
-      </div>
 
       <HeroSocialProof />
+
+      {/* Conversion block — the whole funnel lives here. One tap → Stripe. */}
+      <div className="mt-6 max-w-md rounded-2xl bg-white p-5 shadow-sm ring-1 ring-navy-100 sm:mt-8 sm:p-6">
+        <p className="text-lg font-semibold text-navy-900">
+          $5/mo membership — cancel anytime.
+        </p>
+        <p className="mt-1 text-sm text-navy-600">
+          Your exclusive, done-for-you affiliate links are inside. No
+          applications, no interviews, no waiting — every brand link is live the
+          moment you join.
+        </p>
+        <Suspense fallback={<div className="mt-5 h-32" />}>
+          <MembershipCheckout className="mt-5" />
+        </Suspense>
+        <p className="mt-4 text-center text-sm">
+          <Link href="/how-it-works" className="text-navy-600 hover:text-navy-900">
+            See how it works →
+          </Link>
+        </p>
+      </div>
 
       <BrandRibbon />
 
@@ -85,9 +99,9 @@ export default function PublicLanding() {
           <div>
             <h3 className="text-2xl text-navy-900">Then your dashboard does the bragging.</h3>
             <p className="mt-3 text-base text-navy-600">
-              The second you&apos;re accepted (refundable $5 deposit), you see exactly what&apos;s
-              happening: clicks, sign-ups, and dollars earned this week. No guessing,
-              no chasing brands, no spreadsheets.
+              The second you join, you see exactly what&apos;s happening: clicks,
+              sign-ups, and dollars earned this week. No guessing, no chasing
+              brands, no spreadsheets.
             </p>
             <p className="mt-3 text-sm text-navy-500">
               Numbers below are an example week from a typical first-month member.
@@ -324,7 +338,7 @@ export default function PublicLanding() {
           >
             <summary className="faq-summary flex items-center justify-between gap-4">
               <span className="text-base font-semibold text-navy-900 sm:text-lg">
-                Is the $5 really refundable?
+                What&apos;s the $5/mo for, and can I cancel?
               </span>
               <span
                 aria-hidden="true"
@@ -335,15 +349,15 @@ export default function PublicLanding() {
             </summary>
             <div className="faq-body space-y-3 pt-4 text-base text-navy-700">
               <p>
-                <span className="font-semibold text-navy-900">Yes — completely.</span>{" "}
-                If we don&apos;t accept your application, your $5 is refunded
-                automatically within 5-10 business days. No questions, no
-                paperwork, no support tickets.
+                Your <span className="font-semibold text-navy-900">$5/mo membership</span>{" "}
+                unlocks every curated brand program we&apos;ve already been
+                approved for — so your links go live instantly instead of you
+                applying to each brand, waiting on a review, and getting turned
+                down half the time.
               </p>
               <p>
-                If we DO accept you, the $5 is credited to your account and
-                added to your first payout — so your first cashout is $5 bigger
-                than what you actually earned.
+                <span className="font-semibold text-navy-900">Cancel anytime</span>{" "}
+                in one click from your dashboard. No contracts, no phone calls.
               </p>
             </div>
           </details>
@@ -362,13 +376,13 @@ export default function PublicLanding() {
       </section>
 
       <section className="mt-24 rounded-3xl bg-navy-900 p-10 text-center sm:p-14">
-        <h2 className="text-4xl text-white">Apply for a spot. $5 refundable.</h2>
+        <h2 className="text-4xl text-white">Join MomFluence — $5/mo.</h2>
         <p className="mt-4 text-base text-navy-200">
-          Credited to your first payout if accepted — refunded in full if not.
+          Every curated brand link, live the moment you join. Cancel anytime.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Link href="/signup?lp=home" className="btn-primary no-underline">
-            Apply for a spot — $5 →
+            Join now — $5/mo →
           </Link>
           <Link
             href="/how-it-works"

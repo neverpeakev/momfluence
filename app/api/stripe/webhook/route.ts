@@ -53,15 +53,17 @@ export async function POST(req: NextRequest) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        // Two flows write through this handler:
-        //  A. Authenticated apply flow (legacy /api/checkout/create):
-        //     client_reference_id = auth_user_id (set by SignupInner /
-        //     CompleteInner before redirect to Stripe)
-        //  B. Anonymous apply flow (NEW /api/apply/start, 2026-05-27):
-        //     metadata.source = "apply_anonymous", no client_reference_id.
-        //     Create the auth.users row here from session.customer_details.email
-        //     before upserting momfluencers.
-        const isAnonymousApply = session.metadata?.source === "apply_anonymous";
+        // The funnel writes one flow through this handler:
+        //   Anonymous membership checkout (/api/checkout/start): metadata.source
+        //   = "membership", mode = subscription, no client_reference_id. Create
+        //   the auth.users row here from session.customer_details.email, then
+        //   upsert momfluencers. "apply_anonymous" is the pre-rebuild source
+        //   string — still accepted so any in-flight old sessions provision. The
+        //   legacy authenticated path (client_reference_id) is also handled below
+        //   for grandfathered subscribers.
+        const isAnonymousMembership =
+          session.metadata?.source === "membership" ||
+          session.metadata?.source === "apply_anonymous";
 
         const customerId =
           typeof session.customer === "string"
@@ -74,9 +76,9 @@ export async function POST(req: NextRequest) {
           undefined;
         let email: string | null = null;
 
-        if (isAnonymousApply) {
-          // Stripe's customer_details.email is populated when customer_creation='always'
-          // and Stripe collected the email at the top of the checkout page.
+        if (isAnonymousMembership) {
+          // Stripe populates customer_details.email from the email it collected
+          // on the hosted Checkout page (subscription mode always collects it).
           email =
             session.customer_details?.email ??
             session.customer_email ??
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
 
           if (!email) {
             console.error(
-              "[stripe webhook] apply_anonymous missing email on session",
+              "[stripe webhook] membership checkout missing email on session",
               session.id
             );
             break;
@@ -102,7 +104,7 @@ export async function POST(req: NextRequest) {
           const createRes = await supabase.auth.admin.createUser({
             email,
             email_confirm: true,
-            user_metadata: { source: "apply_anonymous" },
+            user_metadata: { source: "membership" },
           });
 
           if (createRes.error) {
@@ -126,14 +128,14 @@ export async function POST(req: NextRequest) {
                 authUserId = existing.id;
               } else {
                 console.error(
-                  "[stripe webhook] apply_anonymous user already exists but listUsers couldn't find by email",
+                  "[stripe webhook] membership user already exists but listUsers couldn't find by email",
                   { email, sessionId: session.id }
                 );
                 break;
               }
             } else {
               console.error(
-                "[stripe webhook] apply_anonymous createUser failed:",
+                "[stripe webhook] membership createUser failed:",
                 createRes.error.message
               );
               break;
@@ -173,17 +175,11 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        // Handle both modes:
-        //   mode='payment'      → one-time $5 application fee (current flow,
-        //                         2026-05-25 apply-for-a-spot pivot)
-        //   mode='subscription' → legacy $5/mo subscription (Kelly, kevin+test5
-        //                         and any user still on the old flow)
-        //
-        // In both cases we set status='approved' + membership_status='active'.
-        // For the apply-for-a-spot flow, "approved" means: their application
-        // payment cleared. The automated review (V2) will run separately and
-        // can downgrade to 'rejected' + initiate refund if criteria fail.
-        const isApplicationFee = session.mode === "payment";
+        // Activate the member. The funnel is mode='subscription' ($5/mo);
+        // mode='payment' may still arrive from in-flight one-time sessions.
+        // Both set status='approved' + membership_status='active'.
+        // subscription.updated/deleted (below) keep membership_status in sync
+        // with Stripe for cancellations and payment failures.
         const { error } = await supabase
           .from("momfluencers")
           .upsert(
@@ -201,7 +197,7 @@ export async function POST(req: NextRequest) {
 
         if (!error) {
           console.log(
-            `[stripe webhook] momfluencer activated (mode=${session.mode}, isApplicationFee=${isApplicationFee})`,
+            `[stripe webhook] momfluencer activated (mode=${session.mode})`,
             authUserId
           );
         }
@@ -211,14 +207,13 @@ export async function POST(req: NextRequest) {
         }
 
         if (!error && customerId) {
-          // Anonymous apply flow (ApplyHero → /api/apply/start → Stripe) never
-          // fires CompleteRegistration in the browser — the user has no Supabase
-          // session before Stripe, so the pixel CR helper has no authUserId. We
-          // fire it here once the webhook resolves authUserId post-payment. The
-          // canonical event_id matches what the browser pixel WOULD have fired
-          // (`complete_registration_${authUserId}`) so the authenticated SSO/
-          // email flows still dedupe correctly if a user happens to hit both.
-          if (isAnonymousApply) {
+          // The anonymous membership flow never fires CompleteRegistration in
+          // the browser — the user has no Supabase session before Stripe, so the
+          // pixel CR helper has no authUserId. Fire it here once the webhook
+          // resolves authUserId post-payment, using the canonical event_id
+          // (`complete_registration_${authUserId}`) so it dedupes if a browser
+          // CR ever fires too.
+          if (isAnonymousMembership) {
             void fireServerSideCompleteRegistration({
               authUserId,
               email,

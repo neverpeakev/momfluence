@@ -33,22 +33,22 @@ export default function WelcomeInner() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-20">
       <p className="text-sm uppercase tracking-widest text-coral-600 font-semibold">
-        Application accepted
+        You&apos;re a member
       </p>
       <h1 className="mt-3 text-5xl text-navy-900">Welcome in.</h1>
       <p className="mt-6 text-lg text-navy-600">
-        You made it through. We&apos;re glad you&apos;re here — let&apos;s get your profile
-        set up so we can start tagging links to you.
+        Your membership is active. Let&apos;s set up your profile so we can start
+        tagging brand links to you.
       </p>
 
       <div className="mt-6 rounded-xl bg-navy-900 px-5 py-4 text-white shadow-lg">
         <p className="text-xs font-semibold uppercase tracking-wider text-coral-300">
-          $5 deposit credited
+          Every brand link is live
         </p>
         <p className="mt-2 text-base leading-relaxed">
-          Your $5 application deposit is locked in and ready to add to your first
-          payout. <span className="font-semibold">Whatever you earn first, your
-          cashout will be $5 bigger.</span>
+          No per-brand applications, no waiting on reviews —{" "}
+          <span className="font-semibold">your curated affiliate links are
+          ready to use right now.</span>
         </p>
       </div>
 
@@ -81,8 +81,8 @@ export default function WelcomeInner() {
         <div className="card">
           <h3 className="text-lg">Your first cashout</h3>
           <p className="mt-2 text-sm text-navy-600">
-            Earn $25 and you can cash out. Your $5 deposit is added on top — so your
-            first cashout will be <span className="font-semibold">$30</span>.
+            Earn $25 and you can cash out — paid to PayPal, Venmo, or bank
+            transfer. Your fast-track first cashout unlocks day one.
           </p>
         </div>
         <div className="card">
