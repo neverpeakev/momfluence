@@ -30,8 +30,20 @@ const MAX_TOKENS = 1500;
 //   influence" is DEAD — replaced with "Brands are paying real money
 //   for real recommendations" (matter-of-fact statement, not
 //   convincing-you framing)
-// See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+// v6: variety floor (refinement, not pivot — voice unchanged). The
+// 2026-05-31 weekly audit caught a format mono-culture: 11/12 recent
+// posts were `anecdote`, all 3 in the audit window opened with "A
+// regular mom in Sacramento", and 10/12 used the `warm-gradient`
+// background. Root cause was that buildUserPrompt only surfaced recent
+// angle tags and headlines — Claude couldn't see the format/city/bg
+// pattern forming. v6 adds:
+//  - Recent content_format, anecdote-city, and image_bg lists in the
+//    user prompt
+//  - A "VARIETY FLOOR" section in the system prompt that requires
+//    rotation across formats/cities/backgrounds
+// See docs/product-thesis.md for the locked vocabulary tables and the
+// docs/content-audits/2026-05-31.md audit that motivated v6.
+export const PROMPT_VERSION = "2026-05-31.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -264,6 +276,22 @@ Speaks to the silent voice saying "this isn't for me." Edge is welcome here. Exa
 
   "Move over skinny unrelatable influencers. Brands have moved on — they're paying regular moms big bucks now for the same recommendations they used to only pay celebrities for. Real moms. Real money. Find out more and get your cut at momfluence.app."
 
+# VARIETY FLOOR (v6 — added 2026-05-31)
+
+The 2026-05-31 audit caught a mono-culture: 11 of the 12 most recent posts were the SAME content_format (anecdote), all opened in the SAME city (Sacramento), and used the SAME image_bg (warm-gradient). The five formats exist precisely so the brand has texture variety. Treat the lists in the user prompt as hard constraints, not suggestions:
+
+1. **Format rotation.** Look at the recent content_format list. If a format appears in the 2 most-recent slots, you MUST pick a different format. If 3 of the last 4 are the same format, the next post MUST be one of the other 4 formats. Aim for roughly equal distribution across the 5 formats over any 10-post window.
+
+2. **City rotation (anecdote only).** If your format is "anecdote," do NOT reuse any city that appears in the recent-cities list. The US is large. Reach for fresh, specific, recognizable places (St. Louis, Tampa, Boise, Cincinnati, Raleigh, Albuquerque, Tucson, Spokane, Des Moines, Buffalo, etc.). Specificity is the texture; sameness undoes the texture.
+
+3. **Image background rotation.** Do NOT pick the same image_bg as the most recent post. Cycle through the approved palette (coral, navy, cream, warm-gradient, navy-coral-gradient, white-coral-ring).
+
+4. **Display rhythm.** Don't copy the syntactic rhythm of the most-recent displays. If the last three displays were all "She [verb] / [object]" three-word fragments, write a different shape (a question, a brand list, a number-led line, a direct address).
+
+5. **Accent badge variety.** If recent posts all use dollar amounts in the same range ($300–$500), reach for something else: "$5", "50%", "20%", "$25", or null. The badge is a visual chip — repeating dollar amounts looks identical on the feed.
+
+The variety floor is not a stylistic preference. It is a constraint to prevent the daily generator from collapsing into a rut that the human reviewer then has to catch and undo. Honor it.
+
 # CHECK BEFORE SUBMITTING
 
 For every post you generate, verify ALL of these before output:
@@ -275,6 +303,9 @@ For every post you generate, verify ALL of these before output:
 5. Is "regular moms" used (not "everyday moms," not just "moms")?
 6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing?
 7. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
+8. Does your content_format choice satisfy the VARIETY FLOOR (rotated away from recent formats)?
+9. If anecdote: is the city NEW (not on the recent-cities list)?
+10. Is the image_bg different from the most-recent post's bg?
 
 If any check fails, fix and try again.
 
@@ -307,6 +338,12 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
 interface GeneratorInputs {
   recentAngleTags: string[];
   recentDisplays: string[];
+  // v6: variety-floor inputs. Ordered most-recent-first. Empty arrays
+  // are tolerated (first runs) but callers should populate them once
+  // the table has rows.
+  recentContentFormats?: string[];
+  recentCities?: string[];
+  recentImageBgs?: string[];
 }
 
 function buildUserPrompt(inputs: GeneratorInputs): string {
@@ -316,13 +353,31 @@ function buildUserPrompt(inputs: GeneratorInputs): string {
   const displayList = inputs.recentDisplays.length > 0
     ? inputs.recentDisplays.slice(0, 12).map((d) => `- "${d.replace(/\n/g, " / ")}"`).join("\n")
     : "(none yet)";
+  const formatList = inputs.recentContentFormats && inputs.recentContentFormats.length > 0
+    ? inputs.recentContentFormats.slice(0, 12).map((f, i) => `- ${i === 0 ? "most recent: " : ""}${f}`).join("\n")
+    : "(none yet)";
+  const cityList = inputs.recentCities && inputs.recentCities.length > 0
+    ? inputs.recentCities.slice(0, 12).map((c) => `- ${c}`).join("\n")
+    : "(none yet)";
+  const bgList = inputs.recentImageBgs && inputs.recentImageBgs.length > 0
+    ? inputs.recentImageBgs.slice(0, 8).map((b, i) => `- ${i === 0 ? "most recent: " : ""}${b}`).join("\n")
+    : "(none yet)";
   return `# RECENT ANGLES (don't repeat or paraphrase these)
 ${tagList}
 
 # RECENT HEADLINES (so you can hear the visual rhythm and avoid repeating)
 ${displayList}
 
-Generate ONE new post per the system prompt. The angle must be distinct from everything above. Output ONLY the JSON.`;
+# RECENT CONTENT FORMATS (variety floor — rotate AWAY from these per system prompt)
+${formatList}
+
+# RECENT ANECDOTE CITIES (if you pick the anecdote format, DO NOT reuse any of these)
+${cityList}
+
+# RECENT IMAGE BACKGROUNDS (do not pick the same bg as the most-recent post)
+${bgList}
+
+Generate ONE new post per the system prompt. The angle must be distinct from everything above, AND your content_format / city / image_bg choices must satisfy the variety floor. Output ONLY the JSON.`;
 }
 
 function failsBlocklist(post: GeneratedPost): string | null {

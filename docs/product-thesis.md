@@ -253,6 +253,30 @@ The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
 
+### Variety floor (added 2026-05-31 — prompt v6)
+
+The 2026-05-31 weekly audit caught a mono-culture episode: 11 of the 12
+most recent published posts were the same content_format (`anecdote`),
+all three posts in the audit window opened with "A regular mom in
+Sacramento," and 10 of 12 used the `warm-gradient` background. Each
+post individually scored 4.8–5.0 on thesis compliance — the problem was
+at the *portfolio* level, not the post level.
+
+To prevent the daily generator from collapsing into a rut between
+audits, the system prompt now enforces a **variety floor** and the
+generator inputs surface recent format/city/bg history:
+
+- No content_format may appear in the 2 most-recent slots without being
+  rotated out. Aim for roughly equal distribution across the 5 formats
+  over any 10-post window.
+- `anecdote` posts MUST pick a city not on the recent-cities list.
+- `image_bg` must differ from the most-recent post's bg.
+- Display syntactic rhythm should rotate (don't run three "She [verb] /
+  [object]" headlines in a row).
+
+The variety floor is a **refinement**, not a voice pivot. The v5 voice
+(regular moms, big bucks, find out more, get yours) is unchanged.
+
 ---
 
 ## The qualifier (front-and-center)
