@@ -42,7 +42,7 @@ export default function Header() {
             Sign in
           </Link>
           <Link href="/signup" className="btn-primary text-sm no-underline">
-            Apply — $5
+            Join — $5/mo
           </Link>
         </div>
 
@@ -96,7 +96,7 @@ export default function Header() {
                 onClick={() => setOpen(false)}
                 className="btn-primary flex-1 text-sm no-underline"
               >
-                Apply — $5
+                Join — $5/mo
               </Link>
             </div>
           </div>

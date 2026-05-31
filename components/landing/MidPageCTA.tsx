@@ -42,7 +42,7 @@ export default function MidPageCTA({
   headline,
   cta,
   signupHref,
-  fineprint = "$5 refundable deposit · credited to first payout · 22+ brands waiting",
+  fineprint = "$5/mo membership · cancel anytime · 22+ brands waiting",
 }: Props) {
   return (
     <motion.section

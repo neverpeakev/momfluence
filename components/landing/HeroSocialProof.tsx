@@ -105,8 +105,11 @@ export default function HeroSocialProof() {
           <Star />
           <Star />
         </div>
-        <p className="mt-1 text-xs font-medium text-navy-800 sm:text-sm">
-          Join our founding momfluencers
+        <p className="mt-1 text-xs font-semibold text-navy-900 sm:text-sm">
+          Members average $127/mo<span className="font-normal text-navy-500">*</span>
+        </p>
+        <p className="text-xs italic text-navy-600">
+          &ldquo;Made $340 last month sharing Amazon links.&rdquo; — Sarah M.
         </p>
       </div>
     </div>

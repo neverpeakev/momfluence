@@ -87,7 +87,18 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 border-t border-navy-100 pt-6 flex flex-col gap-2 text-xs text-navy-500 md:flex-row md:items-center md:justify-between">
+        <p className="mt-10 border-t border-navy-100 pt-6 text-xs leading-relaxed text-navy-400">
+          *Earnings figures (e.g. &ldquo;$127/mo&rdquo;) and member statements shown on this
+          site are illustrative examples based on historical affiliate-program
+          results and individual member reports. They are not a promise or
+          guarantee of income — your results will vary and depend on your effort,
+          your audience, and factors outside our control. See our{" "}
+          <a href="/disclosures/earnings" className="text-navy-500 underline hover:text-navy-700">
+            full earnings disclaimer
+          </a>
+          .
+        </p>
+        <div className="mt-6 border-t border-navy-100 pt-6 flex flex-col gap-2 text-xs text-navy-500 md:flex-row md:items-center md:justify-between">
           <p>© 2026 Never Peak Inc. · Made for moms with friends.</p>
           <p>Affiliate links may earn commissions for our members.</p>
         </div>

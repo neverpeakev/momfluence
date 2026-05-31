@@ -119,8 +119,8 @@ export default function SuccessInner({ email, paid }: Props) {
           <p className="mt-3 text-base text-navy-700">
             We sent a sign-in link to{" "}
             <span className="font-semibold text-navy-900">{email}</span>.
-            Click it to finish setting up your account and submit your
-            application details.
+            Click it to finish setting up your account and get to your
+            dashboard.
           </p>
           <p className="mt-3 text-sm text-navy-500">
             Tip: the email arrives within a minute. Check spam if it doesn&apos;t
@@ -129,11 +129,11 @@ export default function SuccessInner({ email, paid }: Props) {
           <div className="mt-8 rounded-2xl bg-navy-50 px-5 py-4 text-sm text-navy-700">
             <p className="font-semibold text-navy-900">What&apos;s next</p>
             <ol className="mt-2 ml-4 list-decimal space-y-1">
-              <li>Open the email and click the link</li>
-              <li>Land on your welcome page — you&apos;re in</li>
-              <li>Tell us your social handles in your profile so we can verify</li>
-              <li>Once verified, your $5 becomes your first month at $5/mo</li>
-              <li>Not verified → automatic refund within 24 hours</li>
+              <li>Open the email and click the sign-in link</li>
+              <li>Land on your welcome page — your membership is active</li>
+              <li>Set up your profile and grab your first brand link</li>
+              <li>Share it, earn commission, cash out at $25</li>
+              <li>Cancel anytime in one click from your dashboard</li>
             </ol>
           </div>
         </>

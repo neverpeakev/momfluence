@@ -9,12 +9,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const { data: m } = await supabase
     .from("momfluencers")
-    .select("status, is_admin, email")
+    .select("status, membership_status, is_admin, email")
     .eq("id", user.id)
     .maybeSingle();
 
-  // gate dashboard behind onboarding once profile exists but is still pending+incomplete
-  // (we let them in pending — onboarding nudge shows on the dashboard itself)
+  // Membership gate: anyone reaching an /(app) route must either be an admin
+  // or have an active/trialing Stripe subscription. Users who signed up but
+  // never finished checkout land here with membership_status='inactive' and
+  // get bounced to the paywall.
+  const paid = ["trialing", "active"].includes(m?.membership_status ?? "");
+  if (!m?.is_admin && !paid) {
+    redirect("/paywall");
+  }
+
+  // We intentionally do NOT gate on status='pending' — admin approval is
+  // separate from payment, and pending+paid users still see the dashboard
+  // (with an "in review" nudge rendered by dashboard/page.tsx).
 
   return (
     <div className="min-h-screen">
