@@ -37,7 +37,7 @@ export default function MembershipCheckout({
   const [attr, setAttr] = useState<Attribution>({});
 
   useEffect(() => {
-    const fromUrl = parseAttributionFromQuery(sp);
+    const fromUrl: Attribution = sp ? parseAttributionFromQuery(sp) : {};
     const fromCookie = readAttributionFromCookies();
     const merged: Attribution = {
       variant: fromUrl.variant ?? fromCookie.variant,
