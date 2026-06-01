@@ -17,16 +17,17 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { fireMetaEvent } from "@/lib/meta-pixel";
+import { fireMetaEvent, fireMetaPurchase } from "@/lib/meta-pixel";
 
 interface Props {
   email: string | null;
   paid: boolean;
+  sessionId: string | null;
 }
 
 type Phase = "sending" | "sent" | "error" | "unpaid";
 
-export default function SuccessInner({ email, paid }: Props) {
+export default function SuccessInner({ email, paid, sessionId }: Props) {
   const [phase, setPhase] = useState<Phase>("sending");
   const [err, setErr] = useState<string | null>(null);
   const firedRef = useRef(false);
@@ -38,6 +39,14 @@ export default function SuccessInner({ email, paid }: Props) {
     if (!paid) {
       setPhase("unpaid");
       return;
+    }
+
+    // Fire Purchase HERE — the moment payment is confirmed — not on /welcome,
+    // which a buyer only reaches after clicking the magic-link email (many
+    // never do). event_id = purchase_<session> matches the CAPI webhook fire
+    // and the /welcome fire, so Meta dedupes all copies into one Purchase.
+    if (sessionId) {
+      fireMetaPurchase(5.0, "USD", `purchase_${sessionId}`);
     }
     if (!email) {
       setErr(
@@ -76,7 +85,7 @@ export default function SuccessInner({ email, paid }: Props) {
         setPhase("error");
       }
     }
-  }, [email, paid]);
+  }, [email, paid, sessionId]);
 
   return (
     <main className="mx-auto max-w-md px-6 py-16">
