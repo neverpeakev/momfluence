@@ -104,7 +104,9 @@ export async function POST(req: NextRequest) {
 
   // The method's own param type — avoids depending on the namespaced
   // Stripe.Checkout.SessionCreateParams type, which isn't exported in this
-  // stripe-node version (same reason line_items is inlined above).
+  // stripe-node version (same reason line_items is inlined above). We cast
+  // through `unknown` because this stripe-node version's UiMode type doesn't
+  // surface "embedded"; the values below are all valid Stripe params at runtime.
   type CreateParams = Parameters<typeof stripe.checkout.sessions.create>[0];
 
   try {
@@ -122,7 +124,7 @@ export async function POST(req: NextRequest) {
         allow_promotion_codes: true,
         metadata: sessionMeta,
         subscription_data: { metadata: sessionMeta },
-      } as CreateParams;
+      } as unknown as CreateParams;
       const session = await stripe.checkout.sessions.create(embeddedParams);
 
       if (!session.client_secret) {
