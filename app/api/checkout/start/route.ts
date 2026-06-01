@@ -46,9 +46,15 @@ export async function POST(req: NextRequest) {
   }
 
   // Best-effort parse of funnel attribution. Body is optional.
+  // body.embedded=true switches to Stripe Embedded Checkout (ui_mode='embedded'):
+  // the payment form mounts inside our own /checkout page (same domain, pixel
+  // fires there) instead of redirecting to Stripe's hosted page. Default stays
+  // hosted so the existing homepage/​signup buttons are untouched.
   let attribution: Attribution = {};
+  let embedded = false;
   try {
     const body = await req.json();
+    if (body?.embedded === true) embedded = true;
     if (body?.attribution && typeof body.attribution === "object") {
       const a = body.attribution as Record<string, unknown>;
       const slugLike = (v: unknown): string | undefined =>
@@ -65,7 +71,7 @@ export async function POST(req: NextRequest) {
       };
     }
   } catch {
-    // No body or bad JSON — proceed with empty attribution.
+    // No body or bad JSON — proceed with empty attribution, hosted mode.
   }
 
   const stripe = new Stripe(secret.trim(), {
@@ -78,26 +84,54 @@ export async function POST(req: NextRequest) {
   // from customer_details.email post-payment.
   const sessionMeta = { source: "membership", ...toStripeMetadata(attribution) };
 
+  // Use the canonical Price if configured; otherwise build the $5/mo recurring
+  // price inline so checkout works without any dashboard setup. Inlined (no
+  // named type) because stripe-node's namespaced SessionCreateParams type isn't
+  // exported in this version.
+  const lineItems = [
+    priceId
+      ? { price: priceId, quantity: 1 }
+      : {
+          quantity: 1,
+          price_data: {
+            currency: "usd",
+            unit_amount: 500,
+            recurring: { interval: "month" as const },
+            product_data: { name: "MomFluence Membership" },
+          },
+        },
+  ];
+
   try {
+    if (embedded) {
+      // Embedded Checkout: Stripe's UI mounts inside /checkout on our domain.
+      // return_url (not success/cancel) is where Stripe sends the browser after
+      // completion; same /signup/success target so the rest of the funnel
+      // (magic link → /welcome → Purchase pixel) is unchanged.
+      const session = await stripe.checkout.sessions.create({
+        ui_mode: "embedded",
+        mode: "subscription",
+        line_items: lineItems,
+        return_url:
+          "https://momfluence.app/signup/success?session_id={CHECKOUT_SESSION_ID}",
+        allow_promotion_codes: true,
+        metadata: sessionMeta,
+        subscription_data: { metadata: sessionMeta },
+      });
+
+      if (!session.client_secret) {
+        return NextResponse.json(
+          { error: "Stripe did not return a client secret" },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({ clientSecret: session.client_secret });
+    }
+
+    // Hosted Checkout (default) — unchanged behavior for existing buttons.
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      // Use the canonical Price if configured; otherwise build the $5/mo
-      // recurring price inline so checkout works without any dashboard setup.
-      // Inlined (no named type) because stripe-node's namespaced
-      // SessionCreateParams type isn't exported in this version.
-      line_items: [
-        priceId
-          ? { price: priceId, quantity: 1 }
-          : {
-              quantity: 1,
-              price_data: {
-                currency: "usd",
-                unit_amount: 500,
-                recurring: { interval: "month" },
-                product_data: { name: "MomFluence Membership" },
-              },
-            },
-      ],
+      line_items: lineItems,
       success_url:
         "https://momfluence.app/signup/success?session_id={CHECKOUT_SESSION_ID}",
       cancel_url: "https://momfluence.app/?cancelled=1",
