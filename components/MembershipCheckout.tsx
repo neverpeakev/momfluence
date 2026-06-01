@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   parseAttributionFromQuery,
   readAttributionFromCookies,
@@ -26,12 +26,21 @@ import { fireMetaAddToCart, fireMetaInitiateCheckout } from "@/lib/meta-pixel";
 
 type Method = "apple" | "google" | "card";
 
+// When the publishable key is present, the buttons route to the on-domain
+// embedded /checkout page (pixel fires there). Until the key is set, they use
+// the proven hosted-redirect flow. NEXT_PUBLIC_ vars are inlined at build time,
+// so this is a static, safe gate — never a broken window either way.
+const EMBEDDED_ENABLED = Boolean(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+);
+
 export default function MembershipCheckout({
   className = "",
 }: {
   className?: string;
 }) {
   const sp = useSearchParams();
+  const router = useRouter();
   const [loading, setLoading] = useState<Method | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [attr, setAttr] = useState<Attribution>({});
@@ -53,6 +62,16 @@ export default function MembershipCheckout({
   async function start(method: Method) {
     setErr(null);
     setLoading(method);
+
+    // Embedded path: attribution is already persisted to cookies on mount, and
+    // /checkout re-reads it, so we just navigate there. InitiateCheckout fires
+    // on the /checkout page itself (on our domain).
+    if (EMBEDDED_ENABLED) {
+      router.push("/checkout");
+      return;
+    }
+
+    // Hosted path (default until the publishable key is set).
     try {
       const res = await fetch("/api/checkout/start", {
         method: "POST",
