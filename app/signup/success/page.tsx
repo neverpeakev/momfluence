@@ -47,7 +47,7 @@ export default async function SignupSuccessPage({ searchParams }: PageProps) {
 
   return (
     <Suspense fallback={<SuccessSkeleton />}>
-      <SuccessInner email={email} paid={paid} />
+      <SuccessInner email={email} paid={paid} sessionId={session_id ?? null} />
     </Suspense>
   );
 }
