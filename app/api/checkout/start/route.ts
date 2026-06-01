@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
       // completion; same /signup/success target so the rest of the funnel
       // (magic link → /welcome → Purchase pixel) is unchanged.
       const embeddedParams = {
-        ui_mode: "embedded",
+        ui_mode: "embedded_page",
         mode: "subscription",
         line_items: lineItems,
         return_url:
