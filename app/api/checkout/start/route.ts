@@ -102,13 +102,18 @@ export async function POST(req: NextRequest) {
         },
   ];
 
+  // The method's own param type — avoids depending on the namespaced
+  // Stripe.Checkout.SessionCreateParams type, which isn't exported in this
+  // stripe-node version (same reason line_items is inlined above).
+  type CreateParams = Parameters<typeof stripe.checkout.sessions.create>[0];
+
   try {
     if (embedded) {
       // Embedded Checkout: Stripe's UI mounts inside /checkout on our domain.
       // return_url (not success/cancel) is where Stripe sends the browser after
       // completion; same /signup/success target so the rest of the funnel
       // (magic link → /welcome → Purchase pixel) is unchanged.
-      const session = await stripe.checkout.sessions.create({
+      const embeddedParams = {
         ui_mode: "embedded",
         mode: "subscription",
         line_items: lineItems,
@@ -117,7 +122,8 @@ export async function POST(req: NextRequest) {
         allow_promotion_codes: true,
         metadata: sessionMeta,
         subscription_data: { metadata: sessionMeta },
-      });
+      } as CreateParams;
+      const session = await stripe.checkout.sessions.create(embeddedParams);
 
       if (!session.client_secret) {
         return NextResponse.json(
