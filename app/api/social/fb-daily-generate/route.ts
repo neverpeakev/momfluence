@@ -138,9 +138,20 @@ export async function POST(req: NextRequest): Promise<NextResponse<CronResult>> 
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
+    const missing = [
+      !userToken && "META_MARKETING_API_TOKEN",
+      !pageId && "META_FB_PAGE_ID",
+    ].filter(Boolean).join(", ");
+    // Loud-fail parity with PR #101's ig-mirror abortPending: a silent
+    // 200 here means the cron returned ok=false, wrote nothing to
+    // generated_posts, and emitted zero output — so the failure is
+    // invisible in both the DB and Vercel logs. console.error so the
+    // very next cron leaves a trail.
+    console.error(`[fb-daily-generate] aborting: env vars missing: ${missing}`);
     return NextResponse.json({
       ok: false,
-      error: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
+      error: `${missing} not set`,
+      stage: "env_check",
       duration_ms: Date.now() - started,
     });
   }
