@@ -150,18 +150,37 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
 
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
-  if (!userToken || !pageId) {
+  const pending = await listPendingIgMirror(10);
+
+  // Any setup-stage failure that aborts before the per-row loop must still
+  // mark every pending row ig_failed. Otherwise rows sit at status=fb_published
+  // forever, the DB has no error_message, and the same broken state silently
+  // repeats every cron run (see docs/routine-logs/health-2026-05-31.md).
+  async function abortPending(reason: string): Promise<NextResponse<MirrorResult>> {
+    console.error(`[ig-mirror] aborting before publish loop: ${reason}`);
+    const details: MirrorResult["details"] = [];
+    for (const row of pending) {
+      details.push({ slug: row.slug, error: reason });
+      try {
+        await markFailed(row.id, "ig", reason);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark ${row.slug} ig_failed:`, markErr);
+      }
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details,
       duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
+      message: reason,
     });
   }
 
-  const pending = await listPendingIgMirror(10);
+  if (!userToken || !pageId) {
+    return abortPending("META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set");
+  }
+
   if (pending.length === 0) {
     return NextResponse.json({
       ok: true,
@@ -181,14 +200,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
-    });
+    return abortPending(`auth/page-context: ${msg}`);
   }
 
   // Pre-warm the render endpoint for each pending slug. IG often fails
