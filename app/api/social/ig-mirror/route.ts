@@ -181,13 +181,27 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    const fullMsg = `auth/page-context: ${msg}`;
+    // Without this, pending rows stay in the queue forever and the run
+    // returns 200 with no DB trace — invisible to monitoring. Mark every
+    // pending row ig_failed so the failure surfaces in generated_posts.
+    console.error(`[ig-mirror] ${fullMsg} — marking ${pending.length} pending row(s) ig_failed`);
+    const details: MirrorResult["details"] = [];
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", fullMsg);
+      } catch (markErr) {
+        console.error(`[ig-mirror] failed to mark ${row.slug} ig_failed:`, markErr);
+      }
+      details.push({ slug: row.slug, error: fullMsg });
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details,
       duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
+      message: fullMsg,
     });
   }
 
