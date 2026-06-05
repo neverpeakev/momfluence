@@ -65,7 +65,16 @@ async function fetchPageContext(userToken: string, pageId: string): Promise<{ pa
   const accountsData = JSON.parse(accountsText) as { data?: Array<{ id: string; access_token: string }> };
   const page = (accountsData.data ?? []).find((p) => p.id === pageId);
   if (!page?.access_token) throw new Error(`Page ${pageId} access_token unavailable`);
-  // Linked IG account
+
+  // Linked IG account. The page token needs `instagram_basic` scope for the
+  // `instagram_business_account` field to populate; if that scope was dropped
+  // when the system-user token was rotated, the lookup returns silently empty.
+  // META_IG_BUSINESS_ID is an explicit override that bypasses the lookup —
+  // useful when the IG link is known and stable.
+  const overrideIgId = process.env.META_IG_BUSINESS_ID?.trim();
+  if (overrideIgId) {
+    return { pageToken: page.access_token, igId: overrideIgId };
+  }
   const igRes = await fetch(
     `${META_BASE}/${pageId}?fields=instagram_business_account&access_token=${encodeURIComponent(page.access_token)}`
   );
@@ -73,7 +82,14 @@ async function fetchPageContext(userToken: string, pageId: string): Promise<{ pa
   if (!igRes.ok) throw new Error(`/${pageId} ig lookup → ${igRes.status}: ${igText.slice(0, 300)}`);
   const igData = JSON.parse(igText) as { instagram_business_account?: { id: string } };
   const igId = igData.instagram_business_account?.id;
-  if (!igId) throw new Error(`No Instagram Business Account linked to FB Page ${pageId}`);
+  if (!igId) {
+    throw new Error(
+      `No Instagram Business Account linked to FB Page ${pageId} ` +
+        `(lookup body: ${igText.slice(0, 200)}). ` +
+        `Set META_IG_BUSINESS_ID env var to skip this lookup, or restore the ` +
+        `instagram_basic scope on the page access token.`
+    );
+  }
   return { pageToken: page.access_token, igId };
 }
 
@@ -151,6 +167,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
+    console.error("[ig-mirror] env missing: META_MARKETING_API_TOKEN or META_FB_PAGE_ID");
     return NextResponse.json({
       ok: false,
       mirrored: 0,
@@ -163,6 +180,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
 
   const pending = await listPendingIgMirror(10);
   if (pending.length === 0) {
+    console.log("[ig-mirror] nothing to mirror");
     return NextResponse.json({
       ok: true,
       mirrored: 0,
@@ -172,6 +190,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
       message: "nothing to mirror",
     });
   }
+  console.log(`[ig-mirror] picked up ${pending.length} pending row(s): ${pending.map((r) => r.slug).join(", ")}`);
 
   let pageToken: string;
   let igId: string;
@@ -181,6 +200,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[ig-mirror] auth/page-context failed: ${msg}`);
     return NextResponse.json({
       ok: false,
       mirrored: 0,
