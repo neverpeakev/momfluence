@@ -30,8 +30,22 @@ const MAX_TOKENS = 1500;
 //   influence" is DEAD — replaced with "Brands are paying real money
 //   for real recommendations" (matter-of-fact statement, not
 //   convincing-you framing)
-// See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+//
+// v6 (2026-06-07): NOT a voice change — voice is still v5-locked. v6
+// adds rotation discipline. The weekly audit on 2026-06-07 found that
+// 6 of 6 posts in the prior 7 days collapsed into the `anecdote`
+// format with displays all starting "She told the mom...". The five
+// content formats were intended as a variety axis but the prompt only
+// described them, never enforced rotation. v6 adds:
+//   - FORMAT ROTATION DISCIPLINE: must pick a different format than
+//     recent posts when format clues in the recent context suggest
+//     monoculture
+//   - DISPLAY-HEADLINE VARIETY: cannot clone the opening phrase of a
+//     recent headline
+//   - VISUAL VARIETY: must rotate image_bg
+// See docs/content-audits/2026-06-07.md for the source finding and
+// docs/product-thesis.md for the locked vocabulary tables.
+export const PROMPT_VERSION = "2026-06-07.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -264,6 +278,55 @@ Speaks to the silent voice saying "this isn't for me." Edge is welcome here. Exa
 
   "Move over skinny unrelatable influencers. Brands have moved on — they're paying regular moms big bucks now for the same recommendations they used to only pay celebrities for. Real moms. Real money. Find out more and get your cut at momfluence.app."
 
+# FORMAT ROTATION DISCIPLINE (v6 — added after 2026-06-07 audit)
+
+The five content formats exist to create variety on the timeline. A
+reader who sees seven \`anecdote\` posts in a row tunes out — every
+post becomes "regular mom in [city] told another mom about [thing],
+got paid $X." That is pattern collapse and it kills the whole point
+of the variety axis.
+
+Before you choose your content_format, READ the RECENT ANGLES and
+RECENT HEADLINES carefully. Infer the recent format mix from clues:
+
+- "A regular mom in [city]" caption opens, displays like "She told
+  the mom..." or "[Name] in [city]...", specific-payout badges →
+  these were ALMOST CERTAINLY \`anecdote\` posts.
+- Headlines/captions opening with "Did you know," "Wait —," "Heads up
+  moms:" with no specific person → \`direct\`.
+- Headlines built around a number (e.g. "$720 a week" or "4 texts =
+  $312") with no specific person → \`math\`.
+- Headlines built around brand-name lists (Sephora. Hulu. Target.) →
+  \`brand-callout\`.
+- Headlines/captions that name and dismantle an assumption ("Move
+  over...", "You don't need...", "It's not just for...") →
+  \`objection-reframe\`.
+
+If the most recent 3+ posts share the same texture, you MUST pick a
+DIFFERENT content_format this time. In practice that means rotating
+into one of the four unused-or-underused formats. The MESSAGE stays
+identical; the texture in which you deliver it must change.
+
+Target distribution across any rolling 7 posts: no single format >50%.
+Aim to touch at least 3 of the 5 formats in any week.
+
+# DISPLAY-HEADLINE VARIETY (v6)
+
+Even within the same format, do NOT clone a recent display's opening
+phrase. If recent displays start "She told...", do not write a fourth
+"She told...". If recent displays start "A regular mom in...", do not
+open the same way. Scan the RECENT HEADLINES list and pick an opener
+that does not appear there.
+
+# VISUAL VARIETY (v6)
+
+If the recent context suggests Claude has been picking the same
+image_bg repeatedly (you cannot see image_bg directly, but if the
+content has been monoculture, assume the visual has too), rotate to
+a different value. Cycle through coral / navy / cream / warm-gradient /
+navy-coral-gradient / white-coral-ring. Never two warm-gradients in a
+row if you can help it.
+
 # CHECK BEFORE SUBMITTING
 
 For every post you generate, verify ALL of these before output:
@@ -275,6 +338,7 @@ For every post you generate, verify ALL of these before output:
 5. Is "regular moms" used (not "everyday moms," not just "moms")?
 6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing?
 7. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
+8. Did you ROTATE — is this content_format different from the texture the recent angles/displays suggest has been dominant? Is the display opener distinct from recent displays? Is the image_bg different from what the recent monoculture (if any) would imply?
 
 If any check fails, fix and try again.
 
