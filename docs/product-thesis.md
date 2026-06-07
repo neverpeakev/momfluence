@@ -253,6 +253,26 @@ The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
 
+### Rotation is enforced, not suggested (added v6 after 2026-06-07 audit)
+
+The 2026-06-07 weekly audit found that the daily generator had
+collapsed into 6-of-6 \`anecdote\` posts in the prior week, with every
+display starting "She told the mom...". The five formats are listed
+as the variety axis — but a list, on its own, is just a buffet Claude
+can ignore. From v6 onward the SYSTEM_PROMPT explicitly enforces:
+
+- **No single format >50% of any rolling 7-post window.** Aim to touch
+  at least 3 of 5 formats per week.
+- **No cloning a recent display's opening phrase**, even within the
+  same format. "She told..." three times in a row is not allowed; the
+  fourth must open differently.
+- **Visual rotation** across the six image_bg choices — no more
+  six-in-a-row warm-gradients.
+
+If the recent angles + headlines passed into the prompt show
+single-texture collapse, Claude must rotate this turn. The audit will
+keep scoring this and bump the prompt again if drift returns.
+
 ---
 
 ## The qualifier (front-and-center)
