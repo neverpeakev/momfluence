@@ -151,6 +151,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
+    console.error("[ig-mirror] META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set");
     return NextResponse.json({
       ok: false,
       mirrored: 0,
@@ -162,6 +163,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   }
 
   const pending = await listPendingIgMirror(10);
+  console.log(`[ig-mirror] pending=${pending.length}`);
   if (pending.length === 0) {
     return NextResponse.json({
       ok: true,
@@ -181,11 +183,24 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // Surface in logs so the cron failure is visible in Vercel runtime logs.
+    console.error(`[ig-mirror] auth/page-context failed for ${pending.length} pending row(s):`, msg);
+    // Mark each pending row with the error so the DB shows why it stalled
+    // instead of leaving rows silently stuck in fb_published forever.
+    const details: MirrorResult["details"] = [];
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", `auth/page-context: ${msg}`);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark ${row.slug} failed:`, markErr);
+      }
+      details.push({ slug: row.slug, error: `auth/page-context: ${msg}` });
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details,
       duration_ms: Date.now() - started,
       message: `auth/page-context: ${msg}`,
     });
@@ -222,6 +237,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     }
   }
 
+  console.log(`[ig-mirror] done mirrored=${mirrored} failed=${failed}`);
   return NextResponse.json({
     ok: failed === 0,
     mirrored,
