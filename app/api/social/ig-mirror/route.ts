@@ -30,6 +30,7 @@ import {
   listPendingIgMirror,
   markIgPublished,
   markFailed,
+  noteFailure,
   type GeneratedPostRow,
 } from "@/lib/social/db";
 
@@ -148,19 +149,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     );
   }
 
-  const userToken = process.env.META_MARKETING_API_TOKEN;
-  const pageId = process.env.META_FB_PAGE_ID;
-  if (!userToken || !pageId) {
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
-    });
-  }
-
   const pending = await listPendingIgMirror(10);
   if (pending.length === 0) {
     return NextResponse.json({
@@ -173,6 +161,33 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     });
   }
 
+  // Helper for setup-stage failures: record the error on every pending row
+  // (so it surfaces in Supabase) but leave status=fb_published so the next
+  // cron run retries automatically once the underlying issue is fixed.
+  async function reportSetupFailure(msg: string) {
+    await Promise.all(
+      pending.map((r) =>
+        noteFailure(r.id, "ig", msg).catch((err) => {
+          console.error(`[ig-mirror] noteFailure failed for ${r.slug}:`, err);
+        })
+      )
+    );
+    return NextResponse.json({
+      ok: false,
+      mirrored: 0,
+      failed: pending.length,
+      details: pending.map((r) => ({ slug: r.slug, error: msg })),
+      duration_ms: Date.now() - started,
+      message: msg,
+    });
+  }
+
+  const userToken = process.env.META_MARKETING_API_TOKEN;
+  const pageId = process.env.META_FB_PAGE_ID;
+  if (!userToken || !pageId) {
+    return reportSetupFailure("META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set");
+  }
+
   let pageToken: string;
   let igId: string;
   try {
@@ -181,14 +196,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
-    });
+    return reportSetupFailure(`auth/page-context: ${msg}`);
   }
 
   // Pre-warm the render endpoint for each pending slug. IG often fails

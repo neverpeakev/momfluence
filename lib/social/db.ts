@@ -150,6 +150,27 @@ export async function markFailed(
   if (error) throw new Error(`markFailed: ${error.message}`);
 }
 
+// Record an error_message + errored_at WITHOUT flipping status to a terminal
+// _failed state. Use when a cron's global setup (env vars, page-context) fails
+// for all pending rows at once — they're still retryable on the next run, but
+// the failure is now visible in Supabase instead of leaking only into the
+// cron's HTTP response body.
+export async function noteFailure(
+  id: string,
+  stage: "fb" | "ig",
+  message: string
+): Promise<void> {
+  const sb = admin();
+  const { error } = await sb
+    .from("generated_posts")
+    .update({
+      errored_at: new Date().toISOString(),
+      error_message: `${stage}: ${message}`.slice(0, 4000),
+    })
+    .eq("id", id);
+  if (error) throw new Error(`noteFailure: ${error.message}`);
+}
+
 export async function listPendingIgMirror(limit = 10): Promise<GeneratedPostRow[]> {
   const sb = admin();
   const { data, error } = await sb
