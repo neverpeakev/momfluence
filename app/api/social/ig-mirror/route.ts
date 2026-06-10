@@ -181,11 +181,26 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // Without this, page-context failures (revoked instagram_basic scope,
+    // unlinked IG account, etc.) leave every pending row stuck at
+    // status=fb_published with no error_message — invisible until someone
+    // notices IG is silent. Mark them ig_failed so the daily audit catches
+    // it the next morning.
+    console.error(`[ig-mirror] page-context failed for ${pending.length} pending row(s):`, msg);
+    const details: MirrorResult["details"] = [];
+    for (const row of pending) {
+      details.push({ slug: row.slug, error: `auth/page-context: ${msg}` });
+      try {
+        await markFailed(row.id, "ig", `auth/page-context: ${msg}`);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark ${row.slug} ig_failed:`, markErr);
+      }
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details,
       duration_ms: Date.now() - started,
       message: `auth/page-context: ${msg}`,
     });
