@@ -55,22 +55,45 @@ function siteOrigin(req: NextRequest): string {
   return `${proto}://${host}`;
 }
 
+async function fbGraphGetWithRetry(url: string, label: string): Promise<string> {
+  // FB Graph /me/accounts (and other token-resolution endpoints) intermittently
+  // return 5xx with OAuthException code 1 "Unknown error". Retry transient
+  // failures so a single blip doesn't take down the daily mirror. 4xx errors
+  // bypass retry — they signal real auth/config problems we want to surface.
+  const delays = [0, 1500, 4000];
+  let lastErr: Error | null = null;
+  for (const wait of delays) {
+    if (wait) await new Promise((r) => setTimeout(r, wait));
+    let res: Response;
+    try {
+      res = await fetch(url);
+    } catch (e) {
+      lastErr = e instanceof Error ? e : new Error(String(e));
+      continue;
+    }
+    const text = await res.text();
+    if (res.ok) return text;
+    const err = new Error(`${label} → ${res.status}: ${text.slice(0, 300)}`);
+    if (res.status >= 500) { lastErr = err; continue; }
+    throw err;
+  }
+  throw lastErr ?? new Error(`${label} failed after retries`);
+}
+
 async function fetchPageContext(userToken: string, pageId: string): Promise<{ pageToken: string; igId: string }> {
   // Page access token
-  const accountsRes = await fetch(
-    `${META_BASE}/me/accounts?fields=id,access_token&limit=200&access_token=${encodeURIComponent(userToken)}`
+  const accountsText = await fbGraphGetWithRetry(
+    `${META_BASE}/me/accounts?fields=id,access_token&limit=200&access_token=${encodeURIComponent(userToken)}`,
+    "/me/accounts"
   );
-  const accountsText = await accountsRes.text();
-  if (!accountsRes.ok) throw new Error(`/me/accounts → ${accountsRes.status}: ${accountsText.slice(0, 300)}`);
   const accountsData = JSON.parse(accountsText) as { data?: Array<{ id: string; access_token: string }> };
   const page = (accountsData.data ?? []).find((p) => p.id === pageId);
   if (!page?.access_token) throw new Error(`Page ${pageId} access_token unavailable`);
   // Linked IG account
-  const igRes = await fetch(
-    `${META_BASE}/${pageId}?fields=instagram_business_account&access_token=${encodeURIComponent(page.access_token)}`
+  const igText = await fbGraphGetWithRetry(
+    `${META_BASE}/${pageId}?fields=instagram_business_account&access_token=${encodeURIComponent(page.access_token)}`,
+    `/${pageId} ig lookup`
   );
-  const igText = await igRes.text();
-  if (!igRes.ok) throw new Error(`/${pageId} ig lookup → ${igRes.status}: ${igText.slice(0, 300)}`);
   const igData = JSON.parse(igText) as { instagram_business_account?: { id: string } };
   const igId = igData.instagram_business_account?.id;
   if (!igId) throw new Error(`No Instagram Business Account linked to FB Page ${pageId}`);
