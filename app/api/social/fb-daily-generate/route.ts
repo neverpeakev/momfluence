@@ -58,14 +58,34 @@ interface FbPageInfo { token: string; name: string }
 
 async function fetchPageAccessToken(userToken: string, pageId: string): Promise<FbPageInfo> {
   const url = `${META_BASE}/me/accounts?fields=id,name,access_token&limit=200&access_token=${encodeURIComponent(userToken)}`;
-  const res = await fetch(url);
-  const text = await res.text();
-  if (!res.ok) throw new Error(`GET /me/accounts → ${res.status}: ${text.slice(0, 400)}`);
-  const data = JSON.parse(text) as { data?: Array<{ id: string; name: string; access_token: string }> };
-  const page = (data.data ?? []).find((p) => p.id === pageId);
-  if (!page) throw new Error(`Page ${pageId} not in manageable list`);
-  if (!page.access_token) throw new Error(`No page access_token returned — check pages_show_list scope`);
-  return { token: page.access_token, name: page.name };
+  // FB Graph occasionally returns 5xx with OAuthException code 1 ("An unknown
+  // error has occurred") on /me/accounts. These are transient — retry with
+  // backoff before failing the whole cron. 4xx (real auth problems) surface
+  // immediately so we don't paper over a token revocation.
+  const delays = [0, 1500, 4000];
+  let lastErr: Error | null = null;
+  for (const wait of delays) {
+    if (wait) await new Promise((r) => setTimeout(r, wait));
+    let res: Response;
+    try {
+      res = await fetch(url);
+    } catch (e) {
+      lastErr = e instanceof Error ? e : new Error(String(e));
+      continue;
+    }
+    const text = await res.text();
+    if (!res.ok) {
+      const err = new Error(`GET /me/accounts → ${res.status}: ${text.slice(0, 400)}`);
+      if (res.status >= 500) { lastErr = err; continue; }
+      throw err;
+    }
+    const data = JSON.parse(text) as { data?: Array<{ id: string; name: string; access_token: string }> };
+    const page = (data.data ?? []).find((p) => p.id === pageId);
+    if (!page) throw new Error(`Page ${pageId} not in manageable list`);
+    if (!page.access_token) throw new Error(`No page access_token returned — check pages_show_list scope`);
+    return { token: page.access_token, name: page.name };
+  }
+  throw lastErr ?? new Error(`GET /me/accounts failed after retries`);
 }
 
 async function fetchRenderedPng(req: NextRequest, slug: string): Promise<Buffer> {
