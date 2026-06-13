@@ -142,6 +142,7 @@ interface MirrorResult {
 export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>> {
   const started = Date.now();
   if (!authorized(req)) {
+    console.error("[ig-mirror] unauthorized: missing or wrong Bearer");
     return NextResponse.json(
       { ok: false, mirrored: 0, failed: 0, details: [], duration_ms: 0, message: "unauthorized" },
       { status: 401 }
@@ -151,18 +152,23 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
-    });
+    console.error("[ig-mirror] env missing: META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set");
+    return NextResponse.json(
+      {
+        ok: false,
+        mirrored: 0,
+        failed: 0,
+        details: [],
+        duration_ms: Date.now() - started,
+        message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
+      },
+      { status: 500 }
+    );
   }
 
   const pending = await listPendingIgMirror(10);
   if (pending.length === 0) {
+    console.log("[ig-mirror] nothing to mirror");
     return NextResponse.json({
       ok: true,
       mirrored: 0,
@@ -172,6 +178,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
       message: "nothing to mirror",
     });
   }
+  console.log(`[ig-mirror] pending=${pending.length} slugs=${pending.map((p) => p.slug).join(",")}`);
 
   let pageToken: string;
   let igId: string;
@@ -181,14 +188,20 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
-    });
+    // Silent 200 here previously meant the cron looked "successful" in Vercel
+    // even when token/IG-link had broken. Log + return 500 so it surfaces.
+    console.error(`[ig-mirror] auth/page-context failed: ${msg}`);
+    return NextResponse.json(
+      {
+        ok: false,
+        mirrored: 0,
+        failed: 0,
+        details: [],
+        duration_ms: Date.now() - started,
+        message: `auth/page-context: ${msg}`,
+      },
+      { status: 500 }
+    );
   }
 
   // Pre-warm the render endpoint for each pending slug. IG often fails
@@ -212,6 +225,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
       details.push({ slug: row.slug, ig_media_id: mediaId });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[ig-mirror] publish failed slug=${row.slug}: ${msg}`);
       failed++;
       details.push({ slug: row.slug, error: msg });
       try {
@@ -222,13 +236,17 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     }
   }
 
-  return NextResponse.json({
-    ok: failed === 0,
-    mirrored,
-    failed,
-    details,
-    duration_ms: Date.now() - started,
-  });
+  console.log(`[ig-mirror] done mirrored=${mirrored} failed=${failed} duration_ms=${Date.now() - started}`);
+  return NextResponse.json(
+    {
+      ok: failed === 0,
+      mirrored,
+      failed,
+      details,
+      duration_ms: Date.now() - started,
+    },
+    { status: failed === 0 ? 200 : 500 }
+  );
 }
 
 export async function GET(req: NextRequest) {
