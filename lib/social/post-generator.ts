@@ -30,8 +30,21 @@ const MAX_TOKENS = 1500;
 //   influence" is DEAD — replaced with "Brands are paying real money
 //   for real recommendations" (matter-of-fact statement, not
 //   convincing-you framing)
+// v6 (2026-06-14): operational refinement — v5 voice unchanged. Driven
+// by the weekly audit (docs/content-audits/2026-06-14.md) which found
+// 6/6 posts collapsed to `anecdote`, half without dollar numbers, and
+// most opening with a "A regular mom in [City]..." journalism lede
+// instead of a locked casual opener. Changes:
+// - Added FORMAT ROTATION section to the system prompt (do not repeat
+//   the most recent format; aim for distribution across all 5 in a
+//   7-day window).
+// - Added optional `recentContentFormats` input so the model sees the
+//   format-distribution drift, not just angle tags.
+// - Tightened anecdote rules: a specific dollar number AND a locked
+//   casual opener BEFORE the third-person story are both required.
+// - Added city / image_bg rotation hints.
 // See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+export const PROMPT_VERSION = "2026-06-14.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -264,6 +277,34 @@ Speaks to the silent voice saying "this isn't for me." Edge is welcome here. Exa
 
   "Move over skinny unrelatable influencers. Brands have moved on — they're paying regular moms big bucks now for the same recommendations they used to only pay celebrities for. Real moms. Real money. Find out more and get your cut at momfluence.app."
 
+# FORMAT ROTATION (mandatory)
+
+The MESSAGE is fixed; the FORMAT is the variety axis. Over a 7-day window we want distribution across all five formats — not six anecdotes in a row.
+
+Rules:
+- Do NOT pick the same content_format as the most recent post.
+- If the recent-formats list below shows one format dominating (3+ of the last 6), pick something else — anything else.
+- Bias toward whichever format is missing or under-represented this week.
+- objection-reframe carries the brand's edge — don't let it go a full week unused.
+
+# ANECDOTE FORMAT — STRICTER RULES (v6)
+
+The anecdote format requires ALL THREE:
+1. A specific person AND a specific place (a city is fine).
+2. A specific DOLLAR NUMBER she got paid. Not optional. The number IS the proof. An anecdote without a number is a vignette, not an anecdote — pick a different format if you don't have one.
+3. Open with one of the locked casual openers ("Moms:", "Heads up moms:", "Did you know", "Wait —", "POV:", "Hot tip:", "Quick PSA:", anchored-moment) BEFORE you go into the third-person story. Do NOT open with "A regular mom in [City]..." — that's a journalism lede, not a smart friend texting.
+
+Wrong: "A regular mom in Boise grabbed the link from her dashboard..."
+Right: "Moms: a regular mom in Boise just made $340 grabbing one link from her dashboard..."
+
+# CITY ROTATION
+
+If a city name appears in the recent angle_tags list below, do NOT use that city again this week. The country is large — Memphis, Tulsa, Tacoma, Albany, El Paso, Fresno, Wichita all exist.
+
+# VISUAL ROTATION
+
+Vary image_bg across the 6 options (coral, navy, cream, warm-gradient, navy-coral-gradient, white-coral-ring). If the recent posts list below shows the same image_bg repeating, pick a different one.
+
 # CHECK BEFORE SUBMITTING
 
 For every post you generate, verify ALL of these before output:
@@ -275,6 +316,8 @@ For every post you generate, verify ALL of these before output:
 5. Is "regular moms" used (not "everyday moms," not just "moms")?
 6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing?
 7. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
+8. Is the chosen content_format different from the most recent post (see recent list)? If anecdote is over-indexed this week, did you actively pick something else?
+9. If anecdote: does it have a specific dollar number AND open with a locked casual opener (not "A regular mom in [City]...")?
 
 If any check fails, fix and try again.
 
@@ -307,6 +350,12 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
 interface GeneratorInputs {
   recentAngleTags: string[];
   recentDisplays: string[];
+  /** v6: ordered most-recent-first list of recent content_format values.
+   *  Surfaced to the model so it can see if one format is dominating
+   *  the week and pick a different one. Optional — when omitted,
+   *  format-rotation rules in the system prompt apply as guidance
+   *  without grounding data. */
+  recentContentFormats?: string[];
 }
 
 function buildUserPrompt(inputs: GeneratorInputs): string {
@@ -316,11 +365,33 @@ function buildUserPrompt(inputs: GeneratorInputs): string {
   const displayList = inputs.recentDisplays.length > 0
     ? inputs.recentDisplays.slice(0, 12).map((d) => `- "${d.replace(/\n/g, " / ")}"`).join("\n")
     : "(none yet)";
+
+  const formats = inputs.recentContentFormats ?? [];
+  let formatSection = "";
+  if (formats.length > 0) {
+    const counts = formats.reduce<Record<string, number>>((acc, f) => {
+      acc[f] = (acc[f] ?? 0) + 1;
+      return acc;
+    }, {});
+    const distribution = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([f, n]) => `- ${f}: ${n}`)
+      .join("\n");
+    const mostRecent = formats[0];
+    formatSection = `\n\n# RECENT CONTENT FORMATS (most recent first)
+Distribution across the last ${formats.length} posts:
+${distribution}
+
+Most recent post used: ${mostRecent}
+
+Per the FORMAT ROTATION rules in the system prompt: do NOT pick "${mostRecent}" for this post. Pick a format that is under-represented above (or missing entirely).`;
+  }
+
   return `# RECENT ANGLES (don't repeat or paraphrase these)
 ${tagList}
 
 # RECENT HEADLINES (so you can hear the visual rhythm and avoid repeating)
-${displayList}
+${displayList}${formatSection}
 
 Generate ONE new post per the system prompt. The angle must be distinct from everything above. Output ONLY the JSON.`;
 }

@@ -253,6 +253,27 @@ The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
 
+### Format rotation rule (added 2026-06-14)
+
+The 5 formats are the variety axis — they're not interchangeable. Over a
+rolling 7-day window we want distribution across all five, not the same
+texture six days running. Operational rules:
+
+- The daily generator must NOT pick the same content_format as the most
+  recent post.
+- If one format is dominating (3+ of the last 6 posts), the next post
+  must pick something else.
+- `objection-reframe` carries the brand's edge — don't let it go a full
+  week unused.
+- `anecdote` specifically requires (a) a specific dollar number — no
+  number, it's a vignette, not an anecdote, so pick a different format —
+  and (b) an opener from the locked casual-opener list ("Moms:", "Heads
+  up moms:", "POV:", "Wait —", etc.), not a third-person journalism
+  lede like "A regular mom in [City]...".
+
+These are enforced in `lib/social/post-generator.ts` as of prompt
+version `2026-06-14.v6`.
+
 ---
 
 ## The qualifier (front-and-center)
