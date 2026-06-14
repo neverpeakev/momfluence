@@ -163,6 +163,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
 
   const pending = await listPendingIgMirror(10);
   if (pending.length === 0) {
+    console.log("[ig-mirror] nothing to mirror");
     return NextResponse.json({
       ok: true,
       mirrored: 0,
@@ -180,14 +181,30 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     pageToken = ctx.pageToken;
     igId = ctx.igId;
   } catch (e) {
+    // Page-context failure is a single fault that blocks every pending row.
+    // Mark each one ig_failed so the row exits fb_published limbo and the
+    // failure is visible in generated_posts.error_message — otherwise the
+    // row sits forever matching listPendingIgMirror and every future cron
+    // re-fails silently with the same upstream error.
     const msg = e instanceof Error ? e.message : String(e);
+    const wrapped = `auth/page-context: ${msg}`;
+    console.error(`[ig-mirror] ${wrapped} — marking ${pending.length} pending row(s) ig_failed`);
+    const details: MirrorResult["details"] = [];
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", wrapped);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark ${row.slug} ig_failed:`, markErr);
+      }
+      details.push({ slug: row.slug, error: wrapped });
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details,
       duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
+      message: wrapped,
     });
   }
 
@@ -222,6 +239,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     }
   }
 
+  console.log(
+    `[ig-mirror] done: mirrored=${mirrored} failed=${failed} duration_ms=${Date.now() - started}`
+  );
   return NextResponse.json({
     ok: failed === 0,
     mirrored,
