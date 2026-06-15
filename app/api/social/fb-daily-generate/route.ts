@@ -36,7 +36,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const META_API_VERSION = "v20.0";
+const META_API_VERSION = "v22.0";
 const META_BASE = `https://graph.facebook.com/${META_API_VERSION}`;
 
 function authorized(req: NextRequest): boolean {
