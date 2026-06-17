@@ -19,6 +19,7 @@
     "@stripe/stripe-js": "^9.7.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.4",
+    "@vercel/analytics": "^2.0.1",
     "framer-motion": "^12.39.0",
     "googleapis": "^171.4.0",
     "next": "^15.1.0",
