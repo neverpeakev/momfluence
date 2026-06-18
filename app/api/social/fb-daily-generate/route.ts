@@ -14,8 +14,12 @@
  *   8. Mark row fb_published with the returned post_id.
  *
  * The IG mirror cron (/api/social/ig-mirror) picks up from here 15 min later.
- * If anything fails, we mark the row as fb_failed and return 200 with the
- * error in the body — cron should never see a non-200 (Vercel retries).
+ * Failure handling depends on whether a row was created:
+ *   - After insertPending: mark the row fb_failed and return 200. The row is
+ *     the durable record; a non-200 could trigger a retry that double-publishes.
+ *   - Before insertPending (context/generation error): no row exists, so the
+ *     failure would otherwise be invisible (table empty, cron green). Return
+ *     500 so the failed run shows up in Vercel's cron dashboard and alerting.
  *
  * Manual run for testing:
  *   curl -X POST https://momfluence.app/api/social/fb-daily-generate \
@@ -213,12 +217,15 @@ export async function POST(req: NextRequest): Promise<NextResponse<CronResult>> 
         console.error(`[fb-daily-generate] also failed to mark row failed:`, markErr);
       }
     }
+    // No row means we failed before insertPending — nothing is recorded in
+    // generated_posts, so surface a non-200 to keep the failure visible rather
+    // than letting the cron report green with no post for the day.
     return NextResponse.json({
       ok: false,
       error: msg,
       stage,
       duration_ms: Date.now() - started,
-    });
+    }, { status: row ? 200 : 500 });
   }
 }
 

@@ -17,7 +17,10 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 
 const MODEL = "claude-opus-4-7";
-const MAX_TOKENS = 1500;
+// A caption can run to 300 words plus rationale + JSON scaffolding; 1500 left
+// too little headroom, so a verbose generation got truncated mid-JSON, failed
+// JSON.parse, and (when it happened on every attempt) lost the whole day's post.
+const MAX_TOKENS = 2400;
 // v5: voice locked after multi-round iteration with the founder. Major
 // changes from v4:
 // - "regular moms" replaces "everyday moms" (less brand-tradey)
@@ -353,7 +356,7 @@ export interface GenerateResult {
  */
 export async function generateDailyPost(
   inputs: GeneratorInputs,
-  maxAttempts = 3
+  maxAttempts = 5
 ): Promise<GenerateResult> {
   const recentTagsLower = new Set(inputs.recentAngleTags.map((t) => t.toLowerCase()));
   let lastError = "no attempts";
