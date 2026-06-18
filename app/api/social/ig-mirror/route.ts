@@ -151,6 +151,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
+    console.error("[ig-mirror] aborting: META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set");
     return NextResponse.json({
       ok: false,
       mirrored: 0,
@@ -181,6 +182,15 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // Batch-level precondition failure: every pending row stays unmirrored.
+    // Log loudly so it surfaces in runtime logs — the rows are left as
+    // status=fb_published (NOT marked ig_failed) so a future run auto-retries
+    // once the token/IG-link is fixed, but without this log the failure was
+    // invisible to both the runtime logs and the status-based monitor.
+    console.error(
+      `[ig-mirror] aborting: auth/page-context failed — ${pending.length} row(s) left unmirrored:`,
+      msg
+    );
     return NextResponse.json({
       ok: false,
       mirrored: 0,
