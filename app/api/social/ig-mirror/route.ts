@@ -181,13 +181,25 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // Without marking the pending rows ig_failed here, the failure is
+    // invisible: the row stays at status=fb_published, the cron returns 200,
+    // and the next run finds the same row + fails the same way forever.
+    console.error(`[ig-mirror] fetchPageContext failed; marking ${pending.length} pending row(s) ig_failed:`, msg);
+    const failureMsg = `auth/page-context: ${msg}`;
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", failureMsg);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark row ${row.slug} failed:`, markErr);
+      }
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details: pending.map((r) => ({ slug: r.slug, error: failureMsg })),
       duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
+      message: failureMsg,
     });
   }
 
