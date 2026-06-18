@@ -151,6 +151,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
+    console.error("[ig-mirror] META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set");
     return NextResponse.json({
       ok: false,
       mirrored: 0,
@@ -181,11 +182,23 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // Without this, a broken Meta token or unlinked IG account silently
+    // returns 200 every day while rows pile up in fb_published with no
+    // error_message. Log loudly AND stamp the error onto every pending
+    // row so the failure surfaces in both Vercel logs and the DB.
+    console.error(`[ig-mirror] auth/page-context failed for ${pending.length} pending row(s):`, msg);
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", `auth/page-context: ${msg}`);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark row ${row.slug} failed:`, markErr);
+      }
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details: pending.map((r) => ({ slug: r.slug, error: `auth/page-context: ${msg}` })),
       duration_ms: Date.now() - started,
       message: `auth/page-context: ${msg}`,
     });
