@@ -31,7 +31,17 @@ const MAX_TOKENS = 1500;
 //   for real recommendations" (matter-of-fact statement, not
 //   convincing-you framing)
 // See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+//
+// v6: refinement after 2026-05-17 weekly audit. Voice unchanged. Changes:
+// - Surface recent content_formats to Claude so it can rotate (the
+//   prior week was 75% anecdote — model defaults to the easiest format)
+// - New FORMAT ROTATION section in SYSTEM_PROMPT names the
+//   undertested formats (direct / math / objection-reframe)
+// - Anecdote anti-template note next to the anecdote example: vary
+//   the opener and the situation list across posts (posts 3 and 5
+//   of audit week reused "in group chats, school WhatsApps" verbatim)
+// See docs/content-audits/2026-05-17.md for the full audit.
+export const PROMPT_VERSION = "2026-05-17.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -244,6 +254,15 @@ A specific person, in a specific place, with a specific number. Example:
 
   "A regular mom in Indianapolis recommended a face cream to 4 friends in her group chat last week. She got paid $720 for it. No celebrity status, no million followers — just real recommendations from a real mom. Brands are starting to pay big bucks for the stuff regular moms are already sharing. Find out more at momfluence.app."
 
+ANECDOTE ANTI-TEMPLATE (v6 — read carefully):
+The example above is ONE shape, not the only shape. If you pick this format, vary the anchor across posts so anecdotes don't all read the same:
+- opener-by-city ("A regular mom in [City]...") is FINE but don't open every anecdote this way; alternate with:
+  - payout-first ("$340 in her account. From one group-chat text.")
+  - realization-first ("It took her three days to believe the deposit was real.")
+  - brand-first ("She'd been talking up her Nordstrom find for weeks — and someone finally paid her for it.")
+  - object-first ("The diaper cream she texted to her sister got her $480 by Friday.")
+- vary the situation list: DO NOT reuse the exact phrase "in group chats, school WhatsApps" or any other 3+ word situation cluster across consecutive anecdotes. Pick from group chats, school WhatsApps, Nextdoor, Facebook groups, neighborhood marketplaces, school pickup lines, sideline conversations, playground chats, mom forums, comment sections — and rotate which two or three you name in any given post.
+
 ## 2. content_format: "direct"
 Clean, question-led, unvarnished. Example:
 
@@ -264,6 +283,14 @@ Speaks to the silent voice saying "this isn't for me." Edge is welcome here. Exa
 
   "Move over skinny unrelatable influencers. Brands have moved on — they're paying regular moms big bucks now for the same recommendations they used to only pay celebrities for. Real moms. Real money. Find out more and get your cut at momfluence.app."
 
+# FORMAT ROTATION (v6 — added 2026-05-17 after weekly audit)
+
+The variety axis IS the format. The message is identical across all five formats; the format is the variation. If recent posts have skewed toward one format — especially "anecdote", which is the easiest to default to — DO NOT pick that format again. The user prompt below lists the content_format of recent posts; treat that list as a hard constraint:
+
+- If a format appears 2+ times in the most recent 5 posts: pick a different one.
+- If "anecdote" or "brand-callout" is over-represented and you can't see "direct", "math", or "objection-reframe" in the recent list: lean toward one of those three undertested formats unless the angle genuinely fits anecdote/brand-callout best.
+- Format choice is a deliberate decision, not a default. Justify it in the 'rationale' field by referencing the rotation.
+
 # CHECK BEFORE SUBMITTING
 
 For every post you generate, verify ALL of these before output:
@@ -275,6 +302,8 @@ For every post you generate, verify ALL of these before output:
 5. Is "regular moms" used (not "everyday moms," not just "moms")?
 6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing?
 7. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
+8. Does your chosen content_format respect the FORMAT ROTATION rule above? If the recent-formats list shows your pick was used 2+ times in the last 5 posts, change it unless the angle truly demands it.
+9. If anecdote: did you avoid the "A regular mom in [City]..." verbatim opener if it appears in the last 2 anecdotes? Did you vary the situation list (no verbatim "in group chats, school WhatsApps" reuse)?
 
 If any check fails, fix and try again.
 
@@ -307,6 +336,10 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
 interface GeneratorInputs {
   recentAngleTags: string[];
   recentDisplays: string[];
+  /** v6: most-recent-first list of content_format values from prior posts.
+   *  Surfaced to Claude so it can rotate formats rather than defaulting to
+   *  anecdote. Optional — callers that don't pass it get v5 behavior. */
+  recentContentFormats?: readonly string[];
 }
 
 function buildUserPrompt(inputs: GeneratorInputs): string {
@@ -316,13 +349,19 @@ function buildUserPrompt(inputs: GeneratorInputs): string {
   const displayList = inputs.recentDisplays.length > 0
     ? inputs.recentDisplays.slice(0, 12).map((d) => `- "${d.replace(/\n/g, " / ")}"`).join("\n")
     : "(none yet)";
+  const formatBlock = inputs.recentContentFormats && inputs.recentContentFormats.length > 0
+    ? `# RECENT CONTENT FORMATS (most recent first — rotate AWAY from these per the FORMAT ROTATION rule)
+${inputs.recentContentFormats.slice(0, 5).map((f, i) => `${i + 1}. ${f}`).join("\n")}
+
+`
+    : "";
   return `# RECENT ANGLES (don't repeat or paraphrase these)
 ${tagList}
 
 # RECENT HEADLINES (so you can hear the visual rhythm and avoid repeating)
 ${displayList}
 
-Generate ONE new post per the system prompt. The angle must be distinct from everything above. Output ONLY the JSON.`;
+${formatBlock}Generate ONE new post per the system prompt. The angle must be distinct from everything above. Output ONLY the JSON.`;
 }
 
 function failsBlocklist(post: GeneratedPost): string | null {

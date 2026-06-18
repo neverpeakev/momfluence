@@ -1,6 +1,7 @@
 # Momfluence — Product Thesis (locked)
 
-> **Last updated:** 2026-05-13 (the "rules just changed" rewrite)
+> **Last updated:** 2026-05-17 (rotation discipline added — audit refinement)
+> **Voice last updated:** 2026-05-13 (the "rules just changed" rewrite)
 > **Status:** This is the source of truth for everything user-facing.
 > Every ad, post, landing page, email, support reply, and Claude-generated
 > piece of content must trace back to this doc. The Claude post-generator
@@ -252,6 +253,26 @@ CTA. Every post.
 The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
+
+### Rotation discipline (added 2026-05-17 — audit refinement)
+
+The generator must rotate aggressively across all five formats.
+"Anecdote" is the easiest to default to (it's the most concrete, the
+most vivid example in the prompt) and the model will skew toward it
+unless explicitly counter-pressured. If recent posts have skewed toward
+one format, the next post should pick a different one — especially one
+of the three undertested formats: `direct`, `math`, `objection-reframe`.
+
+Concrete rule the generator follows: the user prompt surfaces the
+content_format of the last five posts; if any format appears 2+ times
+in that window, the generator must pick a different format unless the
+angle truly demands the over-represented one.
+
+Audit also watches for **within-format templating**: even when format
+rotates, the same format used twice in close succession should not
+share the same opener pattern (e.g. anecdotes opening "A regular mom in
+[City]...") or the same situation-list cluster ("in group chats,
+school WhatsApps"). Vary the anchor and the surrounding texture.
 
 ---
 
