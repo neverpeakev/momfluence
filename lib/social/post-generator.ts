@@ -31,7 +31,14 @@ const MAX_TOKENS = 1500;
 //   for real recommendations" (matter-of-fact statement, not
 //   convincing-you framing)
 // See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+// v6 (2026-05-24): voice unchanged — this is a format-rotation refinement
+// after the 2026-05-24 weekly audit found 5/5 published posts in the
+// preceding week were content_format="anecdote" (anecdote is the local
+// optimum because it lets Claude hit the canonical 3 pieces via Mad Lib).
+// Added a hard rotation rule + optional recentContentFormats signal in
+// the user prompt + anti-template guidance inside anecdote.
+// See docs/content-audits/2026-05-24.md for the audit that motivated this.
+export const PROMPT_VERSION = "2026-05-24.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -264,6 +271,22 @@ Speaks to the silent voice saying "this isn't for me." Edge is welcome here. Exa
 
   "Move over skinny unrelatable influencers. Brands have moved on — they're paying regular moms big bucks now for the same recommendations they used to only pay celebrities for. Real moms. Real money. Find out more and get your cut at momfluence.app."
 
+# FORMAT ROTATION (HARD RULE)
+
+The five formats above exist BECAUSE variety is the point. The message is fixed; the texture rotates. Format monoculture defeats the entire variety axis.
+
+Hard rules:
+
+- Look at the "RECENT FORMATS" list in the user prompt (if present). Do NOT pick a content_format that has been used more than twice in the last 7 posts. If 3+ recent posts share a format, you MUST pick from the under-represented formats this round.
+- "anecdote" is the format the generator drifts into because it can hit all three canonical pieces via a Mad Lib (city + product + $ amount). When in doubt, bias AWAY from anecdote. Reach for "direct," "math," "brand-callout," or "objection-reframe" instead.
+- Within "anecdote" specifically: do not always open with "A regular mom in [City]…". Rotate openers ("She told one mom…", "Heads up moms:", "Tuesday morning, carpool line:", "POV: you just realized…"). Rotate cities — do not reuse a city that appears in the recent displays list.
+- Within "math": lead with a number, not a person. Numbers stand on their own.
+- Within "brand-callout": lead with the brand list itself ("Sephora. Hulu. Target. HBO…"). Don't bury it inside an anecdote — that's anecdote, not brand-callout.
+- Within "direct": lead with the question or the news headline. No specific person, no city.
+- Within "objection-reframe": name the silent objection first ("Move over influencers." / "You don't need a million followers." / "This isn't only for the polished ones anymore."). Edge is welcome.
+
+Soft rule for visual variety: rotate image_bg across posts (don't repeat the same bg as the most recent post unless it serves the post). Rotate accent_badge type too — not every post needs a $-amount chip.
+
 # CHECK BEFORE SUBMITTING
 
 For every post you generate, verify ALL of these before output:
@@ -275,6 +298,7 @@ For every post you generate, verify ALL of these before output:
 5. Is "regular moms" used (not "everyday moms," not just "moms")?
 6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing?
 7. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
+8. Format rotation: is the chosen content_format one that does NOT already appear 3+ times in the recent posts? If a format is over-represented, you must pick a different one.
 
 If any check fails, fix and try again.
 
@@ -307,6 +331,11 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
 interface GeneratorInputs {
   recentAngleTags: string[];
   recentDisplays: string[];
+  /** Last N content_format tags pulled from generation_metadata, newest
+   *  first. Optional — when present, the user prompt renders a rotation
+   *  signal so Claude can self-correct away from over-represented
+   *  formats. Callers should pass the last 7 days of formats. */
+  recentContentFormats?: string[];
 }
 
 function buildUserPrompt(inputs: GeneratorInputs): string {
@@ -316,11 +345,29 @@ function buildUserPrompt(inputs: GeneratorInputs): string {
   const displayList = inputs.recentDisplays.length > 0
     ? inputs.recentDisplays.slice(0, 12).map((d) => `- "${d.replace(/\n/g, " / ")}"`).join("\n")
     : "(none yet)";
+
+  let formatSection = "";
+  const formats = inputs.recentContentFormats ?? [];
+  if (formats.length > 0) {
+    const counts = new Map<string, number>();
+    for (const f of formats) counts.set(f, (counts.get(f) ?? 0) + 1);
+    const tally = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([f, n]) => `- ${f}: ${n}`)
+      .join("\n");
+    const allFive = ["anecdote", "direct", "math", "brand-callout", "objection-reframe"];
+    const missing = allFive.filter((f) => !counts.has(f));
+    const overused = Array.from(counts.entries()).filter(([, n]) => n >= 3).map(([f]) => f);
+    formatSection = `\n\n# RECENT FORMATS (rotate away from over-represented ones)\n${tally}` +
+      (missing.length > 0 ? `\n\nFormats NOT used in this window (prefer these): ${missing.join(", ")}` : "") +
+      (overused.length > 0 ? `\n\nDO NOT pick: ${overused.join(", ")} (already used 3+ times — picking it again will be rejected).` : "");
+  }
+
   return `# RECENT ANGLES (don't repeat or paraphrase these)
 ${tagList}
 
 # RECENT HEADLINES (so you can hear the visual rhythm and avoid repeating)
-${displayList}
+${displayList}${formatSection}
 
 Generate ONE new post per the system prompt. The angle must be distinct from everything above. Output ONLY the JSON.`;
 }
@@ -356,6 +403,13 @@ export async function generateDailyPost(
   maxAttempts = 3
 ): Promise<GenerateResult> {
   const recentTagsLower = new Set(inputs.recentAngleTags.map((t) => t.toLowerCase()));
+  const formatCounts = new Map<string, number>();
+  for (const f of inputs.recentContentFormats ?? []) {
+    formatCounts.set(f, (formatCounts.get(f) ?? 0) + 1);
+  }
+  const overusedFormats = new Set(
+    Array.from(formatCounts.entries()).filter(([, n]) => n >= 3).map(([f]) => f)
+  );
   let lastError = "no attempts";
   let lastRaw = "";
 
@@ -396,6 +450,11 @@ export async function generateDailyPost(
     const post = validated.data;
     if (recentTagsLower.has(post.angle_tag.toLowerCase())) {
       lastError = `angle_tag "${post.angle_tag}" matches a recent post`;
+      continue;
+    }
+
+    if (overusedFormats.has(post.content_format)) {
+      lastError = `content_format "${post.content_format}" is over-represented in the last 7 posts (3+ uses) — pick a different format`;
       continue;
     }
 

@@ -253,6 +253,33 @@ The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
 
+### Format rotation rule (locked, added 2026-05-24)
+
+The five formats exist *because* variety is the point. The message is
+fixed; the texture rotates. Format monoculture defeats the entire
+variety axis.
+
+Concrete rule the generator enforces:
+
+- **No format may appear more than 2 times in any rolling 7-post window.**
+  If a format hits 3, the generator must pick a different one.
+- **Bias away from `anecdote` when in doubt.** It's the local optimum
+  because it lets the model hit the canonical 3 pieces via a Mad Lib
+  (city + product + $ amount). Reach for `direct`, `math`,
+  `brand-callout`, or `objection-reframe` first.
+- **Within `anecdote`:** vary the opener (don't always lead with "A
+  regular mom in [City]…") and don't reuse a city from the last 7
+  posts.
+- **Within `brand-callout`:** lead with the brand list itself — if the
+  brand list is buried inside a person/place story, it's an anecdote,
+  not a brand-callout.
+
+Background: 2026-05-24 audit found 5/5 published posts in the prior
+7 days were `anecdote`. The fix shipped in `2026-05-24.v6` of the
+generator: explicit rotation directive in the system prompt + a
+`recentContentFormats` input from the route handler + a runtime
+rejection of any post whose format is already over-represented.
+
 ---
 
 ## The qualifier (front-and-center)
