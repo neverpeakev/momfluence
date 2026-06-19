@@ -151,17 +151,39 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
-    });
+    console.error("[ig-mirror] missing env: META_MARKETING_API_TOKEN or META_FB_PAGE_ID");
+    return NextResponse.json(
+      {
+        ok: false,
+        mirrored: 0,
+        failed: 0,
+        details: [],
+        duration_ms: Date.now() - started,
+        message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
+      },
+      { status: 500 }
+    );
   }
 
-  const pending = await listPendingIgMirror(10);
+  let pending: GeneratedPostRow[];
+  try {
+    pending = await listPendingIgMirror(10);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[ig-mirror] listPendingIgMirror failed:", msg);
+    return NextResponse.json(
+      {
+        ok: false,
+        mirrored: 0,
+        failed: 0,
+        details: [],
+        duration_ms: Date.now() - started,
+        message: `listPendingIgMirror: ${msg}`,
+      },
+      { status: 500 }
+    );
+  }
+  console.log(`[ig-mirror] pending=${pending.length}`);
   if (pending.length === 0) {
     return NextResponse.json({
       ok: true,
@@ -181,14 +203,28 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
-    });
+    console.error("[ig-mirror] auth/page-context failed:", msg);
+    // Mark every pending row as ig_failed so we don't silent-loop forever.
+    // The cron is the only writer of ig_published_at, so the row is otherwise
+    // stuck forever and invisible to the routine-health query.
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", `auth/page-context: ${msg}`);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark row ${row.slug} failed:`, markErr);
+      }
+    }
+    return NextResponse.json(
+      {
+        ok: false,
+        mirrored: 0,
+        failed: pending.length,
+        details: pending.map((r) => ({ slug: r.slug, error: `auth/page-context: ${msg}` })),
+        duration_ms: Date.now() - started,
+        message: `auth/page-context: ${msg}`,
+      },
+      { status: 500 }
+    );
   }
 
   // Pre-warm the render endpoint for each pending slug. IG often fails

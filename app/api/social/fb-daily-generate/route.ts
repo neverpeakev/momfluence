@@ -138,11 +138,15 @@ export async function POST(req: NextRequest): Promise<NextResponse<CronResult>> 
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
-    return NextResponse.json({
-      ok: false,
-      error: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
-      duration_ms: Date.now() - started,
-    });
+    console.error("[fb-daily-generate] missing env: META_MARKETING_API_TOKEN or META_FB_PAGE_ID");
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
+        duration_ms: Date.now() - started,
+      },
+      { status: 500 }
+    );
   }
 
   let row: GeneratedPostRow | null = null;
