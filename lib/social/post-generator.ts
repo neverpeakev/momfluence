@@ -30,8 +30,14 @@ const MAX_TOKENS = 1500;
 //   influence" is DEAD — replaced with "Brands are paying real money
 //   for real recommendations" (matter-of-fact statement, not
 //   convincing-you framing)
+// v6: voice unchanged. Added VARIETY MANDATE after the 2026-06-21 audit
+// found 7/7 posts in the prior week were anecdotes, 4/7 set in Cincinnati,
+// 5/7 sharing the "She [verb]ed X / [reaction]" headline shape, and 5/7
+// using warm-gradient. Format rotation, setting diversity, and headline
+// shape variety are now inferential constraints Claude reads off the
+// recent angle_tags + displays already passed in the user prompt.
 // See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+export const PROMPT_VERSION = "2026-06-21.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -264,6 +270,22 @@ Speaks to the silent voice saying "this isn't for me." Edge is welcome here. Exa
 
   "Move over skinny unrelatable influencers. Brands have moved on — they're paying regular moms big bucks now for the same recommendations they used to only pay celebrities for. Real moms. Real money. Find out more and get your cut at momfluence.app."
 
+# VARIETY MANDATE — read the recent context, then deliberately rotate
+
+The MESSAGE is fixed across posts. The TEXTURE must vary. The default failure mode is anecdote-monoculture: anecdote is the easiest format to write, so Claude reaches for it every day, and over a week the feed becomes "regular mom in [city] at [setting] recommended [thing]" on loop. The 2026-06-21 audit caught exactly this — 7/7 anecdotes, 4/7 in Cincinnati, 5/7 sharing one headline shape, 5/7 using warm-gradient. Do not repeat that.
+
+Before you pick a format, READ the recent angle tags and headlines listed in the user prompt and apply these rules:
+
+1. **Format rotation (HARD).** If 3+ of the most recent 5 angle tags share an anecdote shape — i.e. they look like "{city}-{setting}-{product}-rec" or contain words like "pickup," "bleachers," "rec," "graduation," "waiting-room" — your post MUST use a different content_format: \`direct\`, \`math\`, \`brand-callout\`, or \`objection-reframe\`. Over any rolling 7-day window aim for roughly: 2 anecdote, 1–2 direct, 1 math, 1 brand-callout, 1 objection-reframe. If the recent list is dominated by anecdote, lean toward \`brand-callout\` or \`objection-reframe\` — those formats are most under-used and visually/voicily most distinct.
+
+2. **Setting diversity (anecdote only).** If you DO write an anecdote, the city in your post must NOT appear in any recent angle tag, and the setting (pickup line, sports bleachers, group chat, graduation, parking lot, etc.) must NOT appear in any recent angle tag. Reach for under-mined moments: airport gate, hotel pool, hardware-store aisle, kid's birthday party, vet's office, parent-teacher conference. If you can't find a fresh city + fresh setting, that's a signal to pick a non-anecdote format instead.
+
+3. **Headline shape variety.** If most recent headlines follow "She [verb]ed [thing] / [reaction]" (the dominant 06-15→06-21 shape), your headline MUST use a different shape: a question ("Did you know..."), a brand list ("Sephora. Hulu. Target."), a number ("$720 a week."), a flat declarative ("Brands stopped paying celebrities."), or a POV opener. Mix the rhythm.
+
+4. **Image_bg rotation.** If \`warm-gradient\` or any single \`image_bg\` value dominates the recent context, pick something else — actively reach for \`coral\`, \`navy\`, \`cream\`, or \`white-coral-ring\` when the recent feed is monochrome.
+
+5. **"Products and services" reminder.** The locked phrase is "products and services," not "products" alone. Hulu, HBO, and Disney+ are services — dropping the word narrows the implicit catalog in the reader's head. Use it explicitly when the post names what brands pay for.
+
 # CHECK BEFORE SUBMITTING
 
 For every post you generate, verify ALL of these before output:
@@ -275,6 +297,8 @@ For every post you generate, verify ALL of these before output:
 5. Is "regular moms" used (not "everyday moms," not just "moms")?
 6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing?
 7. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
+8. Variety check: if your chosen content_format matches the dominant shape in the recent angle tags, reconsider — pick a different format. If your headline shape echoes the recent dominant shape, rewrite it. If your image_bg matches the recent dominant value, pick a different one.
+9. If anecdote: your city and setting must NOT appear in any recent angle tag.
 
 If any check fails, fix and try again.
 
