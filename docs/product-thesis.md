@@ -1,6 +1,6 @@
 # Momfluence — Product Thesis (locked)
 
-> **Last updated:** 2026-05-13 (the "rules just changed" rewrite)
+> **Last updated:** 2026-06-21 (variety mandate added after weekly audit; v5 voice unchanged)
 > **Status:** This is the source of truth for everything user-facing.
 > Every ad, post, landing page, email, support reply, and Claude-generated
 > piece of content must trace back to this doc. The Claude post-generator
@@ -252,6 +252,34 @@ CTA. Every post.
 The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
+
+### Rotation policy (added 2026-06-21)
+
+The 2026-06-15 → 2026-06-21 audit found 7 of 7 published posts were
+`anecdote`, 4 of 7 set in the same city (Cincinnati), and 5 of 7
+sharing one headline shape ("She [verb]ed X / [reaction]"). The
+individually well-crafted posts collectively read as one micro-story
+on loop. Locking in the policy that fixed it:
+
+- **Format mix target per rolling 7-day window:** roughly 2 anecdote,
+  1–2 direct, 1 math, 1 brand-callout, 1 objection-reframe. Anecdote
+  is the easiest format to write — it cannot become the default.
+- **No city or setting repetition in anecdote within a 7-day window.**
+  If a fresh city + fresh setting isn't available, pick a non-anecdote
+  format instead.
+- **No headline-shape repetition across consecutive posts.** Rotate
+  between question, brand-list, number, declarative, and POV shapes.
+- **No image_bg repetition dominance.** When the recent feed is
+  monochrome, reach for the under-used backgrounds (`coral`, `navy`,
+  `cream`, `white-coral-ring`).
+
+The SYSTEM_PROMPT in `lib/social/post-generator.ts` enforces this
+inferentially from the `recent_angle_tags` + `recent_displays` already
+passed in the user prompt; no data-plumbing changes were needed for
+v6. If a future audit shows the inferential rule isn't holding, the
+next step is to expand `recentForContext` in `lib/social/db.ts` to
+also pull `content_format` from `generation_metadata` so the rotation
+constraint becomes data-driven.
 
 ---
 
