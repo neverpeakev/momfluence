@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- SCENE s4 · PORTRAIT 1080×1920 · The mechanism · prompt-box center stage -->
+<head>
+<meta charset="utf-8" /><title>Scene s4 (9:16) — the mechanism</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+  html,body{margin:0;background:#0c1020}
+  #root{position:relative;width:1080px;height:1920px;overflow:hidden;color:#fff;
+    background:radial-gradient(120% 70% at 50% 34%,#243155 0%,#161d36 52%,#0f1428 100%);font-family:"DM Sans",sans-serif}
+  .stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:0 70px;box-sizing:border-box}
+  .cap{font-size:30px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;color:#ffbaa6;opacity:0;text-align:center}
+  .box{width:100%;background:#1c2541;border:1px solid #2c3d6c;border-radius:30px;padding:34px 36px 28px;box-shadow:0 40px 120px -30px #000a,inset 0 1px 0 #ffffff10;opacity:0;box-sizing:border-box}
+  .hdr{display:flex;align-items:center;gap:12px;font-size:26px;color:#5d70a3;font-weight:600}
+  .dot{width:14px;height:14px;border-radius:50%;background:#f04a25;box-shadow:0 0 12px #f04a25}
+  .reco{margin-top:24px;font-size:46px;line-height:1.32;font-weight:500;color:#eef1f8;min-height:130px}
+  .reco .cursor{display:inline-block;width:5px;height:48px;background:#f04a25;transform:translateY(9px);margin-left:3px}
+  .link{align-self:center;display:inline-flex;align-items:center;gap:14px;font-family:ui-monospace,Menlo,monospace;font-size:34px;color:#ffbaa6;background:#141a30;border:1px dashed #3a4f87;border-radius:16px;padding:18px 24px;opacity:0;transform:translateY(14px)}
+  .link .t{font-family:"DM Sans";font-size:22px;font-weight:600;color:#5d70a3;text-transform:uppercase;letter-spacing:.1em}
+  .chips{width:100%;display:flex;gap:18px}
+  .chip{flex:1;text-align:center;background:linear-gradient(180deg,#f04a25,#cf3a1b);border-radius:20px;padding:24px 0 18px;box-shadow:0 18px 50px -18px #f04a2588;opacity:0;transform:translateY(26px) scale(.9)}
+  .chip .b{font-size:50px;font-weight:700;line-height:1}
+  .chip .s{font-size:20px;font-weight:600;opacity:.9;margin-top:6px}
+  .sub{font-size:38px;font-weight:600;color:#c2cce0;opacity:0;text-align:center}
+</style>
+</head>
+<body style="margin:0">
+  <div id="root" data-scene-id="s4" data-composition-id="s4" data-width="1080" data-height="1920" data-duration="4.0" data-poster-time="3.4"
+       style="position:relative;width:1080px;height:1920px;overflow:hidden">
+    <div class="stage">
+      <div class="cap" id="cap">real money for real recommendations</div>
+      <div class="box" id="box">
+        <div class="hdr"><span class="dot"></span> your link · auto-generated</div>
+        <div class="reco" id="reco"></div>
+      </div>
+      <div class="link" id="link"><span class="t">your link</span> momfluence.app/r/you</div>
+      <div class="chips" id="chips">
+        <div class="chip"><div class="b">20%</div><div class="s">you keep</div></div>
+        <div class="chip"><div class="b">30%</div><div class="s">you keep</div></div>
+        <div class="chip"><div class="b">50%</div><div class="s">up to</div></div>
+      </div>
+      <div class="sub" id="sub">brands pay you. not the other way around.</div>
+    </div>
+  </div>
+<script>
+(function(){
+  const root=document.getElementById('root');
+  const RECO="omg you NEED this — here's the link";
+  const reco=document.getElementById('reco');const sp=[];
+  for(const c of RECO){const s=document.createElement('span');s.textContent=c;s.style.opacity=0;reco.appendChild(s);sp.push(s);}
+  const cur=document.createElement('span');cur.className='cursor';reco.appendChild(cur);
+  window.__timelines=window.__timelines||{};
+  const tl=gsap.timeline({paused:true,defaults:{ease:'power3.out'}});
+  tl.to('#cap',{opacity:1,duration:.4},0.05)
+    .fromTo('#box',{opacity:0,y:30,scale:.97},{opacity:1,y:0,scale:1,duration:.55},0.2)
+    .to(cur,{opacity:.15,duration:.16,yoyo:true,repeat:7},0.4)
+    .to(sp,{opacity:1,duration:.01,stagger:.04},0.8)
+    .to('#link',{opacity:1,y:0,duration:.5},2.1)
+    .to(cur,{opacity:0,duration:.2},2.1)
+    .to('.chip',{opacity:1,y:0,scale:1,duration:.5,stagger:.16,ease:'back.out(1.7)'},2.5)
+    .to('#sub',{opacity:1,duration:.5},3.2);
+  window.__timelines["s4"]=tl;
+  if(!window.__HYPERFRAMES__){const p=parseFloat(root.dataset.posterTime);tl.seek(p);
+    gsap.delayedCall(1.4,()=>{const loop=()=>tl.play(0);tl.eventCallback('onComplete',()=>gsap.delayedCall(.8,loop));loop();});}
+})();
+</script>
+</body>
+</html>

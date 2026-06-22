@@ -12,14 +12,26 @@ locked product-thesis message (the news → the eligibility puncture → the CTA
 videos/momfluence-intro/
 ├── frame.md            # design system inverted for the frame (tokens, scale, voice)
 ├── storyboard.md       # scene table + per-scene narration (Hook→Build→Punch→Resolve)
-├── storyboard.html     # ← OPEN THIS: reviewable scene table, embeds every keyframe live
+├── storyboard.html     # ← OPEN THIS: reviewable scene table (16:9), embeds every keyframe live
+├── storyboard-portrait.html # reviewable board for the 9:16 vertical cut
 ├── components/         # named reusable compositions
 │   ├── kinetic-title.html   # the "HTML → video" word-morph (the grabbed animation)
 │   ├── prompt-box.html      # recommendation → tracking link → payout chips
 │   └── transitions.html     # flash-through-white · coral-wipe · mask-up · prompt-send
-└── compositions/       # one composition per scene, opening on its DENSEST beat
+├── compositions/       # 16:9 master — one composition per scene, opening on its DENSEST beat
+│   ├── scene_s1.html … scene_s6.html
+└── compositions-portrait/   # 9:16 (1080×1920) Reels/Stories variant — same six scenes
     ├── scene_s1.html … scene_s6.html
 ```
+
+## Two aspect ratios
+
+- **16:9 master** (`compositions/`, `storyboard.html`) — the brand/launch film, matches
+  the "HTML → video" launch reference.
+- **9:16 vertical** (`compositions-portrait/`, `storyboard-portrait.html`) — 1080×1920 for
+  IG Reels / TikTok / Stories. Same six beats and animations; the comparison (s3) and stat
+  tiles (s5) stack vertically, type scaled for a phone, caption keep-out = bottom 320px.
+  Drops straight into the existing vertical sales pipeline (`scripts/SALES_VIDEO_PIPELINE.md`).
 
 ## Review it now (no install)
 

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- SCENE s6 · PORTRAIT 1080×1920 · CTA / Resolve · lockup + tagline + momfluence.app -->
+<head>
+<meta charset="utf-8" /><title>Scene s6 (9:16) — CTA</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+  html,body{margin:0;background:#0c1020}
+  #root{position:relative;width:1080px;height:1920px;overflow:hidden;color:#fff;
+    background:radial-gradient(120% 80% at 50% 40%,#243155 0%,#161d36 52%,#0f1428 100%);font-family:"DM Sans",sans-serif}
+  .grain{position:absolute;inset:0;opacity:.06;mix-blend-mode:screen;background-image:radial-gradient(circle at 1px 1px,#fff 1px,transparent 0);background-size:4px 4px}
+  .stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;padding:0 70px;box-sizing:border-box;text-align:center}
+  .mark{font-family:"Playfair Display",serif;font-weight:700;font-size:120px;letter-spacing:-.01em;opacity:0;line-height:1}
+  .mark .f{color:#f04a25}
+  .tag{font-size:64px;font-weight:700;color:#c2cce0;line-height:1.12}
+  .tag span{display:block;opacity:0;transform:translateY(40px)}
+  .tag .hit{color:#ffbaa6}
+  .cta{opacity:0;transform:translateY(24px)}
+  .cta .pill{display:inline-flex;flex-direction:column;align-items:center;gap:6px;background:linear-gradient(180deg,#f04a25,#cf3a1b);border-radius:34px;padding:28px 48px;font-size:44px;font-weight:700;box-shadow:0 26px 70px -22px #f04a2599}
+  .cta .url{font-family:ui-monospace,Menlo,monospace;font-size:40px}
+  .fine{font-size:30px;color:#5d70a3;opacity:0}
+</style>
+</head>
+<body style="margin:0">
+  <div id="root" data-scene-id="s6" data-composition-id="s6" data-width="1080" data-height="1920" data-duration="3.0" data-poster-time="2.5"
+       style="position:relative;width:1080px;height:1920px;overflow:hidden">
+    <div class="grain"></div>
+    <div class="stage">
+      <div class="mark" id="mark"><span class="m">Mom</span><span class="f">Fluence</span></div>
+      <div class="tag" id="tag"><span>Real moms.</span><span class="hit">Real money.</span><span>Real easy.</span></div>
+      <div class="cta" id="cta"><span class="pill">get your cut →<span class="url">momfluence.app</span></span></div>
+      <div class="fine" id="fine">Real moms. Real recommendations. Real money.</div>
+    </div>
+  </div>
+<script>
+(function(){
+  const root=document.getElementById('root');
+  window.__timelines=window.__timelines||{};
+  const tl=gsap.timeline({paused:true,defaults:{ease:'power4.out'}});
+  tl.fromTo('#mark',{opacity:0,y:30,scale:.96},{opacity:1,y:0,scale:1,duration:.6},0.1)
+    .to('#tag span',{opacity:1,y:0,duration:.5,stagger:.16},0.6)
+    .fromTo('#cta',{opacity:0,y:24},{opacity:1,y:0,duration:.55,ease:'back.out(1.6)'},1.5)
+    .to('#cta .pill',{scale:1.04,duration:.2,yoyo:true,repeat:1},2.1)
+    .to('#fine',{opacity:1,duration:.5},2.2);
+  window.__timelines["s6"]=tl;
+  if(!window.__HYPERFRAMES__){const p=parseFloat(root.dataset.posterTime);tl.seek(p);
+    gsap.delayedCall(1.4,()=>{const loop=()=>tl.play(0);tl.eventCallback('onComplete',()=>gsap.delayedCall(.8,loop));loop();});}
+})();
+</script>
+</body>
+</html>

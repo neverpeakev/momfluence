@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>MomFluence intro — 9:16 portrait review</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<style>
+  :root{--navy900:#141a30;--navy700:#243155;--navy600:#2c3d6c;--navy400:#5d70a3;--navy100:#e2e7f1;--navy50:#f3f5fa;--coral500:#f04a25;--coral600:#cf3a1b;--coral50:#fff4f1}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--navy50);color:var(--navy900);font-family:"DM Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  h1,h2{font-family:"Playfair Display",serif;letter-spacing:-.01em;margin:0}
+  .wrap{max-width:1180px;margin:0 auto;padding:48px 28px 90px}
+  .eyebrow{font-size:13px;text-transform:uppercase;letter-spacing:.16em;color:var(--coral600);font-weight:700}
+  header h1{font-size:44px;margin-top:8px}
+  header p{font-size:17px;color:var(--navy600);max-width:760px;margin-top:12px;line-height:1.55}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+  .chip{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--navy100);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--navy700)}
+  .chip b{color:var(--coral600)}
+  .sec-h{display:flex;align-items:baseline;gap:14px;margin:44px 0 18px}
+  .sec-h h2{font-size:28px}
+  .sec-h span{font-size:14px;color:var(--navy400)}
+  .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .frame{background:#fff;border:1px solid var(--navy100);border-radius:18px;overflow:hidden;box-shadow:0 12px 40px -24px #14203a55}
+  .frame .bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--navy100)}
+  .frame .bar .t{font-weight:700;font-size:15px}
+  .frame .bar .t small{display:block;font-weight:500;font-size:12px;color:var(--navy400)}
+  .frame .bar .d{font-size:12px;font-weight:700;color:var(--coral600);background:var(--coral50);border-radius:999px;padding:4px 10px}
+  /* 1080×1920 scaled to fit a ~344px-wide column → scale .2185 → 236×420 */
+  .stage{position:relative;width:100%;aspect-ratio:9/16;background:#0c1020}
+  .stage iframe{position:absolute;top:0;left:0;width:1080px;height:1920px;border:0;transform:scale(.2185);transform-origin:top left}
+  .frame .note{padding:11px 16px;font-size:12.5px;color:var(--navy600);line-height:1.45;border-top:1px solid var(--navy100)}
+  .frame a.open{font-size:12px;font-weight:700;color:var(--coral600);text-decoration:none}
+  footer{margin-top:50px;font-size:13px;color:var(--navy400);border-top:1px solid var(--navy100);padding-top:20px;line-height:1.6}
+  footer code{font-family:ui-monospace,Menlo,monospace;background:#fff;border:1px solid var(--navy100);border-radius:5px;padding:1px 6px}
+  @media(max-width:820px){.gallery{grid-template-columns:1fr 1fr}.stage iframe{transform:scale(.33)}}
+  @media(max-width:560px){.gallery{grid-template-columns:1fr}.stage iframe{transform:scale(.40)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">HyperFrames · 9:16 review board</div>
+    <h1>MomFluence intro — vertical cut (Reels / Stories)</h1>
+    <p>The 1080×1920 portrait variant of the launch intro, re-laid-out for vertical feeds. Same six beats, same animations and HyperFrames contract — comparison and stat tiles stack vertically instead of side-by-side, type scaled for a phone. Landscape master lives in <code style="font-family:ui-monospace;background:#fff;border:1px solid var(--navy100);padding:1px 6px;border-radius:5px">storyboard.html</code>.</p>
+    <div class="meta">
+      <span class="chip">1080×1920 · <b>9:16</b></span>
+      <span class="chip"><b>6</b> scenes · ~20.5s</span>
+      <span class="chip">caption keep-out: bottom <b>320px</b></span>
+      <span class="chip">IG Reels · TikTok · Stories</span>
+    </div>
+  </header>
+  <div class="sec-h"><h2>Keyframes (9:16)</h2><span>densest beat of each scene · live, looping</span></div>
+  <div class="gallery" id="gallery"></div>
+  <footer>
+    Render vertical with the HyperFrames CLI by pointing it at <code>compositions-portrait/</code> (or set the orientation to portrait in the render config).<br>
+    <code>npx hyperframes render videos/momfluence-intro --scenes compositions-portrait --out momfluence-intro-9x16.mp4</code><br>
+    These slot straight into the existing vertical sales pipeline (<code>scripts/SALES_VIDEO_PIPELINE.md</code>) — same 1080×1920 frame as the capture script expects.
+  </footer>
+</div>
+<script>
+  const scenes = [
+    { id:'s1', t:'Kinetic opener', s:'HTML → video → moms', d:'3.0s', note:'The grabbed morph, centered for vertical.' },
+    { id:'s2', t:'The news', s:'celebrity-tier money', d:'3.5s', note:'Headline reveal + coral underline.' },
+    { id:'s3', t:'Eligibility puncture', s:'1M vs 500 ✓', d:'3.5s', note:'Comparison <b>stacked vertically</b> + group chat.' },
+    { id:'s4', t:'The mechanism', s:'reco → link → payout', d:'4.0s', note:'Prompt-box + 20/30/50% chips.' },
+    { id:'s5', t:'The product', s:'$0 → $40 · $5/mo', d:'3.5s', note:'Stat tiles <b>stacked</b>, earnings count-up.' },
+    { id:'s6', t:'CTA', s:'momfluence.app', d:'3.0s', note:'Lockup + tagline + coral CTA.' },
+  ];
+  document.getElementById('gallery').innerHTML = scenes.map(x => `
+    <div class="frame">
+      <div class="bar"><div class="t">${x.id} · ${x.t}<small>${x.s}</small></div><div class="d">${x.d}</div></div>
+      <div class="stage"><iframe loading="lazy" src="compositions-portrait/scene_${x.id}.html"></iframe></div>
+      <div class="note">${x.note} &nbsp; <a class="open" href="compositions-portrait/scene_${x.id}.html" target="_blank">open ↗</a></div>
+    </div>`).join('');
+</script>
+</body>
+</html>

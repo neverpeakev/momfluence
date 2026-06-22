@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- SCENE s3 · PORTRAIT 1080×1920 · Eligibility puncture · vertical stack (old vs new) + chat -->
+<head>
+<meta charset="utf-8" /><title>Scene s3 (9:16) — eligibility puncture</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+  html,body{margin:0;background:#0c1020}
+  #root{position:relative;width:1080px;height:1920px;overflow:hidden;color:#fff;
+    background:radial-gradient(120% 70% at 50% 34%,#243155 0%,#161d36 54%,#0f1428 100%);font-family:"DM Sans",sans-serif}
+  .stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:0 80px;box-sizing:border-box;text-align:center}
+  .eyebrow{font-weight:600;font-size:30px;letter-spacing:.18em;text-transform:uppercase;color:#ffbaa6;opacity:0}
+  .cap{font-size:30px;font-weight:600;color:#5d70a3;text-transform:uppercase;letter-spacing:.1em}
+  .row{position:relative}
+  .row.old{opacity:.55}
+  .num{font-family:"Playfair Display",serif;font-weight:700;font-size:128px;line-height:1;position:relative;display:inline-block}
+  .strike{position:absolute;left:-10px;right:-10px;top:52%;height:12px;background:#f04a25;border-radius:6px;transform-origin:left;transform:scaleX(0);box-shadow:0 0 24px #f04a2588}
+  .who{font-size:40px;font-weight:600;color:#c2cce0;margin-top:4px}
+  .check{display:inline-block;color:#f04a25;font-weight:800;transform:scale(0);margin-left:8px}
+  .vs{font-family:"Playfair Display",serif;font-size:56px;color:#3a4f87;opacity:0}
+  .new .who{color:#ffbaa6}
+  .bubble{margin-top:14px;width:100%;max-width:760px;background:#1c2541;border:1px solid #2c3d6c;border-radius:26px;border-bottom-left-radius:6px;padding:26px 30px;font-size:40px;font-weight:500;color:#eef1f8;box-shadow:0 30px 90px -30px #000a;opacity:0;transform:translateY(36px);text-align:left}
+  .bubble .tag{font-size:20px;font-weight:600;color:#5d70a3;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+</style>
+</head>
+<body style="margin:0">
+  <div id="root" data-scene-id="s3" data-composition-id="s3" data-width="1080" data-height="1920" data-duration="3.5" data-poster-time="2.9"
+       style="position:relative;width:1080px;height:1920px;overflow:hidden">
+    <div class="stage">
+      <div class="eyebrow" id="eyebrow">Not who you think</div>
+      <div class="row old" id="rOld">
+        <div class="cap">the old rule</div>
+        <div class="num">1,000,000<span class="strike" id="strike"></span></div>
+        <div class="who">"influencers only"</div>
+      </div>
+      <div class="vs" id="vs">vs</div>
+      <div class="row new" id="rNew">
+        <div class="cap">the new rule</div>
+        <div class="num">500<span class="check" id="check">✓</span></div>
+        <div class="who">a regular mom</div>
+      </div>
+      <div class="bubble" id="bubble">
+        <div class="tag">group chat · 11:42</div>
+        omg where did you get that?? send me the link 😭
+      </div>
+    </div>
+  </div>
+<script>
+(function(){
+  const root=document.getElementById('root');
+  window.__timelines=window.__timelines||{};
+  const tl=gsap.timeline({paused:true,defaults:{ease:'power3.out'}});
+  gsap.set('#rOld',{y:-24,opacity:0});gsap.set('#rNew',{y:24,opacity:0});
+  tl.to('#eyebrow',{opacity:1,duration:.4},0.05)
+    .to('#rOld',{y:0,opacity:.55,duration:.5},0.2)
+    .to('#vs',{opacity:1,duration:.4},0.5)
+    .to('#rNew',{y:0,opacity:1,duration:.5},0.65)
+    .to('#strike',{scaleX:1,duration:.45,ease:'power4.out'},1.1)
+    .to('#check',{scale:1,duration:.45,ease:'back.out(2)'},1.45)
+    .fromTo('#bubble',{opacity:0,y:36},{opacity:1,y:0,duration:.55},1.8);
+  window.__timelines["s3"]=tl;
+  if(!window.__HYPERFRAMES__){const p=parseFloat(root.dataset.posterTime);tl.seek(p);
+    gsap.delayedCall(1.4,()=>{const loop=()=>tl.play(0);tl.eventCallback('onComplete',()=>gsap.delayedCall(.7,loop));loop();});}
+})();
+</script>
+</body>
+</html>

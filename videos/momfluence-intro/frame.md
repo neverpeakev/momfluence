@@ -10,7 +10,7 @@
 
 | Field | Value |
 |---|---|
-| Composition | `1920 × 1080`, landscape 16:9 (brand/launch film) |
+| Composition | `1920 × 1080` landscape 16:9 master · `1080 × 1920` 9:16 portrait variant (Reels/Stories) |
 | FPS target | 30 |
 | Total duration | ~20.5 s (6 scenes) |
 | Runtime | GSAP, single **paused** timeline per scene on `window.__timelines` |
