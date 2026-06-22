@@ -151,18 +151,21 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
+    const msg = "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set";
+    console.error(`[ig-mirror] ${msg}`);
     return NextResponse.json({
       ok: false,
       mirrored: 0,
       failed: 0,
       details: [],
       duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
+      message: msg,
     });
   }
 
   const pending = await listPendingIgMirror(10);
   if (pending.length === 0) {
+    console.log("[ig-mirror] nothing to mirror");
     return NextResponse.json({
       ok: true,
       mirrored: 0,
@@ -181,6 +184,14 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // Context failures (bad token, missing IG perms, IG account unlinked) are
+    // infra-level — they break every row uniformly. Log loudly so monitoring
+    // sees it; leave rows in fb_published so they retry once the operator
+    // fixes the infra (vs. marking the backlog ig_failed, which would need
+    // a manual reset to retry).
+    console.error(
+      `[ig-mirror] auth/page-context failed (${pending.length} pending rows untouched): ${msg}`
+    );
     return NextResponse.json({
       ok: false,
       mirrored: 0,
@@ -212,16 +223,18 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
       details.push({ slug: row.slug, ig_media_id: mediaId });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[ig-mirror] publish failed for ${row.slug}: ${msg}`);
       failed++;
       details.push({ slug: row.slug, error: msg });
       try {
         await markFailed(row.id, "ig", msg);
       } catch (markErr) {
-        console.error(`[ig-mirror] also failed to mark row failed:`, markErr);
+        console.error(`[ig-mirror] also failed to mark ${row.slug} failed:`, markErr);
       }
     }
   }
 
+  console.log(`[ig-mirror] done: mirrored=${mirrored} failed=${failed} duration_ms=${Date.now() - started}`);
   return NextResponse.json({
     ok: failed === 0,
     mirrored,
