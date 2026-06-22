@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- SCENE s1 · Hook · "the grabbed kinetic title": HTML → video → moms→money
+     Densest beat (data-poster-time): mid-morph, caret + half-resolved word + underline drawing.
+     Uses: kinetic-title composition. Out-transition: flash-through-white (s1▸s2). -->
+<head>
+<meta charset="utf-8" /><title>Scene s1 — kinetic opener</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+  html,body{margin:0;background:#0c1020}
+  #root{position:relative;width:1920px;height:1080px;overflow:hidden;color:#fff;
+    background:radial-gradient(120% 90% at 38% 30%,#243155 0%,#161d36 46%,#0f1428 100%);
+    font-family:"DM Sans",system-ui,sans-serif}
+  .grain{position:absolute;inset:0;opacity:.06;mix-blend-mode:screen;background-image:radial-gradient(circle at 1px 1px,#fff 1px,transparent 0);background-size:4px 4px}
+  .eyebrow{position:absolute;top:300px;left:0;right:0;text-align:center;font-weight:600;font-size:24px;letter-spacing:.18em;text-transform:uppercase;color:#ffbaa6;opacity:0}
+  .prefix{position:absolute;top:430px;left:0;right:0;text-align:center;font-weight:500;font-size:40px;color:#c2cce0;opacity:0}
+  .slot{position:absolute;top:470px;left:0;right:0;height:240px;display:grid;place-items:center}
+  .word{position:absolute;font-family:"Playfair Display",serif;font-weight:700;font-size:210px;line-height:1;letter-spacing:-.01em;white-space:nowrap}
+  .word .ch{display:inline-block;transform:translateY(120px);opacity:0;filter:blur(14px)}
+  .accent{color:#f04a25}
+  .caret{position:absolute;width:10px;height:150px;background:#f04a25;border-radius:6px;top:520px;left:1110px;opacity:0;box-shadow:0 0 30px #f04a25aa}
+  .underline{position:absolute;height:14px;border-radius:8px;top:712px;left:560px;width:800px;background:linear-gradient(100deg,#f04a25,#ffbaa6);transform-origin:left center;transform:scaleX(0);box-shadow:0 6px 30px #f04a2566}
+</style>
+</head>
+<body style="margin:0">
+  <div id="root" data-scene-id="s1" data-composition-id="s1" data-width="1920" data-height="1080" data-duration="3.0" data-poster-time="2.4"
+       style="position:relative;width:1920px;height:1080px;overflow:hidden">
+    <div class="grain"></div>
+    <div class="eyebrow" id="eyebrow">MomFluence · intro</div>
+    <div class="prefix" id="prefix">it turns</div>
+    <div class="slot">
+      <div class="word" data-w="0">HTML</div>
+      <div class="word" data-w="1">video</div>
+      <div class="word accent" data-w="2">moms</div>
+    </div>
+    <div class="caret" id="caret"></div>
+    <div class="underline" id="underline"></div>
+  </div>
+<script>
+(function(){
+  const root = document.getElementById('root');
+  const words = Array.from(root.querySelectorAll('.word'));
+  words.forEach(w => { const t=w.textContent; w.textContent='';
+    for(const c of t){ const s=document.createElement('span'); s.className='ch'; s.textContent=c; w.appendChild(s);} gsap.set(w,{opacity:1}); });
+  const chars = i => words[i].querySelectorAll('.ch');
+
+  window.__timelines = window.__timelines || {};
+  const tl = gsap.timeline({ paused:true, defaults:{ ease:'power3.out' }});
+  tl.to('#eyebrow',{opacity:1,duration:.4},0.05)
+    .to('#prefix',{opacity:1,duration:.4},0.15)
+    .to('#caret',{opacity:1,duration:.15},0.2)
+    .to('#caret',{opacity:.15,duration:.16,yoyo:true,repeat:4},0.4);
+  const mIn=(i,t)=>tl.to(chars(i),{y:0,opacity:1,filter:'blur(0px)',duration:.45,stagger:.04},t);
+  const mOut=(i,t)=>tl.to(chars(i),{y:-80,opacity:0,filter:'blur(16px)',duration:.35,stagger:.025,ease:'power2.in'},t);
+  mIn(0,0.5); mOut(0,1.1); mIn(1,1.25); mOut(1,1.85); mIn(2,2.0);
+  tl.to('#underline',{scaleX:1,duration:.5,ease:'power4.out'},2.25)
+    .to('#caret',{opacity:0,duration:.2},2.2);
+  window.__timelines["s1"] = tl;
+
+  if(!window.__HYPERFRAMES__){
+    const poster=parseFloat(root.dataset.posterTime); tl.seek(poster);
+    gsap.delayedCall(1.4,()=>{ const loop=()=>tl.play(0); tl.eventCallback('onComplete',()=>gsap.delayedCall(.7,loop)); loop(); });
+  }
+})();
+</script>
+</body>
+</html>

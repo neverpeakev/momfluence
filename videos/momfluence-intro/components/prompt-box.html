@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  COMPONENT: prompt-box composition
+  The MomFluence mechanism in one box: a group-chat recommendation gets "typed",
+  a tracking link materializes, and payout chips light. Mirrors the HyperFrames
+  "prompt box" pattern (a framed input that types itself + emits a result).
+  Reusable: edit RECO, LINK, CHIPS.
+
+  HyperFrames contract: paused timeline @ window.__timelines["prompt-box"],
+  deterministic, transform/opacity only, layout pre-computed.
+-->
+<head>
+<meta charset="utf-8" />
+<title>prompt-box</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+  html,body { margin:0; background:#0c1020; }
+  #pb { position:relative; width:1920px; height:1080px; overflow:hidden;
+    background:radial-gradient(120% 90% at 60% 35%, #243155 0%, #161d36 50%, #0f1428 100%);
+    font-family:"DM Sans",system-ui,sans-serif; color:#fff; }
+  .box { position:absolute; left:560px; top:300px; width:800px; background:#1c2541;
+    border:1px solid #2c3d6c; border-radius:28px; padding:32px 34px 26px;
+    box-shadow:0 40px 120px -30px #000a, inset 0 1px 0 #ffffff10; opacity:0; }
+  .box .hdr { display:flex; align-items:center; gap:10px; font-size:22px; color:#5d70a3; font-weight:600; }
+  .box .dot { width:12px; height:12px; border-radius:50%; background:#f04a25; box-shadow:0 0 12px #f04a25; }
+  .reco { margin-top:22px; font-size:38px; line-height:1.32; font-weight:500; color:#eef1f8; min-height:120px; }
+  .reco .cursor { display:inline-block; width:4px; height:40px; background:#f04a25; transform:translateY(7px); margin-left:2px; }
+  .link { margin-top:18px; display:inline-flex; align-items:center; gap:12px;
+    font-family:ui-monospace,Menlo,monospace; font-size:28px; color:#ffbaa6;
+    background:#141a30; border:1px dashed #3a4f87; border-radius:14px; padding:14px 20px; opacity:0; transform:translateY(14px); }
+  .link .tag { font-family:"DM Sans"; font-size:18px; font-weight:600; color:#5d70a3; text-transform:uppercase; letter-spacing:.1em; }
+  .chips { position:absolute; left:560px; top:760px; width:800px; display:flex; gap:18px; }
+  .chip { flex:1; text-align:center; background:linear-gradient(180deg,#f04a25,#cf3a1b);
+    border-radius:18px; padding:20px 0 16px; box-shadow:0 18px 50px -18px #f04a2588; opacity:0; transform:translateY(26px) scale(.9); }
+  .chip .big { font-size:46px; font-weight:700; line-height:1; }
+  .chip .sm { font-size:18px; font-weight:600; opacity:.9; margin-top:6px; }
+  .caption { position:absolute; left:0; right:0; top:210px; text-align:center;
+    font-size:26px; letter-spacing:.16em; text-transform:uppercase; font-weight:600; color:#ffbaa6; opacity:0; }
+</style>
+</head>
+<body style="margin:0">
+  <div id="pb" data-composition-id="prompt-box" data-width="1920" data-height="1080" data-duration="4.6"
+       style="position:relative;width:1920px;height:1080px;overflow:hidden">
+    <div class="caption" id="pb-cap">the recommendation you already make</div>
+    <div class="box" id="pb-box">
+      <div class="hdr"><span class="dot"></span> group chat · you</div>
+      <div class="reco" id="pb-reco"></div>
+    </div>
+    <div class="link" id="pb-link" style="left:594px; top:560px; position:absolute;">
+      <span class="tag">your link</span> momfluence.app/r/you
+    </div>
+    <div class="chips" id="pb-chips">
+      <div class="chip"><div class="big">20%</div><div class="sm">you keep</div></div>
+      <div class="chip"><div class="big">30%</div><div class="sm">you keep</div></div>
+      <div class="chip"><div class="big">up to 50%</div><div class="sm">of every sale</div></div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const RECO = "omg you NEED this — here's the link";
+  const reco = document.getElementById('pb-reco');
+  // pre-build characters + trailing cursor
+  reco.innerHTML = '';
+  const chSpans = [];
+  for (const c of RECO){ const s=document.createElement('span'); s.textContent=c; s.style.opacity=0; reco.appendChild(s); chSpans.push(s); }
+  const cur = document.createElement('span'); cur.className='cursor'; reco.appendChild(cur);
+
+  window.__timelines = window.__timelines || {};
+  const tl = gsap.timeline({ paused:true, defaults:{ ease:'power3.out' }});
+
+  tl.to('#pb-cap', { opacity:1, duration:.5 }, 0.1)
+    .fromTo('#pb-box', { opacity:0, y:30, scale:.97 }, { opacity:1, y:0, scale:1, duration:.6 }, 0.25)
+    .to(cur, { opacity:.15, duration:.16, yoyo:true, repeat:9 }, 0.5)
+    // typewriter (seek-safe: opacity stagger, not text mutation)
+    .to(chSpans, { opacity:1, duration:.01, stagger:0.045 }, 0.9)
+    // link materializes
+    .to('#pb-link', { opacity:1, y:0, duration:.5 }, 2.5)
+    .to(cur, { opacity:0, duration:.2 }, 2.5)
+    // payout chips light one after another
+    .to('.chip', { opacity:1, y:0, scale:1, duration:.5, stagger:.18, ease:'back.out(1.7)' }, 2.9);
+
+  window.__timelines["prompt-box"] = tl;
+
+  if (!window.__HYPERFRAMES__) {
+    const loop = () => tl.play(0);
+    tl.eventCallback('onComplete', () => gsap.delayedCall(1.0, loop));
+    loop();
+  }
+})();
+</script>
+</body>
+</html>

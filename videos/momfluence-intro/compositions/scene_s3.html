@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- SCENE s3 · The eligibility puncture (thesis beat 2) · split comparison + group-chat
+     Densest beat: "1,000,000 followers" struck through (left, greyed) vs "500 followers ✓ a regular mom"
+     (right), with the prompt-box group-chat bubble landed below.
+     Uses: prompt-box (chat bubble). In-transition: coral-wipe (s2▸s3). -->
+<head>
+<meta charset="utf-8" /><title>Scene s3 — eligibility puncture</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+  html,body{margin:0;background:#0c1020}
+  #root{position:relative;width:1920px;height:1080px;overflow:hidden;color:#fff;
+    background:radial-gradient(120% 90% at 50% 30%,#243155 0%,#161d36 52%,#0f1428 100%);font-family:"DM Sans",sans-serif}
+  .eyebrow{position:absolute;top:130px;left:0;right:0;text-align:center;font-weight:600;font-size:24px;letter-spacing:.18em;text-transform:uppercase;color:#ffbaa6;opacity:0}
+  .col{position:absolute;top:240px;width:760px;text-align:center}
+  .left{left:120px;opacity:.55}
+  .right{right:120px}
+  .cap{font-size:30px;font-weight:600;color:#5d70a3;text-transform:uppercase;letter-spacing:.1em}
+  .num{font-family:"Playfair Display",serif;font-weight:700;font-size:120px;line-height:1;margin-top:14px;position:relative;display:inline-block}
+  .strike{position:absolute;left:-10px;right:-10px;top:52%;height:12px;background:#f04a25;border-radius:6px;transform-origin:left;transform:scaleX(0);box-shadow:0 0 24px #f04a2588}
+  .who{font-size:38px;font-weight:600;margin-top:18px;color:#c2cce0}
+  .right .num{color:#fff}
+  .check{display:inline-block;color:#f04a25;font-weight:800;transform:scale(0);margin-left:6px}
+  .right .who{color:#ffbaa6}
+  /* group-chat bubble (prompt-box pattern) */
+  .bubble{position:absolute;left:600px;top:760px;width:720px;background:#1c2541;border:1px solid #2c3d6c;border-radius:26px;border-bottom-left-radius:6px;padding:26px 30px;font-size:36px;font-weight:500;color:#eef1f8;box-shadow:0 30px 90px -30px #000a;opacity:0;transform:translateY(36px)}
+  .bubble .tag{font-size:18px;font-weight:600;color:#5d70a3;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+  .vs{position:absolute;top:330px;left:0;right:0;text-align:center;font-family:"Playfair Display",serif;font-size:64px;color:#3a4f87;opacity:0}
+</style>
+</head>
+<body style="margin:0">
+  <div id="root" data-scene-id="s3" data-composition-id="s3" data-width="1920" data-height="1080" data-duration="3.5" data-poster-time="2.9"
+       style="position:relative;width:1920px;height:1080px;overflow:hidden">
+    <div class="eyebrow" id="eyebrow">Not who you think</div>
+    <div class="vs" id="vs">vs</div>
+    <div class="col left" id="cL">
+      <div class="cap">the old rule</div>
+      <div class="num">1,000,000<span class="strike" id="strike"></span></div>
+      <div class="who">"influencers only"</div>
+    </div>
+    <div class="col right" id="cR">
+      <div class="cap">the new rule</div>
+      <div class="num">500<span class="check" id="check">✓</span></div>
+      <div class="who">a regular mom</div>
+    </div>
+    <div class="bubble" id="bubble">
+      <div class="tag">group chat · 11:42</div>
+      omg where did you get that?? send me the link 😭
+    </div>
+  </div>
+<script>
+(function(){
+  const root=document.getElementById('root');
+  window.__timelines=window.__timelines||{};
+  const tl=gsap.timeline({paused:true,defaults:{ease:'power3.out'}});
+  gsap.set('#cL',{x:-40,opacity:0}); gsap.set('#cR',{x:40,opacity:0});
+  tl.to('#eyebrow',{opacity:1,duration:.4},0.05)
+    .to('#cL',{x:0,opacity:.55,duration:.55},0.2)
+    .to('#cR',{x:0,opacity:1,duration:.55},0.35)
+    .to('#vs',{opacity:1,duration:.4},0.7)
+    .to('#strike',{scaleX:1,duration:.45,ease:'power4.out'},1.15)
+    .to('#check',{scale:1,duration:.45,ease:'back.out(2)'},1.5)
+    .fromTo('#bubble',{opacity:0,y:36},{opacity:1,y:0,duration:.55},1.8);
+  window.__timelines["s3"]=tl;
+  if(!window.__HYPERFRAMES__){ const p=parseFloat(root.dataset.posterTime); tl.seek(p);
+    gsap.delayedCall(1.4,()=>{const loop=()=>tl.play(0); tl.eventCallback('onComplete',()=>gsap.delayedCall(.7,loop)); loop();}); }
+})();
+</script>
+</body>
+</html>

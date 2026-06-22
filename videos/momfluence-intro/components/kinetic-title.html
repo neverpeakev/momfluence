@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  COMPONENT: kinetic-title composition
+  The word-morph "X → Y" reveal grabbed from the HyperFrames "HTML → video"
+  launch animation, re-pointed at MomFluence. Per-char mask-wipe + blur + y-swap
+  reads as a morph (house-style word-reveal). Reusable: edit the WORDS array.
+
+  HyperFrames contract:
+    - root <div data-composition-id> with fixed w/h/duration, overflow hidden
+    - single paused GSAP timeline registered at window.__timelines[id]
+    - deterministic: no Math.random / Date.now / repeat:-1 in the registered tl
+    - transform/opacity/filter only; layout pre-computed at setup
+  Standalone preview: loops only when NOT inside the HyperFrames runtime.
+-->
+<head>
+<meta charset="utf-8" />
+<title>kinetic-title</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+  html,body { margin:0; background:#0c1020; }
+  #kt {
+    position:relative; width:1920px; height:1080px; overflow:hidden;
+    background:radial-gradient(120% 90% at 38% 30%, #243155 0%, #161d36 46%, #0f1428 100%);
+    font-family:"DM Sans",system-ui,sans-serif; color:#fff;
+  }
+  .grain { position:absolute; inset:0; opacity:.06; mix-blend-mode:screen;
+    background-image:radial-gradient(circle at 1px 1px,#fff 1px,transparent 0); background-size:4px 4px; }
+  .eyebrow { position:absolute; top:300px; left:0; right:0; text-align:center;
+    font-weight:600; font-size:24px; letter-spacing:.18em; text-transform:uppercase; color:#ffbaa6; opacity:0; }
+  .prefix { position:absolute; top:430px; left:0; right:0; text-align:center;
+    font-family:"DM Sans"; font-weight:500; font-size:40px; color:#c2cce0; opacity:0; }
+  /* word stack — all words occupy the same slot, only one visible at a time */
+  .slot { position:absolute; top:470px; left:0; right:0; height:240px; display:grid; place-items:center; }
+  .word { position:absolute; font-family:"Playfair Display",serif; font-weight:700;
+    font-size:210px; line-height:1; letter-spacing:-.01em; white-space:nowrap; }
+  .word .ch { display:inline-block; transform:translateY(120px); opacity:0; filter:blur(14px); }
+  .accent { color:#f04a25; }
+  .caret { position:absolute; width:10px; height:150px; background:#f04a25; border-radius:6px;
+    top:520px; opacity:0; box-shadow:0 0 30px #f04a25aa; }
+  .underline { position:absolute; height:14px; border-radius:8px; top:710px;
+    background:linear-gradient(100deg,#f04a25,#ffbaa6); transform-origin:left center; transform:scaleX(0); box-shadow:0 6px 30px #f04a2566; }
+</style>
+</head>
+<body style="margin:0">
+  <div id="kt" data-composition-id="kinetic-title" data-width="1920" data-height="1080" data-duration="4.2"
+       style="position:relative;width:1920px;height:1080px;overflow:hidden">
+    <div class="grain"></div>
+    <div class="eyebrow" id="kt-eyebrow">MomFluence · the launch</div>
+    <div class="prefix" id="kt-prefix">it turns</div>
+    <div class="slot">
+      <div class="word" data-word="0">HTML</div>
+      <div class="word" data-word="1">video</div>
+      <div class="word accent" data-word="2">moms&nbsp;→&nbsp;<span style="color:#fff">money</span></div>
+    </div>
+    <div class="caret" id="kt-caret"></div>
+    <div class="underline" id="kt-underline"></div>
+  </div>
+
+<script>
+(function(){
+  // --- pre-compute layout: split each word into per-char spans ---
+  const words = Array.from(document.querySelectorAll('#kt .word'));
+  words.forEach(w => {
+    const html = w.innerHTML;
+    // keep entities/markup simple: split visible text nodes char by char
+    if (!w.querySelector('span.ch')) {
+      const text = w.textContent;
+      w.textContent = '';
+      for (const c of text) {
+        const s = document.createElement('span');
+        s.className = 'ch';
+        s.textContent = c === ' ' ? ' ' : c;
+        w.appendChild(s);
+      }
+    }
+    gsap.set(w, { opacity: 1 });
+  });
+  const charsOf = i => words[i].querySelectorAll('.ch');
+
+  gsap.set('#kt-caret', { left: 1110 });
+
+  window.__timelines = window.__timelines || {};
+  const tl = gsap.timeline({ paused:true, defaults:{ ease:'power3.out' }});
+
+  // eyebrow + prefix + caret
+  tl.to('#kt-eyebrow', { opacity:1, duration:.5 }, 0.1)
+    .to('#kt-prefix',  { opacity:1, y:0, duration:.5 }, 0.25)
+    .to('#kt-caret',   { opacity:1, duration:.2 }, 0.3)
+    .to('#kt-caret',   { opacity:0.15, duration:.18, yoyo:true, repeat:5 }, 0.5);
+
+  // helper: reveal word i, then dissolve it out (the "morph")
+  function morphIn(i, t){
+    tl.to(charsOf(i), { y:0, opacity:1, filter:'blur(0px)', duration:.5, stagger:.04 }, t);
+  }
+  function morphOut(i, t){
+    tl.to(charsOf(i), { y:-90, opacity:0, filter:'blur(16px)', duration:.4, stagger:.03, ease:'power2.in' }, t);
+  }
+
+  // HTML → video → moms→money
+  morphIn(0, 0.7);
+  morphOut(0, 1.5);
+  morphIn(1, 1.7);
+  morphOut(1, 2.6);
+  morphIn(2, 2.8);
+  // coral underline draws under the resolved word
+  tl.to('#kt-underline', { scaleX:1, duration:.6, ease:'power4.out',
+        onStart(){ const el=document.getElementById('kt-underline'); el.style.left='560px'; el.style.width='800px'; }}, 3.05)
+    .to('#kt-caret', { opacity:0, duration:.3 }, 3.0);
+
+  window.__timelines["kinetic-title"] = tl;
+
+  // standalone preview only (never alters the registered timeline)
+  if (!window.__HYPERFRAMES__) {
+    const loop = () => { tl.play(0); };
+    tl.eventCallback('onComplete', () => gsap.delayedCall(0.8, loop));
+    loop();
+  }
+})();
+</script>
+</body>
+</html>

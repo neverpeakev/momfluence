@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- SCENE s2 · The news (thesis beat 1) · kinetic word-reveal headline
+     Densest beat: full stacked headline + coral underline at full sweep under "celebrity-tier money".
+     Uses: kinetic-title (word-reveal). In-transition: flash-through-white (s1▸s2). -->
+<head>
+<meta charset="utf-8" /><title>Scene s2 — the news</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+  html,body{margin:0;background:#0c1020}
+  #root{position:relative;width:1920px;height:1080px;overflow:hidden;color:#fff;
+    background:radial-gradient(120% 90% at 50% 28%,#243155 0%,#161d36 50%,#0f1428 100%);font-family:"DM Sans",sans-serif}
+  .eyebrow{position:absolute;top:200px;left:0;right:0;text-align:center;font-weight:600;font-size:24px;letter-spacing:.18em;text-transform:uppercase;color:#ffbaa6;opacity:0}
+  .head{position:absolute;top:300px;left:240px;right:240px;font-family:"Playfair Display",serif;font-weight:700;font-size:128px;line-height:1.04;letter-spacing:-.01em;text-align:center}
+  .ln{display:block;overflow:hidden}
+  .ln span{display:inline-block;transform:translateY(140px);opacity:0}
+  .accent{color:#f04a25;position:relative;display:inline-block}
+  .uline{position:absolute;left:0;bottom:8px;height:16px;width:100%;border-radius:8px;background:linear-gradient(100deg,#f04a25,#ffbaa6);transform-origin:left;transform:scaleX(0);box-shadow:0 8px 36px #f04a2566}
+  .foot{position:absolute;bottom:150px;left:0;right:0;text-align:center;font-size:34px;font-weight:600;color:#c2cce0;opacity:0}
+</style>
+</head>
+<body style="margin:0">
+  <div id="root" data-scene-id="s2" data-composition-id="s2" data-width="1920" data-height="1080" data-duration="3.5" data-poster-time="2.9"
+       style="position:relative;width:1920px;height:1080px;overflow:hidden">
+    <div class="eyebrow" id="eyebrow">Did you know?</div>
+    <div class="head">
+      <span class="ln"><span>moms are getting paid</span></span>
+      <span class="ln"><span class="accent">celebrity-tier money<i class="uline" id="uline"></i></span></span>
+      <span class="ln"><span>to recommend things online.</span></span>
+    </div>
+    <div class="foot" id="foot">Not someday. Now.</div>
+  </div>
+<script>
+(function(){
+  const root=document.getElementById('root');
+  const lines=root.querySelectorAll('.ln > span');
+  window.__timelines=window.__timelines||{};
+  const tl=gsap.timeline({paused:true,defaults:{ease:'power4.out'}});
+  tl.to('#eyebrow',{opacity:1,duration:.4},0.05)
+    .to(lines,{y:0,opacity:1,duration:.7,stagger:.22},0.25)
+    .to('#uline',{scaleX:1,duration:.6,ease:'power4.out'},1.25)
+    .to('#foot',{opacity:1,duration:.5},1.9);
+  window.__timelines["s2"]=tl;
+  if(!window.__HYPERFRAMES__){ const p=parseFloat(root.dataset.posterTime); tl.seek(p);
+    gsap.delayedCall(1.4,()=>{const loop=()=>tl.play(0); tl.eventCallback('onComplete',()=>gsap.delayedCall(.7,loop)); loop();}); }
+})();
+</script>
+</body>
+</html>
