@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- SCENE s5 · PORTRAIT 1080×1920 · The product · stacked stat tiles + earnings ticker -->
+<head>
+<meta charset="utf-8" /><title>Scene s5 (9:16) — the product</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+  html,body{margin:0;background:#0c1020}
+  #root{position:relative;width:1080px;height:1920px;overflow:hidden;color:#fff;
+    background:radial-gradient(120% 70% at 50% 34%,#243155 0%,#161d36 54%,#0f1428 100%);font-family:"DM Sans",sans-serif}
+  .stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:0 80px;box-sizing:border-box;text-align:center}
+  .eyebrow{font-weight:600;font-size:30px;letter-spacing:.18em;text-transform:uppercase;color:#ffbaa6;opacity:0}
+  .hero{font-family:"Playfair Display",serif;font-weight:700;font-size:104px;color:#fff;opacity:0;line-height:1}
+  .tiles{width:100%;display:flex;flex-direction:column;gap:18px;margin-top:6px}
+  .tile{display:flex;align-items:center;justify-content:space-between;background:#1c2541;border:1px solid #2c3d6c;border-radius:22px;padding:24px 30px;box-shadow:0 26px 70px -30px #000a;opacity:0;transform:translateY(28px)}
+  .tile .l{font-size:30px;text-transform:uppercase;letter-spacing:.08em;color:#5d70a3;font-weight:600}
+  .tile .v{font-family:"Playfair Display",serif;font-weight:700;font-size:72px;line-height:1}
+  .tile.win{background:linear-gradient(180deg,#f04a25,#cf3a1b);border-color:#f04a25}
+  .tile.win .l{color:#ffe1d8}
+  .badge{opacity:0}
+  .badge .pill{display:inline-block;background:#141a30;border:1px solid #3a4f87;border-radius:999px;padding:18px 30px;font-size:30px;font-weight:600;color:#c2cce0}
+  .badge .pill b{color:#ffbaa6}
+  .sub{font-size:42px;font-weight:600;color:#c2cce0;opacity:0}
+</style>
+</head>
+<body style="margin:0">
+  <div id="root" data-scene-id="s5" data-composition-id="s5" data-width="1080" data-height="1920" data-duration="3.5" data-poster-time="3.0"
+       style="position:relative;width:1080px;height:1920px;overflow:hidden">
+    <div class="stage">
+      <div class="eyebrow" id="eyebrow">your dashboard, day one</div>
+      <div class="hero" id="hero">wait… <span style="color:#f04a25">really?</span></div>
+      <div class="tiles">
+        <div class="tile" id="t1"><div class="l">Clicks</div><div class="v" id="v1">0</div></div>
+        <div class="tile" id="t2"><div class="l">Conversions</div><div class="v" id="v2">0</div></div>
+        <div class="tile win" id="t3"><div class="l">Earnings</div><div class="v" id="v3">$0</div></div>
+      </div>
+      <div class="badge" id="badge"><span class="pill">one login · one link · <b>$5/mo</b></span></div>
+      <div class="sub" id="sub">"I just made $40."</div>
+    </div>
+  </div>
+<script>
+(function(){
+  const root=document.getElementById('root');
+  window.__timelines=window.__timelines||{};
+  const tl=gsap.timeline({paused:true,defaults:{ease:'power3.out'}});
+  const c1={n:0},c2={n:0},c3={n:0};
+  tl.to('#eyebrow',{opacity:1,duration:.4},0.05)
+    .to('#hero',{opacity:1,duration:.5},0.2)
+    .to(['#t1','#t2','#t3'],{opacity:1,y:0,duration:.5,stagger:.14},0.7)
+    .to(c1,{n:128,duration:1.0,ease:'power1.out',onUpdate:()=>document.getElementById('v1').textContent=Math.round(c1.n)},1.1)
+    .to(c2,{n:6,duration:1.0,ease:'power1.out',onUpdate:()=>document.getElementById('v2').textContent=Math.round(c2.n)},1.2)
+    .to(c3,{n:40,duration:1.2,ease:'power2.out',onUpdate:()=>document.getElementById('v3').textContent='$'+Math.round(c3.n)},1.2)
+    .to('#t3',{scale:1.04,duration:.18,yoyo:true,repeat:1},2.4)
+    .to('#badge',{opacity:1,duration:.5},2.5)
+    .to('#sub',{opacity:1,duration:.5},2.9);
+  window.__timelines["s5"]=tl;
+  if(!window.__HYPERFRAMES__){const p=parseFloat(root.dataset.posterTime);tl.seek(p);
+    gsap.delayedCall(1.4,()=>{const loop=()=>tl.play(0);tl.eventCallback('onComplete',()=>gsap.delayedCall(.8,loop));loop();});}
+})();
+</script>
+</body>
+</html>

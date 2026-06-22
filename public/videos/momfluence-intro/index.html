@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>MomFluence — launch intro</title>
+<base href="/videos/momfluence-intro/" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<style>
+  :root{--navy900:#141a30;--navy700:#243155;--navy600:#2c3d6c;--navy400:#5d70a3;--navy100:#e2e7f1;--navy50:#f3f5fa;--coral500:#f04a25;--coral600:#cf3a1b;--coral50:#fff4f1}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--navy50);color:var(--navy900);font-family:"DM Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  h1,h2{font-family:"Playfair Display",serif;letter-spacing:-.01em;margin:0}
+  .wrap{max-width:1080px;margin:0 auto;padding:48px 24px 80px}
+  .eyebrow{font-size:13px;text-transform:uppercase;letter-spacing:.16em;color:var(--coral600);font-weight:700}
+  h1{font-size:48px;margin-top:8px}
+  p.lead{font-size:18px;color:var(--navy600);max-width:680px;margin-top:12px;line-height:1.55}
+  /* hero player = the s1 kinetic opener, 16:9 */
+  .hero{margin-top:30px;border-radius:20px;overflow:hidden;border:1px solid var(--navy100);box-shadow:0 24px 70px -34px #14203a66;background:#0c1020;position:relative;aspect-ratio:16/9}
+  .hero iframe{position:absolute;top:0;left:0;width:1920px;height:1080px;border:0;transform:scale(.5625);transform-origin:top left}
+  @media(max-width:1080px){.hero iframe{transform:scale(calc(100vw / 1920 - 0.026))}}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px}
+  .card{display:block;text-decoration:none;background:#fff;border:1px solid var(--navy100);border-radius:16px;padding:22px 24px;transition:border-color .15s,transform .15s}
+  .card:hover{border-color:var(--coral500);transform:translateY(-2px)}
+  .card .k{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--coral600)}
+  .card h2{font-size:22px;margin-top:6px;color:var(--navy900)}
+  .card p{font-size:14px;color:var(--navy600);margin:6px 0 0;line-height:1.5}
+  .meta{display:flex;flex-wrap:wrap;gap:9px;margin-top:24px}
+  .chip{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--navy100);border-radius:999px;padding:7px 13px;font-size:13px;font-weight:600;color:var(--navy700)}
+  .chip b{color:var(--coral600)}
+  footer{margin-top:42px;font-size:13px;color:var(--navy400);border-top:1px solid var(--navy100);padding-top:18px;line-height:1.6}
+  footer a{color:var(--coral600);font-weight:600;text-decoration:none}
+  @media(max-width:620px){.cards{grid-template-columns:1fr}h1{font-size:38px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">MomFluence · launch intro</div>
+  <h1>Real moms. Real money. Real easy.</h1>
+  <p class="lead">A ~20.5-second launch film built from code. It opens by grabbing the "HTML&nbsp;→&nbsp;video" kinetic title and re-pointing it at the product — then walks the news, the eligibility puncture, and the call to action. The clip below is the opening beat, looping.</p>
+
+  <div class="hero"><iframe loading="eager" title="MomFluence intro — opening beat" src="compositions/scene_s1.html"></iframe></div>
+
+  <div class="cards">
+    <a class="card" href="storyboard.html">
+      <div class="k">16:9 · landscape</div>
+      <h2>Watch the full storyboard →</h2>
+      <p>All six scenes at their densest beat, the scene table, components, and the transition map. The brand/launch cut.</p>
+    </a>
+    <a class="card" href="storyboard-portrait.html">
+      <div class="k">9:16 · vertical</div>
+      <h2>The Reels / Stories cut →</h2>
+      <p>The 1080×1920 vertical variant — same six beats, re-laid-out for phones. Drops into the sales-video pipeline.</p>
+    </a>
+  </div>
+
+  <div class="meta">
+    <span class="chip">6 scenes · <b>~20.5s</b></span>
+    <span class="chip">Hook → Build → Punch → Resolve</span>
+    <span class="chip">HyperFrames · <b>GSAP</b></span>
+    <span class="chip">plays in-browser · no plugin</span>
+  </div>
+
+  <footer>
+    These are live HTML/GSAP compositions, not an MP4 — they play in the browser. Source &amp; render instructions in
+    <a href="README.md">README</a> · design system in <a href="frame.md">frame.md</a> · story in <a href="storyboard.md">storyboard.md</a>.
+  </footer>
+</div>
+</body>
+</html>

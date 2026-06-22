@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  COMPONENT LIBRARY: named transition components
+  Drop-in seam transitions for the MomFluence intro. Each is a small factory that
+  appends an overlay to a scene root and returns a GSAP tween you splice into the
+  scene timeline at the seam. Seek-safe (transform/opacity/clip-path only),
+  deterministic, no repeat:-1.
+
+    HF.transitions.flashThroughWhite(root, { at, duration })  // white blast wipe
+    HF.transitions.coralWipe(root, { at, duration, dir })     // coral diagonal wipe
+    HF.transitions.maskUp(root, { at, duration })             // clip-path reveal up
+    HF.transitions.promptSend(root, { at, duration })         // "sent" whoosh + scale
+
+  Usage in a scene:
+    <script src="../components/transitions.html"> is NOT how you import; copy the
+    HF.transitions object below into the scene, OR (preferred for HyperFrames)
+    keep transitions in their own track and let `transitions.mjs inject` wire them.
+  This file is the canonical reference + a live preview of all four.
+-->
+<head>
+<meta charset="utf-8" />
+<title>transitions</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+  html,body{margin:0;background:#0c1020;font-family:"DM Sans",sans-serif;color:#fff}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:1920px;height:1080px}
+  .cell{position:relative;overflow:hidden;display:grid;place-items:center}
+  .cell:nth-child(1){background:#141a30}
+  .cell:nth-child(2){background:#1c2541}
+  .cell:nth-child(3){background:#243155}
+  .cell:nth-child(4){background:#2c3d6c}
+  .label{position:absolute;top:24px;left:28px;font-weight:700;font-size:28px;letter-spacing:.04em;z-index:5}
+  .sub{position:absolute;top:64px;left:28px;font-size:18px;color:#ffbaa6;z-index:5}
+  .face{font-size:120px;font-weight:700;color:#f04a25}
+</style>
+</head>
+<body style="margin:0">
+<!-- ===== CANONICAL TRANSITION FACTORY (copy this block into scenes) ===== -->
+<script>
+window.HF = window.HF || {};
+HF.transitions = (function(){
+  function overlay(root, css){
+    const el = document.createElement('div');
+    Object.assign(el.style, { position:'absolute', inset:'0', pointerEvents:'none', zIndex:99 }, css);
+    root.appendChild(el); return el;
+  }
+  return {
+    // white blast: scene punches to white then clears — the signature seam
+    flashThroughWhite(root, { at=0, duration=0.5 } = {}){
+      const el = overlay(root, { background:'#ffffff', opacity:'0' });
+      const tl = gsap.timeline();
+      tl.to(el, { opacity:1, duration:duration*0.45, ease:'power2.in' }, at)
+        .to(el, { opacity:0, duration:duration*0.55, ease:'power2.out' }, at+duration*0.45);
+      return tl;
+    },
+    // coral diagonal wipe in
+    coralWipe(root, { at=0, duration=0.6, dir='left' } = {}){
+      const from = dir==='left' ? 'inset(0 100% 0 0)' : 'inset(0 0 0 100%)';
+      const el = overlay(root, { background:'linear-gradient(100deg,#f04a25,#cf3a1b)',
+        clipPath:from, webkitClipPath:from });
+      const tl = gsap.timeline();
+      tl.to(el, { clipPath:'inset(0 0 0 0)', webkitClipPath:'inset(0 0 0 0)', duration:duration*0.5, ease:'power3.inOut' }, at)
+        .to(el, { clipPath:'inset(0 0 0 100%)', webkitClipPath:'inset(0 0 0 100%)', duration:duration*0.5, ease:'power3.inOut' }, at+duration*0.5);
+      return tl;
+    },
+    // mask reveal from bottom up
+    maskUp(root, { at=0, duration=0.6 } = {}){
+      const el = overlay(root, { background:'#141a30', clipPath:'inset(0 0 0 0)', webkitClipPath:'inset(0 0 0 0)' });
+      const tl = gsap.timeline();
+      tl.to(el, { clipPath:'inset(100% 0 0 0)', webkitClipPath:'inset(100% 0 0 0)', duration, ease:'power4.inOut' }, at);
+      return tl;
+    },
+    // "sent" whoosh: brief coral streak + scale-bump cue
+    promptSend(root, { at=0, duration=0.5 } = {}){
+      const el = overlay(root, { background:'radial-gradient(60% 40% at 50% 60%,#f04a2566,transparent)', opacity:'0', transform:'translateY(60px) scale(.9)' });
+      const tl = gsap.timeline();
+      tl.to(el, { opacity:1, y:0, scale:1, duration:duration*0.4, ease:'power2.out' }, at)
+        .to(el, { opacity:0, y:-80, duration:duration*0.6, ease:'power2.in' }, at+duration*0.4);
+      return tl;
+    }
+  };
+})();
+</script>
+
+<!-- ===== LIVE PREVIEW of all four ===== -->
+<div class="grid">
+  <div class="cell" id="c1"><div class="label">flash-through-white</div><div class="sub">s1▸s2 · s5▸s6</div><div class="face">→</div></div>
+  <div class="cell" id="c2"><div class="label">coral-wipe</div><div class="sub">s2▸s3</div><div class="face">→</div></div>
+  <div class="cell" id="c3"><div class="label">mask-up</div><div class="sub">s3▸s4</div><div class="face">→</div></div>
+  <div class="cell" id="c4"><div class="label">prompt-send</div><div class="sub">s4▸s5</div><div class="face">↑</div></div>
+</div>
+<script>
+(function(){
+  function demo(){
+    const master = gsap.timeline();
+    master.add(HF.transitions.flashThroughWhite(document.getElementById('c1'), { at:0,   duration:0.6 }), 0);
+    master.add(HF.transitions.coralWipe(        document.getElementById('c2'), { at:0,   duration:0.7 }), 0.2);
+    master.add(HF.transitions.maskUp(           document.getElementById('c3'), { at:0,   duration:0.7 }), 0.4);
+    master.add(HF.transitions.promptSend(       document.getElementById('c4'), { at:0,   duration:0.6 }), 0.6);
+    master.eventCallback('onComplete', () => gsap.delayedCall(0.9, demo));
+  }
+  if (!window.__HYPERFRAMES__) demo();
+})();
+</script>
+</body>
+</html>

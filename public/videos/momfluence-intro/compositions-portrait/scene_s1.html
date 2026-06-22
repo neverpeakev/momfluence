@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- SCENE s1 · PORTRAIT 1080×1920 · Hook · kinetic title HTML→video→moms
+     Vertical re-layout of compositions/scene_s1.html. Same morph mechanics. -->
+<head>
+<meta charset="utf-8" /><title>Scene s1 (9:16) — kinetic opener</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+  html,body{margin:0;background:#0c1020}
+  #root{position:relative;width:1080px;height:1920px;overflow:hidden;color:#fff;
+    background:radial-gradient(120% 70% at 50% 34%,#243155 0%,#161d36 50%,#0f1428 100%);
+    font-family:"DM Sans",system-ui,sans-serif}
+  .grain{position:absolute;inset:0;opacity:.06;mix-blend-mode:screen;background-image:radial-gradient(circle at 1px 1px,#fff 1px,transparent 0);background-size:4px 4px}
+  .stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:0 80px;box-sizing:border-box}
+  .eyebrow{font-weight:600;font-size:30px;letter-spacing:.18em;text-transform:uppercase;color:#ffbaa6;opacity:0}
+  .prefix{font-weight:500;font-size:46px;color:#c2cce0;opacity:0}
+  .slot{position:relative;width:100%;height:240px}
+  .word{position:absolute;inset:0;display:grid;place-items:center;font-family:"Playfair Display",serif;font-weight:700;font-size:172px;line-height:1;letter-spacing:-.01em;white-space:nowrap}
+  .word .ch{display:inline-block;transform:translateY(110px);opacity:0;filter:blur(14px)}
+  .accent{color:#f04a25}
+  .underline{height:14px;width:520px;border-radius:8px;background:linear-gradient(100deg,#f04a25,#ffbaa6);transform-origin:left center;transform:scaleX(0);box-shadow:0 6px 30px #f04a2566}
+</style>
+</head>
+<body style="margin:0">
+  <div id="root" data-scene-id="s1" data-composition-id="s1" data-width="1080" data-height="1920" data-duration="3.0" data-poster-time="2.4"
+       style="position:relative;width:1080px;height:1920px;overflow:hidden">
+    <div class="grain"></div>
+    <div class="stage">
+      <div class="eyebrow" id="eyebrow">MomFluence · intro</div>
+      <div class="prefix" id="prefix">it turns</div>
+      <div class="slot">
+        <div class="word" data-w="0">HTML</div>
+        <div class="word" data-w="1">video</div>
+        <div class="word accent" data-w="2">moms</div>
+      </div>
+      <div class="underline" id="underline"></div>
+    </div>
+  </div>
+<script>
+(function(){
+  const root=document.getElementById('root');
+  const words=Array.from(root.querySelectorAll('.word'));
+  words.forEach(w=>{const t=w.textContent;w.textContent='';for(const c of t){const s=document.createElement('span');s.className='ch';s.textContent=c;w.appendChild(s);}gsap.set(w,{opacity:1});});
+  const chars=i=>words[i].querySelectorAll('.ch');
+  window.__timelines=window.__timelines||{};
+  const tl=gsap.timeline({paused:true,defaults:{ease:'power3.out'}});
+  tl.to('#eyebrow',{opacity:1,duration:.4},0.05)
+    .to('#prefix',{opacity:1,duration:.4},0.15);
+  const mIn=(i,t)=>tl.to(chars(i),{y:0,opacity:1,filter:'blur(0px)',duration:.45,stagger:.04},t);
+  const mOut=(i,t)=>tl.to(chars(i),{y:-80,opacity:0,filter:'blur(16px)',duration:.35,stagger:.025,ease:'power2.in'},t);
+  mIn(0,0.5); mOut(0,1.1); mIn(1,1.25); mOut(1,1.85); mIn(2,2.0);
+  tl.to('#underline',{scaleX:1,duration:.5,ease:'power4.out'},2.25);
+  window.__timelines["s1"]=tl;
+  if(!window.__HYPERFRAMES__){const p=parseFloat(root.dataset.posterTime);tl.seek(p);
+    gsap.delayedCall(1.4,()=>{const loop=()=>tl.play(0);tl.eventCallback('onComplete',()=>gsap.delayedCall(.7,loop));loop();});}
+})();
+</script>
+</body>
+</html>
