@@ -17,7 +17,10 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 
 const MODEL = "claude-opus-4-7";
-const MAX_TOKENS = 1500;
+// Caption alone can be up to 2000 chars (~600 tokens), plus the rest of
+// the JSON envelope. 1500 truncated mid-caption on 2026-06-25 and failed
+// all 3 attempts — bump to 4000 for safe headroom.
+const MAX_TOKENS = 4000;
 // v5: voice locked after multi-round iteration with the founder. Major
 // changes from v4:
 // - "regular moms" replaces "everyday moms" (less brand-tradey)
