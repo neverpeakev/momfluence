@@ -151,14 +151,18 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
-    });
+    console.error("[ig-mirror] missing env: META_MARKETING_API_TOKEN or META_FB_PAGE_ID");
+    return NextResponse.json(
+      {
+        ok: false,
+        mirrored: 0,
+        failed: 0,
+        details: [],
+        duration_ms: Date.now() - started,
+        message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
+      },
+      { status: 500 }
+    );
   }
 
   const pending = await listPendingIgMirror(10);
@@ -180,15 +184,32 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     pageToken = ctx.pageToken;
     igId = ctx.igId;
   } catch (e) {
+    // Page-context failure blocks ALL pending rows. Without surfacing this as
+    // an error (non-200 + console.error + per-row markFailed), the cron silently
+    // returns 200 every day and the backlog quietly grows — which is exactly
+    // how this loop went undetected for ~30 days before. Mark every pending row
+    // so the next run can move on, and fail loudly so Vercel cron + runtime
+    // logs show the incident.
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
-    });
+    console.error(`[ig-mirror] page-context fetch failed; blocking ${pending.length} pending row(s):`, msg);
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", `auth/page-context: ${msg}`);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark ${row.slug} failed:`, markErr);
+      }
+    }
+    return NextResponse.json(
+      {
+        ok: false,
+        mirrored: 0,
+        failed: pending.length,
+        details: pending.map((r) => ({ slug: r.slug, error: `auth/page-context: ${msg}` })),
+        duration_ms: Date.now() - started,
+        message: `auth/page-context: ${msg}`,
+      },
+      { status: 500 }
+    );
   }
 
   // Pre-warm the render endpoint for each pending slug. IG often fails
@@ -212,6 +233,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
       details.push({ slug: row.slug, ig_media_id: mediaId });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[ig-mirror] publish failed for ${row.slug}:`, msg);
       failed++;
       details.push({ slug: row.slug, error: msg });
       try {
@@ -222,13 +244,16 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     }
   }
 
-  return NextResponse.json({
-    ok: failed === 0,
-    mirrored,
-    failed,
-    details,
-    duration_ms: Date.now() - started,
-  });
+  return NextResponse.json(
+    {
+      ok: failed === 0,
+      mirrored,
+      failed,
+      details,
+      duration_ms: Date.now() - started,
+    },
+    { status: failed > 0 ? 500 : 200 }
+  );
 }
 
 export async function GET(req: NextRequest) {
