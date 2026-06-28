@@ -253,6 +253,26 @@ The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
 
+### Variety discipline (added 2026-06-28 after a format-collapse week)
+
+Variation across the five formats is the PRIMARY variety axis — not
+variation in angle tags within a single format. The 2026-06-28 audit
+caught a 6/6 collapse to `anecdote` (with six different angle slugs)
+because the dedup mechanism was checking angles, not formats. The fix
+shipped in the generator's `2026-06-28.v6` prompt:
+
+- No single content_format may dominate a 7-day window. Soft cap: a
+  format should appear in no more than ~3 of any 7 consecutive posts.
+- The cron caller should pass `recentContentFormats` to the generator
+  so Claude can rotate against quantitative feedback, not just prose.
+- Anecdote-specific anti-pattern: the display rhythm
+  `"She [verb] the [item] / [prepositional location]"` had been used 5
+  days running. Don't repeat that exact shape two days in a row.
+- The tagline `"Real moms. Real money. Real easy."` is for selective
+  use — roughly 1 in 5 posts, never two days in a row.
+
+See `docs/content-audits/2026-06-28.md` for the full diagnosis.
+
 ---
 
 ## The qualifier (front-and-center)
