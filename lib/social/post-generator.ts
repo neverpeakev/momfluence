@@ -31,7 +31,18 @@ const MAX_TOKENS = 1500;
 //   for real recommendations" (matter-of-fact statement, not
 //   convincing-you framing)
 // See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+// v6 (2026-06-28): refinement, not pivot. The Sunday audit caught a 6/6
+// content_format collapse to `anecdote` plus a "She [verb] the [item] / [loc]"
+// display-rhythm rut. Voice/vocab/BLOCKLIST untouched. v6 adds:
+//   - a VARIETY MANDATE section to SYSTEM_PROMPT (rotate across the 5 formats;
+//     under-weight whatever ran most recently)
+//   - an anti-pattern note about repeating the "She [verb] the [item] / [loc]"
+//     display rhythm two days running
+//   - tighter tagline guidance (cap "Real moms. Real money. Real easy." at
+//     roughly 1 in 5 posts, never two days in a row)
+//   - optional recentContentFormats input (caller upgrade is a follow-up PR)
+// See docs/content-audits/2026-06-28.md.
+export const PROMPT_VERSION = "2026-06-28.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -212,7 +223,7 @@ LOCKED vocabulary (use these exact words, not synonyms):
 
 LOCKED CTA structure: "Find out more at momfluence.app" or "Find out more and get yours/your cut at momfluence.app." Soft two-step. "Find out more" lowers commitment to click. Period at the end, not exclamation.
 
-OPTIONAL tagline: "Real moms. Real money. Real easy." Three beats. Use selectively — maybe 1 in 4 posts. Never every post.
+OPTIONAL tagline: "Real moms. Real money. Real easy." Three beats. Use SPARINGLY — roughly 1 in 5 posts at most, and NEVER two days in a row. If you see it in the recent headlines list below for yesterday or the day before, skip it today.
 
 # DEAD PHRASES (auto-reject on use)
 
@@ -238,6 +249,19 @@ The $5/mo membership is part of the product but does NOT need to appear in every
 # THE VARIETY AXIS — CONTENT FORMAT
 
 You MUST tag each post with one of these five textures. The message is identical across all of them; the format is the variation.
+
+## VARIETY MANDATE (added v6 — non-negotiable)
+
+The MESSAGE is fixed. The FORMAT is the variation. That means across a 7-day window we want a healthy mix of all five formats — NOT 7 days of one format with different angle tags.
+
+When you generate today's post:
+
+1. **Look at the recent angles list below.** If most/all of them describe "a specific mom in a specific place got paid $X" stories (the anecdote shape), the format has collapsed and today's post MUST be one of: \`direct\`, \`math\`, \`brand-callout\`, or \`objection-reframe\`. Do NOT pick \`anecdote\` again.
+2. **Look at the recent formats list below** (if provided). Whatever format dominates the last 5–7 posts, pick something else. Aim for rotation, not a streak.
+3. **Soft rule:** no single format should appear in more than ~3 of any 7 consecutive posts. If you're about to make it 4, switch.
+4. **Anti-rhythm rule for anecdote:** if you DO pick \`anecdote\`, do NOT reuse the display syntax \`"She [verb] the [item] / [prepositional location]"\` (e.g. "She named the thermos / in the lunch line", "She poured the wine / and three sisters-in-law asked the brand") if it appears in the recent headlines below. That exact rhythm has been overused. Find a different display shape — a question, a number, a noun-phrase headline, a brand list, a POV opener.
+
+The audit rolls up by content_format every Sunday. A format-balanced week is the goal.
 
 ## 1. content_format: "anecdote"
 A specific person, in a specific place, with a specific number. Example:
@@ -273,8 +297,9 @@ For every post you generate, verify ALL of these before output:
 3. Does the post end with "Find out more at momfluence.app" or natural variant?
 4. Is the voice conversational and culturally aware (NOT corporate / newsroom)?
 5. Is "regular moms" used (not "everyday moms," not just "moms")?
-6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing?
-7. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
+6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing? If \`anecdote\`, you MUST include a specific payout number — "she made $X" is the texture, vignettes without a number fail this check.
+7. **Variety check (v6):** does the format you picked match the dominant format in the recent angles/formats lists below? If yes, switch to a different format. The variety mandate above is non-negotiable.
+8. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
 
 If any check fails, fix and try again.
 
@@ -307,6 +332,12 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
 interface GeneratorInputs {
   recentAngleTags: string[];
   recentDisplays: string[];
+  // v6 addition: optional. When the caller passes the last N content_formats
+  // (most-recent first), the prompt surfaces them so Claude can rotate. Until
+  // the cron route is updated to query and pass this, the variety mandate
+  // still applies via the recent-angles list — but quantitative steering is
+  // weaker without it. Default [] keeps existing callers working.
+  recentContentFormats?: string[];
 }
 
 function buildUserPrompt(inputs: GeneratorInputs): string {
@@ -316,13 +347,21 @@ function buildUserPrompt(inputs: GeneratorInputs): string {
   const displayList = inputs.recentDisplays.length > 0
     ? inputs.recentDisplays.slice(0, 12).map((d) => `- "${d.replace(/\n/g, " / ")}"`).join("\n")
     : "(none yet)";
+
+  const formats = inputs.recentContentFormats ?? [];
+  const formatBlock = formats.length > 0
+    ? `\n# RECENT CONTENT FORMATS (most-recent first — rotate AWAY from whatever dominates this list)
+${formats.map((f, i) => `${i + 1}. ${f}`).join("\n")}
+`
+    : "";
+
   return `# RECENT ANGLES (don't repeat or paraphrase these)
 ${tagList}
 
 # RECENT HEADLINES (so you can hear the visual rhythm and avoid repeating)
 ${displayList}
-
-Generate ONE new post per the system prompt. The angle must be distinct from everything above. Output ONLY the JSON.`;
+${formatBlock}
+Generate ONE new post per the system prompt. The angle must be distinct from everything above, AND the content_format must rotate away from whatever has dominated recently (see VARIETY MANDATE in system prompt). Output ONLY the JSON.`;
 }
 
 function failsBlocklist(post: GeneratedPost): string | null {
