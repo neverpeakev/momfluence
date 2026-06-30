@@ -150,15 +150,34 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
 
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
-  if (!userToken || !pageId) {
-    return NextResponse.json({
+
+  // Setup-failure helper: flag every pending row so the failure is visible
+  // on the row itself instead of leaving it silently stuck at fb_published.
+  async function failPending(reason: string): Promise<MirrorResult> {
+    const rows = await listPendingIgMirror(10).catch(() => [] as GeneratedPostRow[]);
+    const details: MirrorResult["details"] = [];
+    for (const r of rows) {
+      details.push({ slug: r.slug, error: reason });
+      try {
+        await markFailed(r.id, "ig", reason);
+      } catch (markErr) {
+        console.error(`[ig-mirror] failed to mark row ${r.slug} ig_failed:`, markErr);
+      }
+    }
+    return {
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: rows.length,
+      details,
       duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
-    });
+      message: reason,
+    };
+  }
+
+  if (!userToken || !pageId) {
+    return NextResponse.json(
+      await failPending("META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set")
+    );
   }
 
   const pending = await listPendingIgMirror(10);
@@ -181,13 +200,23 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    const reason = `auth/page-context: ${msg}`;
+    const details: MirrorResult["details"] = [];
+    for (const row of pending) {
+      details.push({ slug: row.slug, error: reason });
+      try {
+        await markFailed(row.id, "ig", reason);
+      } catch (markErr) {
+        console.error(`[ig-mirror] failed to mark row ${row.slug} ig_failed:`, markErr);
+      }
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details,
       duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
+      message: reason,
     });
   }
 
