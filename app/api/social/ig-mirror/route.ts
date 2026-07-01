@@ -181,14 +181,31 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
-    });
+    // Mark every pending row as ig_failed so the failure is visible in the
+    // DB (error_message + errored_at) and the same rows aren't silently
+    // re-picked up every day. Return 500 so Vercel's runtime error tracker
+    // surfaces the issue instead of masking it as a healthy 200.
+    const failedDetails: MirrorResult["details"] = [];
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", `auth/page-context: ${msg}`);
+      } catch (markErr) {
+        console.error(`[ig-mirror] failed to mark ${row.slug} failed:`, markErr);
+      }
+      failedDetails.push({ slug: row.slug, error: msg });
+    }
+    console.error(`[ig-mirror] fetchPageContext failed: ${msg}`);
+    return NextResponse.json(
+      {
+        ok: false,
+        mirrored: 0,
+        failed: pending.length,
+        details: failedDetails,
+        duration_ms: Date.now() - started,
+        message: `auth/page-context: ${msg}`,
+      },
+      { status: 500 }
+    );
   }
 
   // Pre-warm the render endpoint for each pending slug. IG often fails
