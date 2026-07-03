@@ -228,7 +228,7 @@ OPTIONAL tagline: "Real moms. Real money. Real easy." Three beats. Use selective
 - "Side hustle," "side gig," "stay-at-home job"
 - "Are you tired of...," "wish you could...," "if you've ever wanted..." (pain-point openers)
 - "Moms are powerful," "your voice matters," "you deserve" (telegraphing)
-- "Real talk," "hot take," "let's be honest" as openers (overused)
+- "Real talk," "hot take," "let's be honest," "here's the thing" as openers (overused, AI-signal)
 - ALL CAPS for emphasis. Emoji strings.
 
 # THE $5/MO
