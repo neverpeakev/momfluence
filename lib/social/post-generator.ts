@@ -18,20 +18,18 @@ import { z } from "zod";
 
 const MODEL = "claude-opus-4-7";
 const MAX_TOKENS = 1500;
-// v5: voice locked after multi-round iteration with the founder. Major
-// changes from v4:
-// - "regular moms" replaces "everyday moms" (less brand-tradey)
-// - "big bucks" / "real money" replaces "rev share" entirely
-// - "Find out more at momfluence.app" replaces "Get yours" / "$5/mo to
-//   unlock them" as the canonical CTA (softer two-step ask)
-// - "Gate-kept" is DEAD — replaced with "used to only pay celebrities"
-// - "That's so 2025" is DEAD (was tried; didn't land)
-// - "We work with brands who actually want to pay you for your
-//   influence" is DEAD — replaced with "Brands are paying real money
-//   for real recommendations" (matter-of-fact statement, not
-//   convincing-you framing)
-// See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+// v6: enforce content-format rotation. Weekly audit 2026-07-05 found
+// the generator picked `anecdote` 27/27 times over 30 days. The user
+// prompt now includes the recent content_format distribution, and the
+// system prompt mandates picking an under-represented format. Also
+// tightened three sub-patterns that had crept into recent anecdotes:
+// - the "$340" number kept recurring (4/6 posts) — vary the figure
+// - the "She named the [X] in/on/at the [Y]" display template was
+//   the display line on all 6 of the last week's posts
+// - the "Real moms. Real money. Real easy." tagline appeared in 4/6
+//   posts vs. the thesis-locked "~1 in 5 posts" cadence
+// See docs/product-thesis.md § Content formats (locked).
+export const PROMPT_VERSION = "2026-07-05.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -239,6 +237,10 @@ The $5/mo membership is part of the product but does NOT need to appear in every
 
 You MUST tag each post with one of these five textures. The message is identical across all of them; the format is the variation.
 
+## ⚠ FORMAT ROTATION IS MANDATORY
+
+The user prompt below shows the content_format used by every recent post. Read it before you pick. If a format is the majority of the recent list (or appears 2+ times in the last 5), you MUST pick a different format for this generation. Do NOT default to \`anecdote\` — it is easy to write and easy to over-use. A prior audit found this generator produced 27 anecdotes in 27 tries; that is a bug, not a preference. Pick a format that is UNDER-represented in the recent list, and let its texture shape the caption from the very first sentence — not just the middle.
+
 ## 1. content_format: "anecdote"
 A specific person, in a specific place, with a specific number. Example:
 
@@ -275,6 +277,10 @@ For every post you generate, verify ALL of these before output:
 5. Is "regular moms" used (not "everyday moms," not just "moms")?
 6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing?
 7. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
+8. FORMAT ROTATION: is your chosen content_format under-represented in the recent list shown below? If it is already the majority, pick a different one.
+9. HEADLINE TEMPLATE: the recent headlines are shown below. If yours reuses a recent syntactic template (e.g. "She named the [X] in/on/at the [Y]"), rewrite it in a different shape.
+10. TAGLINE CADENCE: the tagline "Real moms. Real money. Real easy." is for roughly 1 in 5 posts, NOT every post. If you're about to use it, first check whether the last few posts already did — if so, drop it.
+11. DOLLAR-FIGURE VARIETY: if you use a specific payout number, vary it. Recent posts have hammered "$340" and "$720." If you're picking one of those, pick a different one that fits the story (e.g. $185, $410, $95, $612, $1,240 — vary widely).
 
 If any check fails, fix and try again.
 
@@ -307,7 +313,13 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
 interface GeneratorInputs {
   recentAngleTags: string[];
   recentDisplays: string[];
+  /** content_format of the last N generated posts, most-recent first. Empty
+   *  array on first-ever generation. Used to enforce format rotation — see
+   *  system-prompt "FORMAT ROTATION IS MANDATORY" section. */
+  recentContentFormats?: string[];
 }
+
+const ALL_CONTENT_FORMATS = ["anecdote", "direct", "math", "brand-callout", "objection-reframe"] as const;
 
 function buildUserPrompt(inputs: GeneratorInputs): string {
   const tagList = inputs.recentAngleTags.length > 0
@@ -316,13 +328,30 @@ function buildUserPrompt(inputs: GeneratorInputs): string {
   const displayList = inputs.recentDisplays.length > 0
     ? inputs.recentDisplays.slice(0, 12).map((d) => `- "${d.replace(/\n/g, " / ")}"`).join("\n")
     : "(none yet)";
+
+  const formats = inputs.recentContentFormats ?? [];
+  const counts = new Map<string, number>(ALL_CONTENT_FORMATS.map((f) => [f, 0]));
+  for (const f of formats) counts.set(f, (counts.get(f) ?? 0) + 1);
+  const distribution = ALL_CONTENT_FORMATS
+    .map((f) => `- ${f}: ${counts.get(f) ?? 0}`)
+    .join("\n");
+  const last5 = formats.slice(0, 5).join(", ") || "(none yet)";
+  const underRep = ALL_CONTENT_FORMATS
+    .filter((f) => (counts.get(f) ?? 0) === Math.min(...ALL_CONTENT_FORMATS.map((g) => counts.get(g) ?? 0)))
+    .join(", ");
+
   return `# RECENT ANGLES (don't repeat or paraphrase these)
 ${tagList}
 
 # RECENT HEADLINES (so you can hear the visual rhythm and avoid repeating)
 ${displayList}
 
-Generate ONE new post per the system prompt. The angle must be distinct from everything above. Output ONLY the JSON.`;
+# RECENT CONTENT_FORMAT DISTRIBUTION (last ${formats.length || 0} posts)
+${distribution}
+Last 5 formats (most recent first): ${last5}
+Under-represented format(s) you should strongly prefer: ${underRep || "(none — even distribution)"}
+
+Generate ONE new post per the system prompt. The angle must be distinct from everything above. The content_format MUST NOT be the majority format in the distribution above unless every other format has been tried at least as often. Output ONLY the JSON.`;
 }
 
 function failsBlocklist(post: GeneratedPost): string | null {

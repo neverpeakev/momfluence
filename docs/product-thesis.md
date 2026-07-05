@@ -253,6 +253,13 @@ The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
 
+**Format rotation is mandatory, not aspirational.** The Claude
+post-generator receives the content_format of every recent post and MUST
+NOT pick the majority-recent format. The 2026-07-05 audit found the
+generator had produced 27 anecdotes in 27 tries — the fix is to force
+rotation at the prompt level. See PROMPT_VERSION `2026-07-05.v6` in
+`lib/social/post-generator.ts`.
+
 ---
 
 ## The qualifier (front-and-center)
