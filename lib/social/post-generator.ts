@@ -17,7 +17,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 
 const MODEL = "claude-opus-4-7";
-const MAX_TOKENS = 1500;
+// Caption schema allows up to 2000 chars (~500 tokens). Add rationale +
+// display + body + JSON structure and the response can easily reach
+// 800-1000 tokens, so we keep meaningful headroom to avoid hitting
+// max_tokens mid-response (which produces truncated, unparseable JSON).
+const MAX_TOKENS = 3000;
 // v5: voice locked after multi-round iteration with the founder. Major
 // changes from v4:
 // - "regular moms" replaces "everyday moms" (less brand-tradey)
@@ -284,7 +288,7 @@ Generate ONE Facebook post that:
 1. Picks a fresh angle slug Momfluence hasn't recently used (recent ones shown below)
 2. Picks ONE content_format
 3. Delivers all 3 canonical pieces (news, eligibility puncture, CTA)
-4. Has a punchy Playfair-display headline (3-9 words ideal, can use \n for line break)
+4. Has a punchy Playfair-display headline (3-9 words ideal, can use the two-character escape \\n for a line break — never a raw newline inside a JSON string)
 5. Has a conversational caption (80-300 words) in the chosen format and locked voice
 
 # OUTPUT FORMAT
@@ -296,7 +300,7 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
   "content_format": "anecdote | direct | math | brand-callout | objection-reframe",
   "rationale": "1 sentence: why this specific angle + format combo",
   "eyebrow": "small-caps kicker text (<30 chars) OR null",
-  "display": "main headline (<80 chars), can use \n for line break",
+  "display": "main headline (<80 chars), can include \\n (backslash-n, TWO characters) for a line break — DO NOT insert a raw newline inside this string",
   "body": "optional subtext under headline (<120 chars) OR null",
   "caption": "full FB caption (80-300 words). MUST contain all 3 canonical pieces. MUST be written in the chosen content_format texture and locked voice. Ends with 'Find out more at momfluence.app' or natural variant.",
   "image_bg": "coral | navy | cream | warm-gradient | navy-coral-gradient | white-coral-ring",
@@ -307,6 +311,53 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
 interface GeneratorInputs {
   recentAngleTags: string[];
   recentDisplays: string[];
+}
+
+/**
+ * Escape raw control characters (newline, CR, tab) that appear INSIDE JSON
+ * string literals. Claude occasionally pretty-prints multi-line display
+ * headlines with a literal newline instead of "\\n", which is invalid JSON
+ * per RFC 8259 §7 ("A string is a sequence of Unicode code points … all
+ * Unicode characters may be placed within the quotation marks, except for
+ * the characters that MUST be escaped: quotation mark, reverse solidus,
+ * and the control characters (U+0000 through U+001F)").
+ *
+ * We walk the payload once and, while inside a string, rewrite raw \n, \r,
+ * \t as their escaped equivalents. Outside strings we don't touch anything,
+ * so the JSON structure is preserved.
+ */
+function escapeControlCharsInStrings(raw: string): string {
+  let out = "";
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (inString) {
+      if (escaped) {
+        out += c;
+        escaped = false;
+        continue;
+      }
+      if (c === "\\") {
+        out += c;
+        escaped = true;
+        continue;
+      }
+      if (c === '"') {
+        out += c;
+        inString = false;
+        continue;
+      }
+      if (c === "\n") { out += "\\n"; continue; }
+      if (c === "\r") { out += "\\r"; continue; }
+      if (c === "\t") { out += "\\t"; continue; }
+      out += c;
+    } else {
+      out += c;
+      if (c === '"') inString = true;
+    }
+  }
+  return out;
 }
 
 function buildUserPrompt(inputs: GeneratorInputs): string {
@@ -377,13 +428,18 @@ export async function generateDailyPost(
       continue;
     }
     lastRaw = block.text;
+    if (res.stop_reason === "max_tokens") {
+      lastError = `stop_reason=max_tokens (response truncated at MAX_TOKENS=${MAX_TOKENS})`;
+      continue;
+    }
     const cleaned = block.text.trim().replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
 
     let parsed: unknown;
     try {
-      parsed = JSON.parse(cleaned);
-    } catch {
-      lastError = `not valid JSON (first 200 chars: ${cleaned.slice(0, 200)})`;
+      parsed = JSON.parse(escapeControlCharsInStrings(cleaned));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      lastError = `not valid JSON (${msg}; first 200 chars: ${cleaned.slice(0, 200)})`;
       continue;
     }
 
