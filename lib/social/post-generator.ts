@@ -228,7 +228,7 @@ OPTIONAL tagline: "Real moms. Real money. Real easy." Three beats. Use selective
 - "Side hustle," "side gig," "stay-at-home job"
 - "Are you tired of...," "wish you could...," "if you've ever wanted..." (pain-point openers)
 - "Moms are powerful," "your voice matters," "you deserve" (telegraphing)
-- "Real talk," "hot take," "let's be honest" as openers (overused)
+- "Real talk," "hot take," "let's be honest," "here's the thing" as openers or connectors (overused, signal AI-generated)
 - ALL CAPS for emphasis. Emoji strings.
 
 # THE $5/MO
@@ -356,13 +356,14 @@ export async function generateDailyPost(
   maxAttempts = 3
 ): Promise<GenerateResult> {
   const recentTagsLower = new Set(inputs.recentAngleTags.map((t) => t.toLowerCase()));
+  const priorErrors: string[] = [];
   let lastError = "no attempts";
   let lastRaw = "";
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const userPrompt = attempt === 1
       ? buildUserPrompt(inputs)
-      : `${buildUserPrompt(inputs)}\n\n# RETRY NOTE\nPrevious attempt failed: ${lastError}. Pick a different angle and avoid that issue.`;
+      : `${buildUserPrompt(inputs)}\n\n# RETRY NOTE (attempt ${attempt} of ${maxAttempts})\nPrior attempts failed:\n${priorErrors.map((e, i) => `  ${i + 1}. ${e}`).join("\n")}\n\nDo NOT repeat any banned phrase quoted above. Pick a genuinely different angle, rewrite the caption from scratch, and verify every banned phrase from the DEAD PHRASES section is absent before you output.`;
 
     const res = await client().messages.create({
       model: MODEL,
@@ -374,6 +375,7 @@ export async function generateDailyPost(
     const block = res.content.find((b) => b.type === "text");
     if (!block || block.type !== "text") {
       lastError = "no text content in response";
+      priorErrors.push(lastError);
       continue;
     }
     lastRaw = block.text;
@@ -384,24 +386,28 @@ export async function generateDailyPost(
       parsed = JSON.parse(cleaned);
     } catch {
       lastError = `not valid JSON (first 200 chars: ${cleaned.slice(0, 200)})`;
+      priorErrors.push(lastError);
       continue;
     }
 
     const validated = GeneratedPostSchema.safeParse(parsed);
     if (!validated.success) {
       lastError = `schema validation: ${validated.error.issues.map((i) => `${i.path.join(".")}=${i.message}`).join("; ")}`;
+      priorErrors.push(lastError);
       continue;
     }
 
     const post = validated.data;
     if (recentTagsLower.has(post.angle_tag.toLowerCase())) {
       lastError = `angle_tag "${post.angle_tag}" matches a recent post`;
+      priorErrors.push(lastError);
       continue;
     }
 
     const blockedPhrase = failsBlocklist(post);
     if (blockedPhrase) {
       lastError = `blocklist hit: "${blockedPhrase}"`;
+      priorErrors.push(lastError);
       continue;
     }
 
