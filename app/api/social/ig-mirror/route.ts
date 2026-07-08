@@ -181,11 +181,26 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // Log so the failure surfaces in Vercel runtime logs — previously the
+    // catch silently returned 200 and the routine had no way to see why IG
+    // stopped mirroring.
+    console.error(`[ig-mirror] auth/page-context failed:`, msg);
+    // Mark every stuck row as ig_failed so it stops re-queuing forever and
+    // the DB carries the diagnosis. Without this, rows accumulate silently.
+    const failedDetails: MirrorResult["details"] = [];
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", `auth/page-context: ${msg}`);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark row ${row.slug}:`, markErr);
+      }
+      failedDetails.push({ slug: row.slug, error: `auth/page-context: ${msg}` });
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: failedDetails.length,
+      details: failedDetails,
       duration_ms: Date.now() - started,
       message: `auth/page-context: ${msg}`,
     });
@@ -212,6 +227,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
       details.push({ slug: row.slug, ig_media_id: mediaId });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[ig-mirror] publish failed for ${row.slug}:`, msg);
       failed++;
       details.push({ slug: row.slug, error: msg });
       try {
