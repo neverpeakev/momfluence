@@ -31,7 +31,19 @@ const MAX_TOKENS = 1500;
 //   for real recommendations" (matter-of-fact statement, not
 //   convincing-you framing)
 // See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+//
+// v6 (2026-07-12): voice unchanged, refinement only. Weekly audit surfaced
+// a hard format monoculture — 5/5 posts in the audit window were
+// `anecdote`, all following the same "regular mom in [city] at [kid
+// activity], someone asked, she got paid $340" skeleton. Added:
+// - Explicit CONTENT-FORMAT ROTATION directive in SYSTEM_PROMPT.
+// - Anti-formula callout in the anecdote section (vary payout numbers,
+//   vary scene types, in-person is not required).
+// - Optional `recentContentFormats` input so callers can surface the
+//   recent format distribution to Claude explicitly. When present, the
+//   prompt renders it and instructs Claude to pick something else.
+// See docs/content-audits/2026-07-12.md for the audit that motivated this.
+export const PROMPT_VERSION = "2026-07-12.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -239,10 +251,25 @@ The $5/mo membership is part of the product but does NOT need to appear in every
 
 You MUST tag each post with one of these five textures. The message is identical across all of them; the format is the variation.
 
+## CONTENT-FORMAT ROTATION (non-negotiable)
+
+The five formats exist so the Momfluence FB Page reads as a variety of textures across the week, not the same post with props swapped. Rotate deliberately:
+
+- Look at the recent headlines list below. If it's obvious the last several posts have all been the same texture (e.g. every one is a specific mom in a specific city with a specific payout — that's \`anecdote\`), pick a DIFFERENT format today.
+- Do NOT default to \`anecdote\` because it's the most vivid. \`direct\`, \`math\`, \`brand-callout\`, and \`objection-reframe\` are equally valid and are the ones getting under-served. When in doubt, pick one of those four.
+- A "recent content formats" section may appear in the user prompt. When it does, treat it as authoritative: pick a format that is under-represented or absent from it.
+- Anecdote should be roughly 1 in 5 posts across a week, not 5 in 5.
+
 ## 1. content_format: "anecdote"
 A specific person, in a specific place, with a specific number. Example:
 
   "A regular mom in Indianapolis recommended a face cream to 4 friends in her group chat last week. She got paid $720 for it. No celebrity status, no million followers — just real recommendations from a real mom. Brands are starting to pay big bucks for the stuff regular moms are already sharing. Find out more at momfluence.app."
+
+ANTI-FORMULA when you do pick anecdote:
+- Vary the payout number. Don't reuse $340, $580, or $720 back to back. Pick something plausible and specific ($1,180, $95, $2,400, $47, etc.).
+- Vary the scene. Not every anecdote is a school-year kid-activity scene (drop-off line, back-to-school night, gymnastics class, music class). Group chats, Nextdoor threads, Facebook Marketplace, PTA emails, evening scrolls on the couch, checkout line at Target, salon chair, book-club text thread all work.
+- In-person is NOT required. Some of the strongest anecdotes are pure DMs / group chats / online — that's where the reader actually already recommends things.
+- Don't repeat the scaffolding "X moms wrote it down" / "she named the [product]" — vary how the recommendation gets made and how the payout gets described.
 
 ## 2. content_format: "direct"
 Clean, question-led, unvarnished. Example:
@@ -307,6 +334,34 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
 interface GeneratorInputs {
   recentAngleTags: string[];
   recentDisplays: string[];
+  /** Recent content_format values (newest first) so Claude can see the
+   *  format-rotation state and pick something under-represented. Optional:
+   *  callers that don't pass it get the rotation nudge from the system
+   *  prompt alone. Wire this from `generation_metadata.content_format` when
+   *  the caller has it. */
+  recentContentFormats?: string[];
+}
+
+function summarizeFormats(formats: string[]): string {
+  const counts = new Map<string, number>();
+  for (const f of formats) counts.set(f, (counts.get(f) ?? 0) + 1);
+  const total = formats.length;
+  const known = ["anecdote", "direct", "math", "brand-callout", "objection-reframe"] as const;
+  const lines = known.map((k) => {
+    const n = counts.get(k) ?? 0;
+    const pct = total > 0 ? Math.round((n / total) * 100) : 0;
+    return `- ${k}: ${n} of last ${total} (${pct}%)`;
+  });
+  const overused = known.filter((k) => (counts.get(k) ?? 0) / Math.max(total, 1) >= 0.5);
+  const missing = known.filter((k) => !counts.has(k));
+  let hint = "";
+  if (overused.length > 0) {
+    hint = `\nOVER-USED (avoid today): ${overused.join(", ")}.`;
+  }
+  if (missing.length > 0) {
+    hint += `\nABSENT (prefer today): ${missing.join(", ")}.`;
+  }
+  return `${lines.join("\n")}${hint}`;
 }
 
 function buildUserPrompt(inputs: GeneratorInputs): string {
@@ -316,13 +371,16 @@ function buildUserPrompt(inputs: GeneratorInputs): string {
   const displayList = inputs.recentDisplays.length > 0
     ? inputs.recentDisplays.slice(0, 12).map((d) => `- "${d.replace(/\n/g, " / ")}"`).join("\n")
     : "(none yet)";
+  const formatsSection = inputs.recentContentFormats && inputs.recentContentFormats.length > 0
+    ? `\n\n# RECENT CONTENT FORMATS (rotate — pick one under-represented or absent)\n${summarizeFormats(inputs.recentContentFormats)}\n`
+    : "";
   return `# RECENT ANGLES (don't repeat or paraphrase these)
 ${tagList}
 
 # RECENT HEADLINES (so you can hear the visual rhythm and avoid repeating)
-${displayList}
+${displayList}${formatsSection}
 
-Generate ONE new post per the system prompt. The angle must be distinct from everything above. Output ONLY the JSON.`;
+Generate ONE new post per the system prompt. The angle must be distinct from everything above, AND the content_format must actively rotate away from what's been over-used recently. Output ONLY the JSON.`;
 }
 
 function failsBlocklist(post: GeneratedPost): string | null {
