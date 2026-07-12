@@ -249,6 +249,20 @@ authentic alternative.
 the eligibility puncture (no million followers / no celebrity), the
 CTA. Every post.
 
+### Format rotation is enforced
+
+The daily generator is expected to **rotate through the five textures**,
+not ride a single one. Anecdote is the most vivid format and is the
+strongest default temptation; the generator prompt (v6+) explicitly
+counter-weights that with a rotation directive and, when the caller
+supplies recent content_format counts, an "OVER-USED / ABSENT" hint
+that steers today's pick.
+
+Rough weekly target: no single format should exceed ~30% of shipped
+posts in a rolling window. If the weekly audit surfaces a format
+monoculture (as it did in the 2026-07-12 audit — 5/5 anecdotes),
+the fix goes into the prompt, not into the audit rubric.
+
 The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
