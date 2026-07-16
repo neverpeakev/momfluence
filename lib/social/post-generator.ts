@@ -284,7 +284,7 @@ Generate ONE Facebook post that:
 1. Picks a fresh angle slug Momfluence hasn't recently used (recent ones shown below)
 2. Picks ONE content_format
 3. Delivers all 3 canonical pieces (news, eligibility puncture, CTA)
-4. Has a punchy Playfair-display headline (3-9 words ideal, can use \n for line break)
+4. Has a punchy Playfair-display headline (3-9 words ideal, can use the two-character escape \\n for a line break — never a raw newline inside the JSON string)
 5. Has a conversational caption (80-300 words) in the chosen format and locked voice
 
 # OUTPUT FORMAT
@@ -296,7 +296,7 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
   "content_format": "anecdote | direct | math | brand-callout | objection-reframe",
   "rationale": "1 sentence: why this specific angle + format combo",
   "eyebrow": "small-caps kicker text (<30 chars) OR null",
-  "display": "main headline (<80 chars), can use \n for line break",
+  "display": "main headline (<80 chars). For a line break emit the two-character escape \\n — do NOT press Enter inside this string; a raw newline is invalid JSON and will be rejected.",
   "body": "optional subtext under headline (<120 chars) OR null",
   "caption": "full FB caption (80-300 words). MUST contain all 3 canonical pieces. MUST be written in the chosen content_format texture and locked voice. Ends with 'Find out more at momfluence.app' or natural variant.",
   "image_bg": "coral | navy | cream | warm-gradient | navy-coral-gradient | white-coral-ring",
@@ -335,6 +335,32 @@ function failsBlocklist(post: GeneratedPost): string | null {
     if (!okContext) return "passive income (unqualified)";
   }
   return null;
+}
+
+// Claude occasionally emits a raw newline inside a JSON string value (usually
+// the `display` headline where it wants a line break). That's invalid JSON.
+// Walk the text and escape newlines/carriage returns that appear inside a
+// quoted string literal; leave structural whitespace alone.
+function escapeRawNewlinesInStrings(s: string): string {
+  let out = "";
+  let inStr = false;
+  let escaped = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) {
+      if (escaped) { out += c; escaped = false; continue; }
+      if (c === "\\") { out += c; escaped = true; continue; }
+      if (c === '"') { out += c; inStr = false; continue; }
+      if (c === "\n") { out += "\\n"; continue; }
+      if (c === "\r") { out += "\\r"; continue; }
+      if (c === "\t") { out += "\\t"; continue; }
+      out += c;
+    } else {
+      out += c;
+      if (c === '"') inStr = true;
+    }
+  }
+  return out;
 }
 
 export interface GenerateResult {
@@ -383,8 +409,12 @@ export async function generateDailyPost(
     try {
       parsed = JSON.parse(cleaned);
     } catch {
-      lastError = `not valid JSON (first 200 chars: ${cleaned.slice(0, 200)})`;
-      continue;
+      try {
+        parsed = JSON.parse(escapeRawNewlinesInStrings(cleaned));
+      } catch {
+        lastError = `not valid JSON (first 200 chars: ${cleaned.slice(0, 200)})`;
+        continue;
+      }
     }
 
     const validated = GeneratedPostSchema.safeParse(parsed);
