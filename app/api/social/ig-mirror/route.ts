@@ -151,13 +151,15 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
+    const msg = "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set";
+    console.error(`[ig-mirror] ${msg}`);
     return NextResponse.json({
       ok: false,
       mirrored: 0,
       failed: 0,
       details: [],
       duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
+      message: msg,
     });
   }
 
@@ -180,14 +182,32 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     pageToken = ctx.pageToken;
     igId = ctx.igId;
   } catch (e) {
+    // Auth/page-context is fatal for every pending row this run. Surface it
+    // in three places so it can't go unnoticed: console.error (Vercel runtime
+    // errors dashboard), the response body (visible to manual curl), AND on
+    // every pending row's error_message (surfaces in the health cron and
+    // dashboards). Without the row-level mark, this branch silently loops
+    // day after day — see docs/routine-logs/health-2026-07-17.md for the
+    // 7-week regression that motivated this fix.
     const msg = e instanceof Error ? e.message : String(e);
+    const full = `auth/page-context: ${msg}`;
+    console.error(`[ig-mirror] ${full}`);
+    const details: MirrorResult["details"] = [];
+    for (const row of pending) {
+      details.push({ slug: row.slug, error: full });
+      try {
+        await markFailed(row.id, "ig", full);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark row failed:`, markErr);
+      }
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details,
       duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
+      message: full,
     });
   }
 
