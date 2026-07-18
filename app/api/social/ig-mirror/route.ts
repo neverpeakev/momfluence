@@ -151,13 +151,15 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
+    const msg = "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set";
+    console.error(`[ig-mirror] early exit: ${msg}`);
     return NextResponse.json({
       ok: false,
       mirrored: 0,
       failed: 0,
       details: [],
       duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
+      message: msg,
     });
   }
 
@@ -180,14 +182,29 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     pageToken = ctx.pageToken;
     igId = ctx.igId;
   } catch (e) {
+    // Auth/page-context failure blocks EVERY pending row. Log loudly and
+    // mark each pending row as ig_failed so tomorrow's cron isn't tricked
+    // into silently re-processing the same backlog — the operator has to
+    // fix the Meta permissions/link and can then manually reset rows.
     const msg = e instanceof Error ? e.message : String(e);
+    const summary = `auth/page-context: ${msg}`;
+    console.error(`[ig-mirror] ${summary} — marking ${pending.length} pending row(s) ig_failed`);
+    const details: MirrorResult["details"] = [];
+    for (const row of pending) {
+      details.push({ slug: row.slug, error: summary });
+      try {
+        await markFailed(row.id, "ig", summary);
+      } catch (markErr) {
+        console.error(`[ig-mirror] failed to mark row ${row.slug} ig_failed:`, markErr);
+      }
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details,
       duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
+      message: summary,
     });
   }
 
