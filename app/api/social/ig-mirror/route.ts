@@ -163,6 +163,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
 
   const pending = await listPendingIgMirror(10);
   if (pending.length === 0) {
+    console.log("[ig-mirror] no pending rows to mirror");
     return NextResponse.json({
       ok: true,
       mirrored: 0,
@@ -172,6 +173,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
       message: "nothing to mirror",
     });
   }
+  console.log(`[ig-mirror] ${pending.length} pending row(s), oldest fb_published_at=${pending[0].fb_published_at}`);
 
   let pageToken: string;
   let igId: string;
@@ -181,6 +183,11 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // Log loudly — endpoint still returns 200 (cron shouldn't retry), but
+    // without this the backlog piles up invisibly (see routine-logs/health-2026-07-19.md).
+    // Rows stay fb_published so they'll retry once the IG link/token is restored,
+    // rather than being terminally marked ig_failed.
+    console.error(`[ig-mirror] auth/page-context failed, ${pending.length} row(s) BLOCKED (not marked failed — will retry):`, msg);
     return NextResponse.json({
       ok: false,
       mirrored: 0,
@@ -188,7 +195,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
       details: [],
       duration_ms: Date.now() - started,
       message: `auth/page-context: ${msg}`,
-    });
+      blocked_rows: pending.length,
+    } as MirrorResult & { blocked_rows: number });
   }
 
   // Pre-warm the render endpoint for each pending slug. IG often fails
