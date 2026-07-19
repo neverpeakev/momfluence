@@ -253,6 +253,20 @@ The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
 
+### Format rotation is enforced (added 2026-07-19)
+
+Aggregate variety across the week is a first-class quality axis, not
+a nice-to-have. As of prompt version `2026-07-19.v6`, the generator's
+SYSTEM_PROMPT explicitly requires the daily post to rotate to a
+`content_format` different from the most recently used one, and to
+break out of any headline scaffold repeated in the last 12 headlines
+(e.g., "She named the ___ / in the ___"). Reusing the same invented
+dollar figure across posts is also disallowed. Trigger for this rule:
+the 2026-07-19 audit found 6/6 posts in the prior week were
+`anecdote`, 5/6 used the same headline template, and 4/6 reused the
+figure `$312` — every individual post scored clean on voice, but the
+week as a whole read as one post remixed.
+
 ---
 
 ## The qualifier (front-and-center)
