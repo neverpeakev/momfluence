@@ -31,7 +31,17 @@ const MAX_TOKENS = 1500;
 //   for real recommendations" (matter-of-fact statement, not
 //   convincing-you framing)
 // See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+// v6 (2026-07-19): weekly audit found 6/6 posts in the prior week were all
+// `anecdote` format, 5/6 used the exact "She named the X / in the Y"
+// headline template, and 4/6 reused the dollar figure $312. Individual
+// posts scored clean on voice/vocab/canonical-message, but at the weekly
+// aggregate the variety axis had collapsed. v6 adds mandatory format
+// rotation, headline-template break-out, and number-anchor break-out to
+// SYSTEM_PROMPT. Also adds an optional `recentFormats` input so callers
+// can (in a follow-up) surface the actual recent content_format history —
+// until then, Claude infers repetition from `recentDisplays`.
+// See docs/content-audits/2026-07-19.md for the roll-up.
+export const PROMPT_VERSION = "2026-07-19.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -264,6 +274,24 @@ Speaks to the silent voice saying "this isn't for me." Edge is welcome here. Exa
 
   "Move over skinny unrelatable influencers. Brands have moved on — they're paying regular moms big bucks now for the same recommendations they used to only pay celebrities for. Real moms. Real money. Find out more and get your cut at momfluence.app."
 
+# FORMAT ROTATION IS MANDATORY (v6)
+
+The five content_formats exist to produce weekly texture variety, not so that one format can dominate. Anecdote in particular is easy to overuse because concrete stories feel high-quality in isolation — but 6 anecdotes in a row is a monotone week, not a strong week.
+
+Rules:
+- If a "recent formats" list is provided below, DO NOT pick the format that appears most recently in that list. Pick one of the other four.
+- If no explicit formats list is provided, INFER from the recent headlines: multiple headlines that read like "She named the X / in the Y" or "A regular mom in [city]…" strongly indicate anecdote-heavy weeks. When you see that, choose direct, math, brand-callout, or objection-reframe for this post.
+- Objection-reframe is the format most often missing from weeks that skew anecdote-heavy. When you notice that skew, it is the correct choice.
+- The message is fixed. The format is where variety lives. Rotate deliberately.
+
+# BREAK VISUAL-TEMPLATE REPETITION
+
+Scan the recent headlines list. If the same syntactic scaffold appears 2+ times (e.g., "She named the ___ / in the ___", "A regular mom in ___", "$XXX from ___"), THIS post's headline MUST use a structurally different form. Prefer question openers ("Did you know…"), incredulous discovery ("Wait —…"), list openers (brand names as a run: "Sephora. Hulu. Target."), or POV openers when the recent set is all anecdote-shaped.
+
+# BREAK NUMBER-ANCHOR REPETITION
+
+If the recent captions reuse a specific dollar figure (e.g., $312 shows up in more than one recent post), do NOT use that number. Anchor on a different plausible figure — or, when the format doesn't need one, omit the specific number entirely and let the message carry itself. Never invent the same "plausible" number week after week; it reads as fake to any reader who sees two of them.
+
 # CHECK BEFORE SUBMITTING
 
 For every post you generate, verify ALL of these before output:
@@ -274,7 +302,10 @@ For every post you generate, verify ALL of these before output:
 4. Is the voice conversational and culturally aware (NOT corporate / newsroom)?
 5. Is "regular moms" used (not "everyday moms," not just "moms")?
 6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing?
-7. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
+7. Is the chosen content_format DIFFERENT from the most recently used format (per the rotation rule above)?
+8. Is this post's headline structurally different from the recent-headlines list (per the template break-out rule)?
+9. If a dollar figure is present, is it different from any figure reused in the recent captions?
+10. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
 
 If any check fails, fix and try again.
 
@@ -307,6 +338,12 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
 interface GeneratorInputs {
   recentAngleTags: string[];
   recentDisplays: string[];
+  /** Recent content_format values, most-recent first. Optional so
+   *  existing callers keep compiling; when omitted, Claude infers
+   *  repetition from `recentDisplays` per the SYSTEM_PROMPT rotation
+   *  rule. See docs/content-audits/2026-07-19.md for the audit that
+   *  prompted this. */
+  recentFormats?: string[];
 }
 
 function buildUserPrompt(inputs: GeneratorInputs): string {
@@ -316,13 +353,23 @@ function buildUserPrompt(inputs: GeneratorInputs): string {
   const displayList = inputs.recentDisplays.length > 0
     ? inputs.recentDisplays.slice(0, 12).map((d) => `- "${d.replace(/\n/g, " / ")}"`).join("\n")
     : "(none yet)";
+  const recentFormats = inputs.recentFormats ?? [];
+  const formatBlock = recentFormats.length > 0
+    ? `# RECENT CONTENT FORMATS (most recent first — DO NOT pick the top one)
+${recentFormats.slice(0, 12).map((f) => `- ${f}`).join("\n")}
+
+`
+    : `# RECENT CONTENT FORMATS
+(not supplied — infer format repetition from the recent headlines below and rotate away from whatever texture they clearly share)
+
+`;
   return `# RECENT ANGLES (don't repeat or paraphrase these)
 ${tagList}
 
 # RECENT HEADLINES (so you can hear the visual rhythm and avoid repeating)
 ${displayList}
 
-Generate ONE new post per the system prompt. The angle must be distinct from everything above. Output ONLY the JSON.`;
+${formatBlock}Generate ONE new post per the system prompt. The angle must be distinct from everything above. The content_format must rotate away from whatever the recent set has been dominated by (see FORMAT ROTATION IS MANDATORY in the system prompt). Output ONLY the JSON.`;
 }
 
 function failsBlocklist(post: GeneratedPost): string | null {
