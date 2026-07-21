@@ -150,18 +150,37 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
 
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
-  if (!userToken || !pageId) {
+
+  const pending = await listPendingIgMirror(10);
+
+  // Global-failure path: token/page-context problems affect every pending row.
+  // Persist the reason to each row so the failure is visible in Supabase — a
+  // silent early-return here let 55 days of failures (2026-05-28 → 2026-07-21)
+  // go undetected because no ig_failed rows were ever written.
+  async function failAllPending(reason: string): Promise<NextResponse<MirrorResult>> {
+    const details: MirrorResult["details"] = [];
+    for (const row of pending) {
+      details.push({ slug: row.slug, error: reason });
+      try {
+        await markFailed(row.id, "ig", reason);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark row failed:`, markErr);
+      }
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details,
       duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
+      message: reason,
     });
   }
 
-  const pending = await listPendingIgMirror(10);
+  if (!userToken || !pageId) {
+    return failAllPending("META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set");
+  }
+
   if (pending.length === 0) {
     return NextResponse.json({
       ok: true,
@@ -181,14 +200,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
-    });
+    return failAllPending(`auth/page-context: ${msg}`);
   }
 
   // Pre-warm the render endpoint for each pending slug. IG often fails
