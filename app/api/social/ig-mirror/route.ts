@@ -30,6 +30,7 @@ import {
   listPendingIgMirror,
   markIgPublished,
   markFailed,
+  annotateIgMirrorAttempt,
   type GeneratedPostRow,
 } from "@/lib/social/db";
 
@@ -150,18 +151,25 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
 
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
+  const pending = await listPendingIgMirror(10);
   if (!userToken || !pageId) {
+    const envMsg = "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set";
+    for (const row of pending) {
+      try {
+        await annotateIgMirrorAttempt(row.id, envMsg);
+      } catch (annErr) {
+        console.error(`[ig-mirror] failed to annotate row ${row.id}:`, annErr);
+      }
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
       failed: 0,
-      details: [],
+      details: pending.map((r) => ({ slug: r.slug, error: envMsg })),
       duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
+      message: envMsg,
     });
   }
-
-  const pending = await listPendingIgMirror(10);
   if (pending.length === 0) {
     return NextResponse.json({
       ok: true,
@@ -181,11 +189,21 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // Record the systemic failure on every row we pulled so it is not
+    // silent in the database. Leaves status='fb_published' so the row is
+    // still eligible for mirroring once the token/scope is fixed.
+    for (const row of pending) {
+      try {
+        await annotateIgMirrorAttempt(row.id, msg);
+      } catch (annErr) {
+        console.error(`[ig-mirror] failed to annotate row ${row.id}:`, annErr);
+      }
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
       failed: 0,
-      details: [],
+      details: pending.map((r) => ({ slug: r.slug, error: msg })),
       duration_ms: Date.now() - started,
       message: `auth/page-context: ${msg}`,
     });
