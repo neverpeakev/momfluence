@@ -150,6 +150,21 @@ export async function markFailed(
   if (error) throw new Error(`markFailed: ${error.message}`);
 }
 
+// Records a systemic (pre-per-row-loop) failure without transitioning status,
+// so the row is still picked up on the next mirror run once the underlying
+// problem (bad token, missing scope, revoked page grant) is fixed.
+export async function annotateIgMirrorAttempt(id: string, message: string): Promise<void> {
+  const sb = admin();
+  const { error } = await sb
+    .from("generated_posts")
+    .update({
+      errored_at: new Date().toISOString(),
+      error_message: `[ig-mirror pre-loop] ${message}`.slice(0, 4000),
+    })
+    .eq("id", id);
+  if (error) throw new Error(`annotateIgMirrorAttempt: ${error.message}`);
+}
+
 export async function listPendingIgMirror(limit = 10): Promise<GeneratedPostRow[]> {
   const sb = admin();
   const { data, error } = await sb
