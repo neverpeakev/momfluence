@@ -150,18 +150,41 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
 
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
-  if (!userToken || !pageId) {
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
-    });
+  const pending = await listPendingIgMirror(10);
+
+  // Mark every pending row failed on run-wide errors (missing env or
+  // page-context failure). Otherwise rows sit in fb_published forever with
+  // a null error_message and the failure is invisible until someone reads
+  // Vercel logs.
+  async function bailAllPending(message: string, httpStatus = 200): Promise<NextResponse<MirrorResult>> {
+    console.error(`[ig-mirror] run-wide failure: ${message}`);
+    const marked: MirrorResult["details"] = [];
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", message);
+        marked.push({ slug: row.slug, error: message });
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark ${row.slug} failed:`, markErr);
+        marked.push({ slug: row.slug, error: `${message} (also markFailed threw)` });
+      }
+    }
+    return NextResponse.json(
+      {
+        ok: false,
+        mirrored: 0,
+        failed: pending.length,
+        details: marked,
+        duration_ms: Date.now() - started,
+        message,
+      },
+      { status: httpStatus }
+    );
   }
 
-  const pending = await listPendingIgMirror(10);
+  if (!userToken || !pageId) {
+    return bailAllPending("META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set");
+  }
+
   if (pending.length === 0) {
     return NextResponse.json({
       ok: true,
@@ -181,14 +204,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
-    });
+    return bailAllPending(`auth/page-context: ${msg}`);
   }
 
   // Pre-warm the render endpoint for each pending slug. IG often fails
