@@ -49,17 +49,29 @@ export interface GeneratedPostRow {
   created_at: string;
 }
 
-export async function recentForContext(limit = 30): Promise<{ angle_tags: string[]; displays: string[] }> {
+export async function recentForContext(limit = 30): Promise<{
+  angle_tags: string[];
+  displays: string[];
+  content_formats: string[];
+  accent_badges: string[];
+  image_bgs: string[];
+}> {
   const sb = admin();
   const { data, error } = await sb
     .from("generated_posts")
-    .select("angle_tag, display")
+    .select("angle_tag, display, accent_badge, image_bg, generation_metadata")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw new Error(`recentForContext: ${error.message}`);
+  const rows = data ?? [];
   return {
-    angle_tags: (data ?? []).map((r) => r.angle_tag).filter(Boolean),
-    displays: (data ?? []).map((r) => r.display).filter(Boolean),
+    angle_tags: rows.map((r) => r.angle_tag).filter(Boolean),
+    displays: rows.map((r) => r.display).filter(Boolean),
+    content_formats: rows
+      .map((r) => (r.generation_metadata as { content_format?: string } | null)?.content_format)
+      .filter((v): v is string => Boolean(v)),
+    accent_badges: rows.map((r) => r.accent_badge).filter((v): v is string => Boolean(v)),
+    image_bgs: rows.map((r) => r.image_bg).filter((v): v is string => Boolean(v)),
   };
 }
 

@@ -158,6 +158,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<CronResult>> 
     const result = await generateDailyPost({
       recentAngleTags: ctx.angle_tags,
       recentDisplays: ctx.displays,
+      recentContentFormats: ctx.content_formats,
+      recentAccentBadges: ctx.accent_badges,
+      recentImageBgs: ctx.image_bgs,
     });
 
     // 3. Insert pending row

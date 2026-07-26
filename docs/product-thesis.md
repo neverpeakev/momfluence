@@ -253,6 +253,29 @@ The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
 
+### Variety rotation policy (LOCKED — added 2026-07-26 after audit)
+
+The autonomous generator has to be told to rotate, otherwise it settles
+into a single texture. These are the rules the generator enforces every
+day (`lib/social/post-generator.ts` reads them via the recent-post
+context):
+
+- **Format rotation.** No single content_format may appear 3 posts in a
+  row, and no single format >40% of the last 7 posts. If the tail of
+  recent formats reads `anecdote, anecdote, anecdote`, the next post
+  MUST be a different format.
+- **Dollar-figure freshness.** Never reuse a dollar figure that appears
+  in the last 10 accent_badges. Vary the range (mix $80s with $400s with
+  $1,200s) — recycling the same number reads as fabricated.
+- **Display-formula freshness.** If recent displays share a syntactic
+  template (e.g. `"She named the ___ at the ___"`), the next display
+  must break the shape.
+- **Image_bg rotation.** No image_bg two posts in a row.
+
+The 2026-07-26 audit found 7/7 posts that week were `anecdote`, 6/7
+used $340, 6/7 used the "She named the ___ at the ___" template, and
+6/7 used `warm-gradient` — this policy exists so that doesn't recur.
+
 ---
 
 ## The qualifier (front-and-center)

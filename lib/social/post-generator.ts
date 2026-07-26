@@ -18,20 +18,16 @@ import { z } from "zod";
 
 const MODEL = "claude-opus-4-7";
 const MAX_TOKENS = 1500;
-// v5: voice locked after multi-round iteration with the founder. Major
-// changes from v4:
-// - "regular moms" replaces "everyday moms" (less brand-tradey)
-// - "big bucks" / "real money" replaces "rev share" entirely
-// - "Find out more at momfluence.app" replaces "Get yours" / "$5/mo to
-//   unlock them" as the canonical CTA (softer two-step ask)
-// - "Gate-kept" is DEAD — replaced with "used to only pay celebrities"
-// - "That's so 2025" is DEAD (was tried; didn't land)
-// - "We work with brands who actually want to pay you for your
-//   influence" is DEAD — replaced with "Brands are paying real money
-//   for real recommendations" (matter-of-fact statement, not
-//   convincing-you framing)
-// See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+// v6: voice unchanged (v5 still locked). Adds anti-monoculture rotation
+// enforcement after the 2026-07-26 audit found 7/7 posts in a week were
+// `anecdote` format, 6/7 used $340 as the dollar figure, 6/7 followed
+// the "She named the ___ at the ___" display formula, and 6/7 used the
+// same warm-gradient image_bg. Generator now receives recent
+// content_formats + accent_badges + image_bgs in the user prompt and
+// SYSTEM_PROMPT explicitly forbids repeating the last format 3x, the
+// last dollar figure, or the last image_bg 2x. See
+// docs/product-thesis.md → "Variety rotation policy".
+export const PROMPT_VERSION = "2026-07-26.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -264,6 +260,20 @@ Speaks to the silent voice saying "this isn't for me." Edge is welcome here. Exa
 
   "Move over skinny unrelatable influencers. Brands have moved on — they're paying regular moms big bucks now for the same recommendations they used to only pay celebrities for. Real moms. Real money. Find out more and get your cut at momfluence.app."
 
+# VARIETY ROTATION (HARD RULES — the audit checks these)
+
+The user prompt lists the recent content_formats, accent_badges, and image_bgs. Enforce these rotation rules:
+
+1. **Format rotation.** If the last 3 posts were all the same content_format, you MUST pick a different one. Weekly balance target: no single format >40% of the last 7. If you see "anecdote, anecdote, anecdote" as the tail of recent formats, DO NOT ship another anecdote — pick direct, math, brand-callout, or objection-reframe.
+
+2. **Dollar-figure freshness.** If a specific dollar figure (e.g. $340, $720, $180) appears in the recent accent_badges list, do NOT reuse it. Every worked-example number should feel real and specific — recycling the same figure across posts reads as fabricated. Vary the range too (mix $80s with $400s with $1,200s).
+
+3. **Display-formula freshness.** Read the recent displays. If they share a syntactic template (e.g. "She named the ___ at the ___" or "Three moms bought ___") do NOT ship a fourth in the same shape. Break the pattern — question, brand list, math statement, POV, whatever fits.
+
+4. **Image_bg rotation.** If the last 2 posts used the same image_bg, pick a different one from the enum. Visual monotony reads as an auto-generated feed.
+
+5. **Opener discipline.** Most captions should begin with one of the LOCKED openers ("Moms:", "Heads up moms:", "Did you know", "Wait —", "POV:", "Hot tip:", "Quick PSA:") or an anchored moment. Diving straight into a third-person anecdote with no opener is allowed occasionally but shouldn't be the default — the smart-friend-texting energy comes from that direct address.
+
 # CHECK BEFORE SUBMITTING
 
 For every post you generate, verify ALL of these before output:
@@ -275,6 +285,7 @@ For every post you generate, verify ALL of these before output:
 5. Is "regular moms" used (not "everyday moms," not just "moms")?
 6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing?
 7. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
+8. Does this post BREAK the recent pattern (format, dollar figure, display shape, image_bg)?
 
 If any check fails, fix and try again.
 
@@ -307,6 +318,15 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
 interface GeneratorInputs {
   recentAngleTags: string[];
   recentDisplays: string[];
+  /** Most-recent-first list of content_format values from recent posts.
+   *  Used to enforce format rotation (see SYSTEM_PROMPT "VARIETY ROTATION"). */
+  recentContentFormats?: string[];
+  /** Most-recent-first list of accent_badge values (usually dollar figures).
+   *  Used to enforce dollar-figure freshness. */
+  recentAccentBadges?: string[];
+  /** Most-recent-first list of image_bg values. Used to prevent visual
+   *  monotony (same background 3+ posts in a row). */
+  recentImageBgs?: string[];
 }
 
 function buildUserPrompt(inputs: GeneratorInputs): string {
@@ -316,13 +336,32 @@ function buildUserPrompt(inputs: GeneratorInputs): string {
   const displayList = inputs.recentDisplays.length > 0
     ? inputs.recentDisplays.slice(0, 12).map((d) => `- "${d.replace(/\n/g, " / ")}"`).join("\n")
     : "(none yet)";
+  const formats = inputs.recentContentFormats ?? [];
+  const formatList = formats.length > 0
+    ? formats.slice(0, 10).map((f, i) => `${i + 1}. ${f}${i === 0 ? " ← most recent" : ""}`).join("\n")
+    : "(none yet)";
+  const badges = (inputs.recentAccentBadges ?? []).slice(0, 10);
+  const badgeList = badges.length > 0 ? badges.map((b) => `- ${b}`).join("\n") : "(none yet)";
+  const bgs = (inputs.recentImageBgs ?? []).slice(0, 6);
+  const bgList = bgs.length > 0
+    ? bgs.map((b, i) => `${i + 1}. ${b}${i === 0 ? " ← most recent" : ""}`).join("\n")
+    : "(none yet)";
   return `# RECENT ANGLES (don't repeat or paraphrase these)
 ${tagList}
 
 # RECENT HEADLINES (so you can hear the visual rhythm and avoid repeating)
 ${displayList}
 
-Generate ONE new post per the system prompt. The angle must be distinct from everything above. Output ONLY the JSON.`;
+# RECENT CONTENT FORMATS (most recent first) — enforce rotation
+${formatList}
+
+# RECENT ACCENT BADGES / DOLLAR FIGURES (do NOT reuse any of these numbers)
+${badgeList}
+
+# RECENT IMAGE BACKGROUNDS (most recent first) — don't repeat the last 2
+${bgList}
+
+Generate ONE new post per the system prompt. The angle must be distinct from everything above. The content_format, dollar figure, display shape, and image_bg must break the recent pattern per the VARIETY ROTATION rules. Output ONLY the JSON.`;
 }
 
 function failsBlocklist(post: GeneratedPost): string | null {
