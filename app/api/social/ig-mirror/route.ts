@@ -150,16 +150,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
 
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
-  if (!userToken || !pageId) {
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
-    });
-  }
 
   const pending = await listPendingIgMirror(10);
   if (pending.length === 0) {
@@ -173,6 +163,37 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     });
   }
 
+  // Pre-flight failures (env missing, page-context resolution failing) used
+  // to short-circuit here without touching the pending rows. That left rows
+  // stuck at status='fb_published' forever with no error_message, so the
+  // failure was invisible until someone eyeballed the DB. Now we mark every
+  // pending row ig_failed with the pre-flight reason so the next audit sees
+  // exactly why they didn't ship.
+  async function bailOut(reason: string): Promise<NextResponse<MirrorResult>> {
+    console.error(`[ig-mirror] pre-flight failed: ${reason}`);
+    const bailDetails: MirrorResult["details"] = [];
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", `pre-flight: ${reason}`);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark ${row.slug} failed:`, markErr);
+      }
+      bailDetails.push({ slug: row.slug, error: reason });
+    }
+    return NextResponse.json({
+      ok: false,
+      mirrored: 0,
+      failed: pending.length,
+      details: bailDetails,
+      duration_ms: Date.now() - started,
+      message: reason,
+    });
+  }
+
+  if (!userToken || !pageId) {
+    return bailOut("META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set");
+  }
+
   let pageToken: string;
   let igId: string;
   try {
@@ -181,14 +202,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
-    });
+    return bailOut(`auth/page-context: ${msg}`);
   }
 
   // Pre-warm the render endpoint for each pending slug. IG often fails
