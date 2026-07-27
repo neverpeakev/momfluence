@@ -181,11 +181,23 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // Mark every pending row ig_failed so the failure surfaces in the DB
+    // (error_message populated) and daily monitoring catches it. Without
+    // this, rows stay silently in fb_published limbo forever.
+    const details: MirrorResult["details"] = [];
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", `auth/page-context: ${msg}`);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark row failed:`, markErr);
+      }
+      details.push({ slug: row.slug, error: `auth/page-context: ${msg}` });
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details,
       duration_ms: Date.now() - started,
       message: `auth/page-context: ${msg}`,
     });
