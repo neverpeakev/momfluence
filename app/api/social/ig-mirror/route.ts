@@ -20,6 +20,10 @@
  * are marked ig_failed with the error message and will NOT be retried by
  * future runs (would need manual reset).
  *
+ * Whole-run failures (env missing, page-context/token error) also mark every
+ * pending row ig_failed with the specific error, so the daily health check
+ * surfaces the problem within 24h instead of silently accumulating.
+ *
  * Why daily and not faster: IG rate-limits media publishes to 25 per
  * 24-hour rolling window per account. Daily cron with ~1 mirror per day
  * is well under the limit.
@@ -148,19 +152,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     );
   }
 
-  const userToken = process.env.META_MARKETING_API_TOKEN;
-  const pageId = process.env.META_FB_PAGE_ID;
-  if (!userToken || !pageId) {
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
-    });
-  }
-
+  // Fetch pending rows first so any preflight failure below can mark them
+  // ig_failed. Without this, a token/link problem silently accumulates
+  // fb_published rows for weeks (see 2026-05-27 → 2026-07-28 outage).
   const pending = await listPendingIgMirror(10);
   if (pending.length === 0) {
     return NextResponse.json({
@@ -173,6 +167,32 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     });
   }
 
+  async function abortPending(reason: string): Promise<MirrorResult> {
+    const details: MirrorResult["details"] = [];
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", reason);
+      } catch (markErr) {
+        console.error(`[ig-mirror] whole-run abort: markFailed for ${row.slug} threw:`, markErr);
+      }
+      details.push({ slug: row.slug, error: reason });
+    }
+    return {
+      ok: false,
+      mirrored: 0,
+      failed: pending.length,
+      details,
+      duration_ms: Date.now() - started,
+      message: reason,
+    };
+  }
+
+  const userToken = process.env.META_MARKETING_API_TOKEN;
+  const pageId = process.env.META_FB_PAGE_ID;
+  if (!userToken || !pageId) {
+    return NextResponse.json(await abortPending("META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set"));
+  }
+
   let pageToken: string;
   let igId: string;
   try {
@@ -181,14 +201,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
-    });
+    return NextResponse.json(await abortPending(`auth/page-context: ${msg}`));
   }
 
   // Pre-warm the render endpoint for each pending slug. IG often fails
