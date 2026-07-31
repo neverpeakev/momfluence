@@ -181,11 +181,26 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // Mark every pending row ig_failed so we don't silently accumulate a
+    // backlog that would bulk-publish stale content whenever the IG link
+    // is restored. Rows without an error_message look "healthy" to the
+    // health cron, which is how the 2026-05-28 IG unlink went unnoticed
+    // for two months.
+    console.error(`[ig-mirror] page-context failed, marking ${pending.length} pending row(s) ig_failed:`, msg);
+    const failedDetails: MirrorResult["details"] = [];
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", `auth/page-context: ${msg}`);
+      } catch (markErr) {
+        console.error(`[ig-mirror] failed to mark ${row.slug} ig_failed:`, markErr);
+      }
+      failedDetails.push({ slug: row.slug, error: `auth/page-context: ${msg}` });
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details: failedDetails,
       duration_ms: Date.now() - started,
       message: `auth/page-context: ${msg}`,
     });
