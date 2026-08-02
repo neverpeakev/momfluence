@@ -1,6 +1,6 @@
 # Momfluence — Product Thesis (locked)
 
-> **Last updated:** 2026-05-13 (the "rules just changed" rewrite)
+> **Last updated:** 2026-08-02 (format-rotation rule added; v5 voice unchanged)
 > **Status:** This is the source of truth for everything user-facing.
 > Every ad, post, landing page, email, support reply, and Claude-generated
 > piece of content must trace back to this doc. The Claude post-generator
@@ -252,6 +252,30 @@ CTA. Every post.
 The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
+
+### Format rotation is mandatory (added 2026-08-02)
+
+Variety across the five formats is the point of the taxonomy. The daily
+generator must NOT produce the same `content_format` more than a few times
+in a row. Concretely: it should not pick a format that appears in the last
+3 posts, and if it sees the recent window skewing to one format it must
+rotate deliberately away.
+
+This rule exists because the 2026-08-02 weekly audit caught 6/6 posts
+using `anecdote` — 5 of them with the same "She named the [X] at [Y]"
+display template. Individual posts scored 5/5; the portfolio failed
+because there was no variety. "This format is working" is not a reason to
+keep using it — that decision belongs to the downstream Bayesian optimizer,
+which needs data across all five formats to do its job.
+
+Retired templates (do NOT reuse verbatim, even with the noun swapped):
+- Display: "She named the [product] / [preposition] the [place]."
+- Caption chassis: "A regular mom in [City] was [routine thing]. Another
+  mom asked. She named it. N moms bought. She got paid $Y."
+
+Anecdotes remain a valid format — they just need syntactic variation:
+start with the payout, start with the notification, start with the brand,
+start with the mom being asked.
 
 ---
 
