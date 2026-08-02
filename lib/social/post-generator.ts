@@ -31,7 +31,22 @@ const MAX_TOKENS = 1500;
 //   for real recommendations" (matter-of-fact statement, not
 //   convincing-you framing)
 // See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+// v6 (2026-08-02): variety-enforcement tightening after the weekly audit
+// caught 6/6 posts in the same anecdote format, with 5/6 sharing the same
+// "She named the [X] at [Y]" display template. Voice is unchanged (v5
+// remains locked). Changes:
+// - New FORMAT ROTATION section in SYSTEM_PROMPT: prefer a format not used
+//   in the recent window
+// - New TEMPLATE FATIGUE section: names the "She named the ___" anecdote
+//   template as retired and instructs syntactic variation
+// - New VISUAL VARIETY note nudging image_bg and eyebrow away from
+//   permutations of the same two choices
+// - Optional recentContentFormats field on GeneratorInputs so callers can
+//   surface the actual format distribution; user prompt renders it when
+//   present, and always tells the model to break shared visual rhythm in
+//   the recent headlines
+// See docs/content-audits/2026-08-02.md for the audit that prompted this.
+export const PROMPT_VERSION = "2026-08-02.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -264,6 +279,52 @@ Speaks to the silent voice saying "this isn't for me." Edge is welcome here. Exa
 
   "Move over skinny unrelatable influencers. Brands have moved on — they're paying regular moms big bucks now for the same recommendations they used to only pay celebrities for. Real moms. Real money. Find out more and get your cut at momfluence.app."
 
+# FORMAT ROTATION (mandatory)
+
+Variety across the five formats is the point of the taxonomy. The reader
+sees this feed day after day; if every post is an anecdote, the feed reads
+as one long story instead of a category-creating campaign.
+
+Rules:
+- Look at the RECENT ANGLES and (if provided) RECENT CONTENT FORMATS in
+  the user prompt. Do NOT pick a content_format that has been used in the
+  last 3 posts. If the last 3+ posts are all the same format, you MUST
+  pick a different one.
+- If in doubt, rotate. anecdote → direct → math → brand-callout →
+  objection-reframe → anecdote is a sensible cycle, but any rotation is
+  better than sameness.
+- "The anecdote was working" is not a reason to keep writing anecdotes.
+  Optimizing for one format is the optimizer's job downstream, not yours.
+
+# TEMPLATE FATIGUE (retired patterns)
+
+Even when the content_format is right, a repeated display/caption template
+reads as AI-slop. These specific templates are RETIRED — do not reuse them
+verbatim or with only the noun swapped:
+
+- Display: "She named the [product] / [preposition] the [place]."
+  (e.g. "She named the mittens / at the bus stop corner." — used 5 times
+  in a row and is now off-limits.)
+- Caption opener: "A regular mom in [City] was [doing routine thing].
+  Another mom asked which [X] she uses. She [named it / dropped the link].
+  N moms bought. She got paid $Y."
+  This exact chassis is exhausted. Anecdotes are still welcome — vary the
+  syntax: start with the payout, start with the group chat notification,
+  start with the mom being asked, start with the brand's POV, etc.
+
+More generally: scan the RECENT HEADLINES in the user prompt for a shared
+visual rhythm. If you see one, break it — don't extend it.
+
+# VISUAL VARIETY
+
+image_bg has six options for a reason. Don't default to warm-gradient or
+navy-coral-gradient every time — rotate through coral, navy, cream, and
+white-coral-ring too, matched to the post's mood.
+
+eyebrow: vary the phrasing. "REAL MOM, REAL MONEY" is one option, not a
+default. "TRUE STORY", "HEADS UP MOMS", "THE MATH", "BRANDS PAYING NOW",
+"POV", short punchy fragments — mix it up.
+
 # CHECK BEFORE SUBMITTING
 
 For every post you generate, verify ALL of these before output:
@@ -275,6 +336,8 @@ For every post you generate, verify ALL of these before output:
 5. Is "regular moms" used (not "everyday moms," not just "moms")?
 6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing?
 7. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
+8. Is the content_format different from the last 3 posts (if the user prompt lists them)?
+9. Does the display avoid the retired "She named the [X] at [Y]" template and any shared visual rhythm with the recent headlines list?
 
 If any check fails, fix and try again.
 
@@ -307,6 +370,11 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
 interface GeneratorInputs {
   recentAngleTags: string[];
   recentDisplays: string[];
+  /** Optional: content_format values of recent posts (most recent first).
+   *  When present, the user prompt shows the distribution so the model can
+   *  see which formats are over-represented and rotate. Backward compatible:
+   *  older callers that omit this still work. */
+  recentContentFormats?: string[];
 }
 
 function buildUserPrompt(inputs: GeneratorInputs): string {
@@ -316,13 +384,33 @@ function buildUserPrompt(inputs: GeneratorInputs): string {
   const displayList = inputs.recentDisplays.length > 0
     ? inputs.recentDisplays.slice(0, 12).map((d) => `- "${d.replace(/\n/g, " / ")}"`).join("\n")
     : "(none yet)";
+
+  let formatBlock = "";
+  if (inputs.recentContentFormats && inputs.recentContentFormats.length > 0) {
+    const recent = inputs.recentContentFormats.slice(0, 10);
+    const counts = recent.reduce<Record<string, number>>((acc, f) => {
+      acc[f] = (acc[f] ?? 0) + 1;
+      return acc;
+    }, {});
+    const dist = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([f, n]) => `${f} (${n})`)
+      .join(", ");
+    const lastThree = recent.slice(0, 3).join(", ");
+    formatBlock = `
+
+# RECENT CONTENT FORMATS (rotate away from these)
+Last ${recent.length} posts: ${dist}
+Last 3 posts (do NOT repeat any of these): ${lastThree}`;
+  }
+
   return `# RECENT ANGLES (don't repeat or paraphrase these)
 ${tagList}
 
 # RECENT HEADLINES (so you can hear the visual rhythm and avoid repeating)
-${displayList}
+${displayList}${formatBlock}
 
-Generate ONE new post per the system prompt. The angle must be distinct from everything above. Output ONLY the JSON.`;
+Generate ONE new post per the system prompt. The angle must be distinct from everything above. Scan the recent headlines for a shared visual rhythm (opening word, sentence shape, template) — if you find one, BREAK it, do not extend it. Pick a content_format that is NOT in the last 3 posts (if the recent formats list above shows it). Output ONLY the JSON.`;
 }
 
 function failsBlocklist(post: GeneratedPost): string | null {
