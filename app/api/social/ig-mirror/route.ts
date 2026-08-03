@@ -151,6 +151,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
+    console.error("[ig-mirror] META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set");
     return NextResponse.json({
       ok: false,
       mirrored: 0,
@@ -162,6 +163,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   }
 
   const pending = await listPendingIgMirror(10);
+  console.log(`[ig-mirror] pending=${pending.length}${pending.length ? ` slugs=${pending.map((r) => r.slug).join(",")}` : ""}`);
   if (pending.length === 0) {
     return NextResponse.json({
       ok: true,
@@ -181,6 +183,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // Vercel cron ignores response bodies, so the message field alone leaves
+    // no trace in runtime logs. Emit an error line too.
+    console.error(`[ig-mirror] auth/page-context failed:`, msg);
     return NextResponse.json({
       ok: false,
       mirrored: 0,
