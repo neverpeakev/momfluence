@@ -1,6 +1,9 @@
 # Momfluence — Product Thesis (locked)
 
-> **Last updated:** 2026-05-13 (the "rules just changed" rewrite)
+> **Last updated:** 2026-08-09 (v6 amendment: format-rotation + anecdote
+> guardrails after weekly audit surfaced 7-of-7-anecdote monoculture)
+> **Previous major update:** 2026-05-13 (the "rules just changed" rewrite —
+> v5 voice lock. Voice, vocabulary, canonical spine unchanged in v6.)
 > **Status:** This is the source of truth for everything user-facing.
 > Every ad, post, landing page, email, support reply, and Claude-generated
 > piece of content must trace back to this doc. The Claude post-generator
@@ -252,6 +255,52 @@ CTA. Every post.
 The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
+
+### Format rotation (added v6 — 2026-08-09)
+
+The five formats above are a variety axis, not a menu of interchangeable
+options. Feed variety is a first-class requirement:
+
+- **No format may appear more than 2 times in any 5-post window.** If
+  the last several posts are all one format, the generator must pick a
+  different one, even if the current angle would land well in the
+  overused format.
+- **When one format dominates**, prefer the underrepresented ones
+  (`direct`, `math`, `brand-callout`, `objection-reframe`) — these
+  can carry the same specificity as `anecdote` without inventing a
+  person.
+
+### Anecdote-specific guardrails (added v6)
+
+Anecdote is the format most prone to template calcification. When
+picking anecdote, actively rotate on all of these axes:
+
+- **Headline shape** — do NOT default to "She named the ___ / at the
+  ___." That template needs a 10-post rest. Rotate to dollar-first,
+  quote-first, moment-first, or paired-noun structures.
+- **Payout figure** — vary meaningfully. Do not reuse a specific
+  figure within a 10-post window.
+- **Count** — "four moms bought it" has been overused. Vary the count
+  (3, 7, 11, 14) or drop it entirely.
+- **City** — do not reuse a city within 10 posts.
+- **Venue** — do not reuse the specific venue (carpool line,
+  pediatrician's waiting room, gymnastics meet, cheer practice
+  pickup, field trip check-in, orchestra concert, snack shack line)
+  within 10 posts.
+
+### Visual rotation (added v6)
+
+`image_bg` has six values for a reason. The generator must actively
+rotate through them, matching mood to format:
+
+- `coral` — energetic, direct, brand-forward
+- `navy` — confident, math-heavy, "here's the number"
+- `cream` — calm, soft-storytelling anecdote
+- `warm-gradient` — warmth, group-chat energy
+- `navy-coral-gradient` — bold objection-reframe / edgy
+- `white-coral-ring` — clean, brand-callout, list-driven
+
+Defaulting to one background across every post is a variety failure.
 
 ---
 
