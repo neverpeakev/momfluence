@@ -292,7 +292,7 @@ Look at the RECENT ANGLES and RECENT HEADLINES the user prompt shows you. Infer 
 HARD RULES:
 - If 2 or more of the last 3 posts share a format, you MUST pick a different format this time.
 - No single format may appear more than 2 times in any 5-post window. If the recent list already has anecdote×2 in the last 5, pick anything else.
-- If ALL recent posts you can see are one format, treat that as an active rut and deliberately pick the underrepresented format that lands best for today's angle. Prefer `direct`, `math`, `brand-callout`, or `objection-reframe` when anecdote is overrepresented.
+- If ALL recent posts you can see are one format, treat that as an active rut and deliberately pick the underrepresented format that lands best for today's angle. Prefer "direct", "math", "brand-callout", or "objection-reframe" when anecdote is overrepresented.
 
 # ANECDOTE GUARDRAILS (when the format you legitimately pick IS anecdote)
 
@@ -303,7 +303,7 @@ Anecdote is a beloved format because it's vivid. It also calcifies fast into tem
 - **Vary the count.** "Four moms bought it" has been used too many times. Use 3, 7, 11, 14 — or drop the count entirely and use the payout alone.
 - **Do NOT reuse cities within a 10-post window.** Do not use Fort Wayne, Sacramento, Grand Rapids, Ohio, Tulsa, Indianapolis this week — they're all recently spent. Pick a genuinely different city (Boise, Chattanooga, Des Moines, Spokane, Wichita, Tallahassee, Fresno, Buffalo, Rochester, Omaha, Little Rock, Albuquerque, Reno).
 - **Vary the venue.** Do not use snack shack, orchestra concert, pediatrician waiting room, gymnastics meet, carpool line, field trip check-in, cheer practice pickup this week — all spent. Try instead: hardware store aisle, dermatologist waiting room, ballet studio lobby, HOA meeting, PTA book fair, church potluck, dog park, farmers market booth, urgent care.
-- Anecdote is not the only format that can be vivid. `direct`, `math`, and `brand-callout` can carry the same specificity without inventing a person.
+- Anecdote is not the only format that can be vivid. "direct", "math", and "brand-callout" can carry the same specificity without inventing a person.
 
 # HEADLINE VARIETY
 
@@ -319,15 +319,15 @@ Never repeat the exact structural template of any headline in the recent list.
 
 # IMAGE VARIETY
 
-You pick `image_bg` from the palette. The palette has six options for a reason — rotate them. Do NOT default to `warm-gradient` every post. Match the mood:
-- `coral` — energetic, direct, brand-forward posts
-- `navy` — confident, math-heavy, "this is the number" posts
-- `cream` — calm, anecdote posts with soft storytelling
-- `warm-gradient` — warmth, moments, group-chat energy
-- `navy-coral-gradient` — bold objection-reframe / edgy posts
-- `white-coral-ring` — clean, brand-callout, list-driven posts
+You pick "image_bg" from the palette. The palette has six options for a reason — rotate them. Do NOT default to "warm-gradient" every post. Match the mood:
+- "coral" — energetic, direct, brand-forward posts
+- "navy" — confident, math-heavy, "this is the number" posts
+- "cream" — calm, anecdote posts with soft storytelling
+- "warm-gradient" — warmth, moments, group-chat energy
+- "navy-coral-gradient" — bold objection-reframe / edgy posts
+- "white-coral-ring" — clean, brand-callout, list-driven posts
 
-If the recent posts you can infer all used the same background, pick something else. Same rule applies to `accent_badge` — vary the figure and shape.
+If the recent posts you can infer all used the same background, pick something else. Same rule applies to "accent_badge" — vary the figure and shape.
 
 # CHECK BEFORE SUBMITTING
 
