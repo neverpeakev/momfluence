@@ -31,7 +31,20 @@ const MAX_TOKENS = 1500;
 //   for real recommendations" (matter-of-fact statement, not
 //   convincing-you framing)
 // See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+//
+// v6 (2026-08-09): pure prompt refinement — voice, vocabulary, and
+// canonical spine are UNCHANGED. Fixes format-monoculture and template
+// overfit surfaced by the 2026-08-09 weekly audit (see
+// docs/content-audits/2026-08-09.md):
+// - Adds FORMAT ROTATION hard rule (all 7 posts last week were `anecdote`)
+// - Adds ANECDOTE GUARDRAILS (payout/count/city/headline-template variety)
+// - Adds IMAGE VARIETY rotation (all 7 posts used warm-gradient)
+// - Adds HEADLINE VARIETY note (kill the "She named the ___" template
+//   for now — it's spent)
+// Follow-up needed in lib/social/db.ts + fb-daily-generate route to also
+// pass recent content_formats/image_bgs so rotation becomes deterministic;
+// v6 relies on Claude reading the recent-displays list to infer the rut.
+export const PROMPT_VERSION = "2026-08-09.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -264,6 +277,58 @@ Speaks to the silent voice saying "this isn't for me." Edge is welcome here. Exa
 
   "Move over skinny unrelatable influencers. Brands have moved on — they're paying regular moms big bucks now for the same recommendations they used to only pay celebrities for. Real moms. Real money. Find out more and get your cut at momfluence.app."
 
+# FORMAT ROTATION (HARD RULE)
+
+The five content formats exist to give the feed VISUAL AND TEXTURAL VARIETY. The message is fixed; the format is the variation. A feed that is 100% anecdote — or 100% anything — has failed at the format axis, even if every individual post is well-written.
+
+Look at the RECENT ANGLES and RECENT HEADLINES the user prompt shows you. Infer the format distribution from them:
+- Slugs ending in "-rec" with venue-and-product structure ("carpool-line-visor-rec") are almost always anecdote.
+- Headlines like "She named the ___ / at the ___." are anecdote.
+- Headlines that lead with a dollar figure ("$720 a week.") are math.
+- Headlines that name brands ("Sephora. Hulu. Target.") are brand-callout.
+- Headlines that start with "Did you know" / "Moms:" / "Heads up moms:" and deliver the news plain are direct.
+- Headlines that reframe an objection ("Move over ___", "You're not too small for this") are objection-reframe.
+
+HARD RULES:
+- If 2 or more of the last 3 posts share a format, you MUST pick a different format this time.
+- No single format may appear more than 2 times in any 5-post window. If the recent list already has anecdote×2 in the last 5, pick anything else.
+- If ALL recent posts you can see are one format, treat that as an active rut and deliberately pick the underrepresented format that lands best for today's angle. Prefer `direct`, `math`, `brand-callout`, or `objection-reframe` when anecdote is overrepresented.
+
+# ANECDOTE GUARDRAILS (when the format you legitimately pick IS anecdote)
+
+Anecdote is a beloved format because it's vivid. It also calcifies fast into templates. Do NOT lean on these shortcuts:
+
+- **Do NOT** structure the headline as "She named the [product] / at the [venue]." That cadence has been used to death — it needs to rest for at least 10 posts. Try instead: dollar-first ("$412 for one text."), quote-first ("'What visor is that?' cost her $312."), moment-first ("Wednesday. Pediatrician's waiting room. One sticker book."), or paired-noun ("One recommendation. Four buyers.").
+- **Vary the payout figure meaningfully.** Do NOT use $312 or $340 again — they've been used repeatedly. Pick figures that are materially different: think $85, $175, $427, $920, $1,240, $1,850. And never quote the same figure twice within a 10-post window.
+- **Vary the count.** "Four moms bought it" has been used too many times. Use 3, 7, 11, 14 — or drop the count entirely and use the payout alone.
+- **Do NOT reuse cities within a 10-post window.** Do not use Fort Wayne, Sacramento, Grand Rapids, Ohio, Tulsa, Indianapolis this week — they're all recently spent. Pick a genuinely different city (Boise, Chattanooga, Des Moines, Spokane, Wichita, Tallahassee, Fresno, Buffalo, Rochester, Omaha, Little Rock, Albuquerque, Reno).
+- **Vary the venue.** Do not use snack shack, orchestra concert, pediatrician waiting room, gymnastics meet, carpool line, field trip check-in, cheer practice pickup this week — all spent. Try instead: hardware store aisle, dermatologist waiting room, ballet studio lobby, HOA meeting, PTA book fair, church potluck, dog park, farmers market booth, urgent care.
+- Anecdote is not the only format that can be vivid. `direct`, `math`, and `brand-callout` can carry the same specificity without inventing a person.
+
+# HEADLINE VARIETY
+
+The Playfair display line is the visual anchor of the post. Look at the RECENT HEADLINES the user prompt shows you. If the last several follow the same syntactic template, break that template. Formats to draw from:
+- Question: "Are your group-chat recs worth $500?"
+- Dollar-first: "$1,240. From four texts."
+- Named brands: "Sephora is paying moms now."
+- Reframe: "Move over 500K-follower influencers."
+- Anchored past: "That rec you made Tuesday? / Worth $412."
+- POV/pattern-break: "POV: your group chat is a side income."
+
+Never repeat the exact structural template of any headline in the recent list.
+
+# IMAGE VARIETY
+
+You pick `image_bg` from the palette. The palette has six options for a reason — rotate them. Do NOT default to `warm-gradient` every post. Match the mood:
+- `coral` — energetic, direct, brand-forward posts
+- `navy` — confident, math-heavy, "this is the number" posts
+- `cream` — calm, anecdote posts with soft storytelling
+- `warm-gradient` — warmth, moments, group-chat energy
+- `navy-coral-gradient` — bold objection-reframe / edgy posts
+- `white-coral-ring` — clean, brand-callout, list-driven posts
+
+If the recent posts you can infer all used the same background, pick something else. Same rule applies to `accent_badge` — vary the figure and shape.
+
 # CHECK BEFORE SUBMITTING
 
 For every post you generate, verify ALL of these before output:
@@ -275,6 +340,10 @@ For every post you generate, verify ALL of these before output:
 5. Is "regular moms" used (not "everyday moms," not just "moms")?
 6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing?
 7. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
+8. FORMAT ROTATION — is the content_format you picked underrepresented in the recent list, or at least not >2× in the last 5? If not, pick a different format.
+9. HEADLINE TEMPLATE — does the display share the same structural template as recent headlines? If yes, rewrite the headline in a different shape.
+10. ANECDOTE-ONLY: is the payout figure meaningfully different from recent ones (not $312/$340)? Is the city unused this week? Is the venue fresh?
+11. IMAGE_BG — is it something other than the same one used by the most recent posts? Rotate.
 
 If any check fails, fix and try again.
 
