@@ -181,13 +181,34 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    const wrapped = `auth/page-context: ${msg}`;
+    // Log so this shows up in Vercel runtime logs. Without this the route
+    // returns 200 silently and the health-check routine can't tell it's broken.
+    console.error(`[ig-mirror] ${wrapped}`);
+    // Mark every pending row ig_failed with the same message so (a) the daily
+    // health check sees a real error_message instead of a phantom-pending row,
+    // and (b) rows stop accumulating into a backlog that would bulk-publish
+    // stale content the moment the IG link is restored. Manual reset (SQL:
+    // status='fb_published', error_message=NULL, errored_at=NULL) required
+    // once the underlying auth/link issue is fixed.
+    const details: MirrorResult["details"] = [];
+    let failed = 0;
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", wrapped);
+        failed++;
+        details.push({ slug: row.slug, error: wrapped });
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark row failed:`, markErr);
+      }
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed,
+      details,
       duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
+      message: wrapped,
     });
   }
 
