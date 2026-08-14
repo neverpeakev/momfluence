@@ -151,6 +151,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
+    console.error("[ig-mirror] early-return: META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set");
     return NextResponse.json({
       ok: false,
       mirrored: 0,
@@ -162,6 +163,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   }
 
   const pending = await listPendingIgMirror(10);
+  console.log(`[ig-mirror] pending rows: ${pending.length}${pending.length ? ` (slugs: ${pending.map((r) => r.slug).join(", ")})` : ""}`);
   if (pending.length === 0) {
     return NextResponse.json({
       ok: true,
@@ -181,6 +183,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[ig-mirror] fetchPageContext failed: ${msg}`);
     return NextResponse.json({
       ok: false,
       mirrored: 0,
@@ -212,6 +215,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
       details.push({ slug: row.slug, ig_media_id: mediaId });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[ig-mirror] publishToIg failed for ${row.slug}: ${msg}`);
       failed++;
       details.push({ slug: row.slug, error: msg });
       try {
