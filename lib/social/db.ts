@@ -150,6 +150,22 @@ export async function markFailed(
   if (error) throw new Error(`markFailed: ${error.message}`);
 }
 
+export async function noteTransientFailure(
+  ids: string[],
+  message: string
+): Promise<void> {
+  if (ids.length === 0) return;
+  const sb = admin();
+  const { error } = await sb
+    .from("generated_posts")
+    .update({
+      errored_at: new Date().toISOString(),
+      error_message: message.slice(0, 4000),
+    })
+    .in("id", ids);
+  if (error) throw new Error(`noteTransientFailure: ${error.message}`);
+}
+
 export async function listPendingIgMirror(limit = 10): Promise<GeneratedPostRow[]> {
   const sb = admin();
   const { data, error } = await sb
