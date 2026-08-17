@@ -150,16 +150,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
 
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
-  if (!userToken || !pageId) {
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
-    });
-  }
 
   const pending = await listPendingIgMirror(10);
   if (pending.length === 0) {
@@ -173,6 +163,37 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     });
   }
 
+  // Top-level failures (missing env, expired token, no linked IG account)
+  // used to return 200 with just a message body and leave the pending rows
+  // untouched — status stayed 'fb_published', error_message stayed NULL,
+  // and the daily health check saw nothing wrong. That is how a broken
+  // token can silently strand every subsequent day's post. Any top-level
+  // failure now marks every already-loaded pending row as ig_failed so
+  // the DB carries a visible error trail.
+  async function failAllPending(reason: string) {
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", reason);
+      } catch (markErr) {
+        console.error(`[ig-mirror] failAllPending: could not mark ${row.slug}:`, markErr);
+      }
+    }
+  }
+
+  if (!userToken || !pageId) {
+    const msg = "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set";
+    console.error(`[ig-mirror] ${msg}`);
+    await failAllPending(msg);
+    return NextResponse.json({
+      ok: false,
+      mirrored: 0,
+      failed: pending.length,
+      details: pending.map((r) => ({ slug: r.slug, error: msg })),
+      duration_ms: Date.now() - started,
+      message: msg,
+    });
+  }
+
   let pageToken: string;
   let igId: string;
   try {
@@ -181,13 +202,16 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    const wrapped = `auth/page-context: ${msg}`;
+    console.error(`[ig-mirror] ${wrapped}`);
+    await failAllPending(wrapped);
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details: pending.map((r) => ({ slug: r.slug, error: wrapped })),
       duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
+      message: wrapped,
     });
   }
 
