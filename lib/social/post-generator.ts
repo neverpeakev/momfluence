@@ -337,6 +337,30 @@ function failsBlocklist(post: GeneratedPost): string | null {
   return null;
 }
 
+/** Walk the string; inside quoted (non-escaped) regions, replace raw
+ *  newline/carriage-return/tab bytes with their JSON escape sequences.
+ *  Leaves everything outside strings — and already-escaped sequences —
+ *  untouched. Cheap safety net for the model emitting a literal LF where
+ *  the prompt asked for `\n`. */
+export function escapeControlCharsInJsonStrings(s: string): string {
+  let out = "";
+  let inString = false;
+  let escape = false;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (escape) { out += ch; escape = false; continue; }
+    if (ch === "\\") { out += ch; escape = true; continue; }
+    if (ch === '"') { inString = !inString; out += ch; continue; }
+    if (inString) {
+      if (ch === "\n") { out += "\\n"; continue; }
+      if (ch === "\r") { out += "\\r"; continue; }
+      if (ch === "\t") { out += "\\t"; continue; }
+    }
+    out += ch;
+  }
+  return out;
+}
+
 export interface GenerateResult {
   post: GeneratedPost;
   attempts: number;
@@ -383,8 +407,16 @@ export async function generateDailyPost(
     try {
       parsed = JSON.parse(cleaned);
     } catch {
-      lastError = `not valid JSON (first 200 chars: ${cleaned.slice(0, 200)})`;
-      continue;
+      // The prompt tells the model `display` "can use \n for line break".
+      // Some responses emit a literal newline inside the JSON string instead
+      // of the escape sequence, which JSON.parse rejects. Retry once after
+      // escaping raw control chars that appear inside quoted string values.
+      try {
+        parsed = JSON.parse(escapeControlCharsInJsonStrings(cleaned));
+      } catch {
+        lastError = `not valid JSON (first 200 chars: ${cleaned.slice(0, 200)})`;
+        continue;
+      }
     }
 
     const validated = GeneratedPostSchema.safeParse(parsed);
