@@ -65,7 +65,14 @@ async function fetchPageContext(userToken: string, pageId: string): Promise<{ pa
   const accountsData = JSON.parse(accountsText) as { data?: Array<{ id: string; access_token: string }> };
   const page = (accountsData.data ?? []).find((p) => p.id === pageId);
   if (!page?.access_token) throw new Error(`Page ${pageId} access_token unavailable`);
-  // Linked IG account
+
+  // Resolve the linked IG Business Account. Prefer an explicit env override
+  // (META_IG_USER_ID) so we don't depend on the instagram_business_account
+  // Graph edge, which returns empty unless the token carries instagram_basic
+  // + instagram_content_publish and the account link is fully propagated.
+  const igOverride = process.env.META_IG_USER_ID?.trim();
+  if (igOverride) return { pageToken: page.access_token, igId: igOverride };
+
   const igRes = await fetch(
     `${META_BASE}/${pageId}?fields=instagram_business_account&access_token=${encodeURIComponent(page.access_token)}`
   );
@@ -73,7 +80,12 @@ async function fetchPageContext(userToken: string, pageId: string): Promise<{ pa
   if (!igRes.ok) throw new Error(`/${pageId} ig lookup → ${igRes.status}: ${igText.slice(0, 300)}`);
   const igData = JSON.parse(igText) as { instagram_business_account?: { id: string } };
   const igId = igData.instagram_business_account?.id;
-  if (!igId) throw new Error(`No Instagram Business Account linked to FB Page ${pageId}`);
+  if (!igId) {
+    throw new Error(
+      `No Instagram Business Account linked to FB Page ${pageId} (edge returned empty). ` +
+        `Set META_IG_USER_ID or ensure the token has instagram_basic + instagram_content_publish.`
+    );
+  }
   return { pageToken: page.access_token, igId };
 }
 
@@ -151,14 +163,19 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
-    });
+    const message = "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set";
+    console.error(`[ig-mirror] ${message}`);
+    return NextResponse.json(
+      {
+        ok: false,
+        mirrored: 0,
+        failed: 0,
+        details: [],
+        duration_ms: Date.now() - started,
+        message,
+      },
+      { status: 500 }
+    );
   }
 
   const pending = await listPendingIgMirror(10);
@@ -180,15 +197,29 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     pageToken = ctx.pageToken;
     igId = ctx.igId;
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
-    });
+    const msg = `auth/page-context: ${e instanceof Error ? e.message : String(e)}`;
+    console.error(`[ig-mirror] ${msg}`);
+    // Persist the failure onto the pending rows so it surfaces in the DB
+    // instead of vanishing into an HTTP 200. Without this, a broken IG link
+    // leaves rows stuck at fb_published forever with no error recorded.
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", msg);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark row ${row.slug} failed:`, markErr);
+      }
+    }
+    return NextResponse.json(
+      {
+        ok: false,
+        mirrored: 0,
+        failed: pending.length,
+        details: pending.map((r) => ({ slug: r.slug, error: msg })),
+        duration_ms: Date.now() - started,
+        message: msg,
+      },
+      { status: 500 }
+    );
   }
 
   // Pre-warm the render endpoint for each pending slug. IG often fails
@@ -222,13 +253,19 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     }
   }
 
-  return NextResponse.json({
-    ok: failed === 0,
-    mirrored,
-    failed,
-    details,
-    duration_ms: Date.now() - started,
-  });
+  if (failed > 0) {
+    console.error(`[ig-mirror] ${failed}/${pending.length} rows failed to mirror`, details);
+  }
+  return NextResponse.json(
+    {
+      ok: failed === 0,
+      mirrored,
+      failed,
+      details,
+      duration_ms: Date.now() - started,
+    },
+    { status: failed === 0 ? 200 : 500 }
+  );
 }
 
 export async function GET(req: NextRequest) {
