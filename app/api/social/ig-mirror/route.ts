@@ -163,6 +163,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
 
   const pending = await listPendingIgMirror(10);
   if (pending.length === 0) {
+    console.log("[ig-mirror] nothing to mirror");
     return NextResponse.json({
       ok: true,
       mirrored: 0,
@@ -180,12 +181,31 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     pageToken = ctx.pageToken;
     igId = ctx.igId;
   } catch (e) {
+    // Meta-side failure (IG account unlinked from FB Page, revoked token,
+    // missing scope). This is the whole batch's fault, not any single row's,
+    // but leaving the rows at status=fb_published silently makes the failure
+    // invisible: the daily health check can't distinguish "mirror hasn't run
+    // yet" from "mirror ran and Meta rejected the whole batch." Mark every
+    // pending row ig_failed with the context error so the state is durable
+    // and the health check surfaces it. Manual reset is required to retry
+    // once the Meta-side link/scope is restored.
     const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[ig-mirror] page-context failed, marking ${pending.length} pending rows ig_failed: ${msg}`);
+    const details: MirrorResult["details"] = [];
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", `auth/page-context: ${msg}`);
+        details.push({ slug: row.slug, error: `auth/page-context: ${msg}` });
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark row ${row.slug} failed:`, markErr);
+        details.push({ slug: row.slug, error: `auth/page-context (+ mark failed): ${msg}` });
+      }
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details,
       duration_ms: Date.now() - started,
       message: `auth/page-context: ${msg}`,
     });
@@ -222,6 +242,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     }
   }
 
+  console.log(`[ig-mirror] done: mirrored=${mirrored} failed=${failed} pending=${pending.length}`);
   return NextResponse.json({
     ok: failed === 0,
     mirrored,
