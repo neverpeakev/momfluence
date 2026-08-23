@@ -31,7 +31,20 @@ const MAX_TOKENS = 1500;
 //   for real recommendations" (matter-of-fact statement, not
 //   convincing-you framing)
 // See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+// v6: unchanged voice, added format-rotation feedback loop.
+// The 2026-08-23 weekly audit found the generator had drifted into a
+// 26-day, 26-post anecdote monoculture, every headline of the form
+// "She named the ___ / at [school event]". Root cause was that Claude
+// never saw its own recent content_format distribution — recentForContext
+// only fed back angle_tags + displays. v6:
+// - GeneratorInputs now includes recentContentFormats (last 15+)
+// - buildUserPrompt renders that as a visible distribution
+// - SYSTEM_PROMPT adds a FORMAT ROTATION section requiring a switch away
+//   from any format used in the last 3 posts
+// - "She named the" added to BLOCKLIST (case-insensitive) as a hard block
+//   for the specific display-pattern rut. Not a voice change — the
+//   underlying anecdote texture stays fully in rotation.
+export const PROMPT_VERSION = "2026-08-24.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -126,6 +139,11 @@ const BLOCKLIST: readonly string[] = [
   "start earning",
   "your opportunity",
   "exclusive access",
+  // v6: display-pattern rut. "She named the [product] at [event]" ran for
+  // 26 consecutive posts. Cooling this shape off; the anecdote format
+  // itself remains fully in rotation, just via different openers /
+  // display shapes. See docs/content-audits/2026-08-23.md.
+  "she named the",
 ];
 
 /** "Passive income" requires qualification — flag as-is, allow when paired
@@ -239,6 +257,17 @@ The $5/mo membership is part of the product but does NOT need to appear in every
 
 You MUST tag each post with one of these five textures. The message is identical across all of them; the format is the variation.
 
+## FORMAT ROTATION (v6, non-negotiable)
+
+The five formats are the primary variation axis. Recent-format distribution is shown in the user message under "# RECENT CONTENT FORMATS". Rotation rules:
+
+1. Do NOT pick a content_format that appears in the LAST 3 entries of the recent-formats list.
+2. If any of the five formats is entirely absent from the recent-formats window shown, prefer it — the goal is at least one appearance of every format per 7 posts.
+3. Never ship two consecutive posts in the same format. Never ship three of any format in any consecutive 5-post window.
+4. Similarly, do NOT re-use a display-line shape (opener + subject + place pattern) that appears in the "# RECENT HEADLINES" list. Rotate the visual rhythm as aggressively as you rotate the format. In particular, "She named the ___" as a display-line opener is retired — pick a different display shape.
+
+If the recent-formats list is empty or has fewer than 3 entries (early days), pick any format; the rotation rule only bites once history exists.
+
 ## 1. content_format: "anecdote"
 A specific person, in a specific place, with a specific number. Example:
 
@@ -307,7 +336,17 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
 interface GeneratorInputs {
   recentAngleTags: string[];
   recentDisplays: string[];
+  /** v6: last N content_formats used, newest-first. Empty on early runs. */
+  recentContentFormats: string[];
 }
+
+const ALL_CONTENT_FORMATS = [
+  "anecdote",
+  "direct",
+  "math",
+  "brand-callout",
+  "objection-reframe",
+] as const;
 
 function buildUserPrompt(inputs: GeneratorInputs): string {
   const tagList = inputs.recentAngleTags.length > 0
@@ -316,13 +355,27 @@ function buildUserPrompt(inputs: GeneratorInputs): string {
   const displayList = inputs.recentDisplays.length > 0
     ? inputs.recentDisplays.slice(0, 12).map((d) => `- "${d.replace(/\n/g, " / ")}"`).join("\n")
     : "(none yet)";
+
+  const recentFormats = inputs.recentContentFormats.slice(0, 15);
+  const formatList = recentFormats.length > 0
+    ? recentFormats.map((f, i) => `${i + 1}. ${f}${i < 3 ? "  ← last 3, DO NOT PICK" : ""}`).join("\n")
+    : "(none yet — pick any format)";
+  const usedFormats = new Set(recentFormats);
+  const missingFormats = ALL_CONTENT_FORMATS.filter((f) => !usedFormats.has(f));
+  const missingLine = recentFormats.length >= 5 && missingFormats.length > 0
+    ? `\n\nFormats missing entirely from the recent window (prefer one of these): ${missingFormats.join(", ")}`
+    : "";
+
   return `# RECENT ANGLES (don't repeat or paraphrase these)
 ${tagList}
 
 # RECENT HEADLINES (so you can hear the visual rhythm and avoid repeating)
 ${displayList}
 
-Generate ONE new post per the system prompt. The angle must be distinct from everything above. Output ONLY the JSON.`;
+# RECENT CONTENT FORMATS (newest first — enforce format rotation per system prompt)
+${formatList}${missingLine}
+
+Generate ONE new post per the system prompt. The angle must be distinct from everything above. The content_format MUST NOT match any of the last 3 formats listed. Output ONLY the JSON.`;
 }
 
 function failsBlocklist(post: GeneratedPost): string | null {
@@ -356,6 +409,8 @@ export async function generateDailyPost(
   maxAttempts = 3
 ): Promise<GenerateResult> {
   const recentTagsLower = new Set(inputs.recentAngleTags.map((t) => t.toLowerCase()));
+  // v6: reject any pick that matches one of the last 3 content_formats.
+  const forbiddenFormats = new Set(inputs.recentContentFormats.slice(0, 3));
   let lastError = "no attempts";
   let lastRaw = "";
 
@@ -396,6 +451,11 @@ export async function generateDailyPost(
     const post = validated.data;
     if (recentTagsLower.has(post.angle_tag.toLowerCase())) {
       lastError = `angle_tag "${post.angle_tag}" matches a recent post`;
+      continue;
+    }
+
+    if (forbiddenFormats.has(post.content_format)) {
+      lastError = `content_format "${post.content_format}" is one of the last 3 used (${[...forbiddenFormats].join(", ")}). Rotate to a different format.`;
       continue;
     }
 
