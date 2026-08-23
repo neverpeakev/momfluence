@@ -253,6 +253,27 @@ The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
 
+### Format-diversity target (added 2026-08-24)
+
+The five formats are the primary variation axis, so the generator must
+actually spread across them. The rules the generator enforces:
+
+- No content_format may match any of the **last 3** posts' formats.
+- No format may appear **>3 times in any consecutive 7-post window**.
+- The goal shape over any 7-day window is **at least one appearance of
+  each of the five formats**.
+- Display-line rhythms rotate at the same cadence as formats. If a
+  specific display shape (e.g. "She named the ___ / at [event]") has
+  appeared in the last window, pick a different shape.
+
+Rationale: the 2026-08-23 weekly audit found the generator had drifted
+into a 26-day, 26-post pure-anecdote monoculture, all with the same
+"She named the ___" display opener. Root cause was that Claude was
+never shown its own recent content_format distribution. v6 of
+`lib/social/post-generator.ts` fixes the feedback loop (see
+`docs/content-audits/2026-08-23.md` for the full trail). This section
+is what the rotation rules trace back to.
+
 ---
 
 ## The qualifier (front-and-center)
