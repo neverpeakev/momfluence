@@ -151,6 +151,10 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
+    console.error("[ig-mirror] env missing", {
+      hasToken: !!userToken,
+      hasPageId: !!pageId,
+    });
     return NextResponse.json({
       ok: false,
       mirrored: 0,
@@ -162,6 +166,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   }
 
   const pending = await listPendingIgMirror(10);
+  console.log(`[ig-mirror] pending rows: ${pending.length}`, {
+    slugs: pending.map((p) => p.slug),
+  });
   if (pending.length === 0) {
     return NextResponse.json({
       ok: true,
@@ -179,13 +186,26 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     const ctx = await fetchPageContext(userToken, pageId);
     pageToken = ctx.pageToken;
     igId = ctx.igId;
+    console.log(`[ig-mirror] page context resolved, igId=${igId}`);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[ig-mirror] fetchPageContext failed: ${msg}`);
+    // Mark every pending row as ig_failed so the state reflects reality
+    // and a human sees the error_message in the DB (previously the endpoint
+    // returned 200 with the error only in the response body, which is not
+    // captured anywhere).
+    for (const row of pending) {
+      try {
+        await markFailed(row.id, "ig", `auth/page-context: ${msg}`);
+      } catch (markErr) {
+        console.error(`[ig-mirror] also failed to mark row failed:`, markErr);
+      }
+    }
     return NextResponse.json({
       ok: false,
       mirrored: 0,
-      failed: 0,
-      details: [],
+      failed: pending.length,
+      details: pending.map((r) => ({ slug: r.slug, error: `auth/page-context: ${msg}` })),
       duration_ms: Date.now() - started,
       message: `auth/page-context: ${msg}`,
     });
