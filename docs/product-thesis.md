@@ -249,6 +249,26 @@ authentic alternative.
 the eligibility puncture (no million followers / no celebrity), the
 CTA. Every post.
 
+### Weekly format rotation (added 2026-08-30)
+
+The five formats are a **rotation**, not a menu. The 2026-08-30 audit
+found six consecutive days of `anecdote` posts, each with the same
+"A regular mom in [City] was [doing thing], she got paid $X" template —
+individually clean, collectively a bot signal. Rules:
+
+- Any single format appearing ≥3 times in the last 7 days is
+  **over-used**. The generator is instructed to avoid it unless the
+  angle truly requires it.
+- Any format missing from the last 7 days is **under-used** and
+  preferred. `brand-callout`, `direct`, `math`, and `objection-reframe`
+  should each land at least once per week.
+- Within a format, opener/structure must also rotate. Reusing
+  "A regular mom in [City]..." + specific $ receipt on consecutive
+  days is a variety failure even when the format tag differs.
+- Invented specific dollar receipts ("she got paid $340") are worked
+  examples, not testimonial promises — vary the specificity level and
+  don't stack recycled amounts ($312/$340 repeating) across the week.
+
 The weekly audit (Sunday) rolls up by content_format to tell us which
 texture is producing the highest-quality posts and which is consistently
 weaker. The optimizer dashboard groups ad variants the same way.
