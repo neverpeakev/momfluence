@@ -18,20 +18,23 @@ import { z } from "zod";
 
 const MODEL = "claude-opus-4-7";
 const MAX_TOKENS = 1500;
-// v5: voice locked after multi-round iteration with the founder. Major
-// changes from v4:
-// - "regular moms" replaces "everyday moms" (less brand-tradey)
-// - "big bucks" / "real money" replaces "rev share" entirely
-// - "Find out more at momfluence.app" replaces "Get yours" / "$5/mo to
-//   unlock them" as the canonical CTA (softer two-step ask)
-// - "Gate-kept" is DEAD — replaced with "used to only pay celebrities"
-// - "That's so 2025" is DEAD (was tried; didn't land)
-// - "We work with brands who actually want to pay you for your
-//   influence" is DEAD — replaced with "Brands are paying real money
-//   for real recommendations" (matter-of-fact statement, not
-//   convincing-you framing)
-// See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+// v6 (2026-08-30): weekly audit found format collapse — 6/6 posts in the
+// preceding week were `anecdote` with an "A regular mom in [City]..."
+// opener and "She named the X / at Y" headline. Voice, vocabulary and
+// canonical-message compliance were all clean; the failure was at the
+// weekly level (variety). Changes from v5:
+// - Generator now receives recent content_formats and is instructed to
+//   rotate — an "under-used format" hint pushes it off the anecdote
+//   default when anecdote is over-represented in the last 7 days.
+// - New guidance against reusing the "A regular mom in [City] was
+//   [doing thing]..." + specific $ payout template on consecutive days.
+// - Reinforces thesis "worked examples, not testimonial promises" — the
+//   invented specific mom + specific city + specific check pattern was
+//   drifting into fabricated-testimonial territory.
+// v5 voice remains LOCKED. Vocabulary tables unchanged.
+// See docs/product-thesis.md for the locked vocabulary tables and the
+// "Content formats" section (updated for weekly rotation requirement).
+export const PROMPT_VERSION = "2026-08-30.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -264,6 +267,29 @@ Speaks to the silent voice saying "this isn't for me." Edge is welcome here. Exa
 
   "Move over skinny unrelatable influencers. Brands have moved on — they're paying regular moms big bucks now for the same recommendations they used to only pay celebrities for. Real moms. Real money. Find out more and get your cut at momfluence.app."
 
+# WEEKLY VARIETY IS A HARD REQUIREMENT
+
+The reader sees these posts across a whole week. If every post uses the SAME
+format and SAME opener with only the noun swapped, it reads as a bot even
+when each individual post is clean. Two variety axes matter:
+
+1. **Format rotation.** The five content formats (anecdote, direct, math,
+   brand-callout, objection-reframe) must rotate. If the "recent formats"
+   list below shows one format dominating the last 7 days, deliberately
+   pick a DIFFERENT format. Do not default to anecdote — anecdote is a
+   texture, not a fallback. brand-callout and objection-reframe are
+   under-used in general; direct and math work great as a break from
+   anecdote runs.
+
+2. **Fresh openers within a format.** Do NOT reuse a template opener on
+   consecutive days. Specifically for anecdote: if the last few posts
+   opened with "A regular mom in [City]..." followed by a specific $
+   payout, pick a different anecdote texture — an anchored-moment opener
+   ("Heads up moms: the tape you sent to your group chat last week..."),
+   or drop the city and specific-check framing entirely. The thesis says
+   "worked examples," not "invented testimonials with fake dollar
+   receipts." Vary the specificity level, not just the noun.
+
 # CHECK BEFORE SUBMITTING
 
 For every post you generate, verify ALL of these before output:
@@ -275,6 +301,7 @@ For every post you generate, verify ALL of these before output:
 5. Is "regular moms" used (not "everyday moms," not just "moms")?
 6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing?
 7. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
+8. Does the chosen format break the recent-format streak, and does the opener/structure differ from recent posts (not just the noun)?
 
 If any check fails, fix and try again.
 
@@ -307,6 +334,38 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
 interface GeneratorInputs {
   recentAngleTags: string[];
   recentDisplays: string[];
+  /** Optional: last N content_format tags (newest first). Used to push
+   *  format rotation and flag under-used formats. Absent → generator
+   *  still runs, just without the rotation nudge. */
+  recentContentFormats?: string[];
+}
+
+const ALL_FORMATS = [
+  "anecdote",
+  "direct",
+  "math",
+  "brand-callout",
+  "objection-reframe",
+] as const;
+
+function formatRotationHint(recent: string[]): string {
+  if (recent.length === 0) {
+    return "(no recent format history — pick whichever fits the angle)";
+  }
+  const lastWeek = recent.slice(0, 7);
+  const counts = new Map<string, number>();
+  for (const f of lastWeek) counts.set(f, (counts.get(f) ?? 0) + 1);
+  const dominant = [...counts.entries()].filter(([, n]) => n >= 3).map(([f]) => f);
+  const missing = ALL_FORMATS.filter((f) => !counts.has(f));
+  const lines: string[] = [];
+  lines.push(`Last ${lastWeek.length} posts by format: ${lastWeek.join(" → ")}`);
+  if (dominant.length > 0) {
+    lines.push(`OVER-USED (${dominant.join(", ")} appeared ≥3× in the last 7 days) — do NOT pick these unless the angle truly requires it.`);
+  }
+  if (missing.length > 0) {
+    lines.push(`UNDER-USED (missing from the last 7 days): ${missing.join(", ")} — strongly prefer one of these.`);
+  }
+  return lines.join("\n");
 }
 
 function buildUserPrompt(inputs: GeneratorInputs): string {
@@ -316,13 +375,17 @@ function buildUserPrompt(inputs: GeneratorInputs): string {
   const displayList = inputs.recentDisplays.length > 0
     ? inputs.recentDisplays.slice(0, 12).map((d) => `- "${d.replace(/\n/g, " / ")}"`).join("\n")
     : "(none yet)";
+  const formatHint = formatRotationHint(inputs.recentContentFormats ?? []);
   return `# RECENT ANGLES (don't repeat or paraphrase these)
 ${tagList}
 
 # RECENT HEADLINES (so you can hear the visual rhythm and avoid repeating)
 ${displayList}
 
-Generate ONE new post per the system prompt. The angle must be distinct from everything above. Output ONLY the JSON.`;
+# RECENT FORMAT MIX — rotate away from what's dominant
+${formatHint}
+
+Generate ONE new post per the system prompt. The angle must be distinct from everything above, AND the content_format must break the streak per the rotation hint above. Output ONLY the JSON.`;
 }
 
 function failsBlocklist(post: GeneratedPost): string | null {
