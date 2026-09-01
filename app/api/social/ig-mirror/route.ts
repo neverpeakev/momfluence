@@ -151,6 +151,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
+    console.error("[ig-mirror] META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set");
     return NextResponse.json({
       ok: false,
       mirrored: 0,
@@ -163,6 +164,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
 
   const pending = await listPendingIgMirror(10);
   if (pending.length === 0) {
+    console.log("[ig-mirror] nothing to mirror");
     return NextResponse.json({
       ok: true,
       mirrored: 0,
@@ -181,6 +183,15 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // Systemic failure — every pending row is affected. Log loudly so this
+    // shows up as an error line in Vercel logs; do NOT auto-mark rows
+    // ig_failed since page-context errors are often transient (rate limit,
+    // token refresh) and we don't want a Meta hiccup to permanently
+    // discard the daily post. Per-row publishToIg errors below still do.
+    console.error(
+      `[ig-mirror] page-context failed, ${pending.length} row(s) left in fb_published:`,
+      msg
+    );
     return NextResponse.json({
       ok: false,
       mirrored: 0,
@@ -220,6 +231,12 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
         console.error(`[ig-mirror] also failed to mark row failed:`, markErr);
       }
     }
+  }
+
+  if (failed > 0) {
+    console.error(`[ig-mirror] mirrored=${mirrored} failed=${failed}`);
+  } else {
+    console.log(`[ig-mirror] mirrored=${mirrored}`);
   }
 
   return NextResponse.json({
