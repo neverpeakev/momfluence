@@ -18,20 +18,28 @@ import { z } from "zod";
 
 const MODEL = "claude-opus-4-7";
 const MAX_TOKENS = 1500;
-// v5: voice locked after multi-round iteration with the founder. Major
-// changes from v4:
+// v6 (2026-09-06): voice unchanged from v5 — this bump is a rotation
+// refinement, not a voice pivot. The 2026-09-06 weekly audit found 7/7
+// posts across the prior week were `anecdote` format, with visually
+// identical "She named the [X] at the [Y]" headlines. The generator was
+// only seeing recent angle_tags + displays; it had no signal to rotate
+// content_format or image_bg. v6 fixes that:
+//   - GeneratorInputs now carries recentContentFormats + recentImageBgs
+//   - SYSTEM_PROMPT gains a hard "format rotation" rule (cannot match
+//     any of the last 3 formats)
+//   - buildUserPrompt surfaces the recent format + bg lists so Claude
+//     can see what to avoid
+//   - generateDailyPost rejects a generation whose content_format
+//     collides with any of the last 3, forcing a retry
+// v5 changes preserved from prior header:
 // - "regular moms" replaces "everyday moms" (less brand-tradey)
 // - "big bucks" / "real money" replaces "rev share" entirely
-// - "Find out more at momfluence.app" replaces "Get yours" / "$5/mo to
-//   unlock them" as the canonical CTA (softer two-step ask)
-// - "Gate-kept" is DEAD — replaced with "used to only pay celebrities"
-// - "That's so 2025" is DEAD (was tried; didn't land)
-// - "We work with brands who actually want to pay you for your
-//   influence" is DEAD — replaced with "Brands are paying real money
-//   for real recommendations" (matter-of-fact statement, not
-//   convincing-you framing)
-// See docs/product-thesis.md for the locked vocabulary tables.
-export const PROMPT_VERSION = "2026-05-13.v5";
+// - "Find out more at momfluence.app" is the canonical CTA
+// - "Gate-kept," "that's so 2025," "we work with brands who actually..."
+//   are DEAD phrases
+// See docs/product-thesis.md for the locked vocabulary tables and the
+// format-rotation rule.
+export const PROMPT_VERSION = "2026-09-06.v6";
 
 function client(): Anthropic {
   const apiKey = process.env.anthropic_public_api_key ?? process.env.ANTHROPIC_API_KEY;
@@ -214,6 +222,15 @@ LOCKED CTA structure: "Find out more at momfluence.app" or "Find out more and ge
 
 OPTIONAL tagline: "Real moms. Real money. Real easy." Three beats. Use selectively — maybe 1 in 4 posts. Never every post.
 
+# FORMAT ROTATION (HARD CONSTRAINT — non-negotiable)
+
+The five content formats exist so that the same canonical news lands with different textures across the week. Repeating one format across consecutive days destroys that variety and makes the feed read as templated.
+
+Rules:
+1. Your post's content_format MUST NOT match any of the last 3 formats shown in the user prompt. This is enforced by validation — a generation that collides will be rejected and retried.
+2. Do NOT reuse the structural rhyme of recent headlines. If the last several displays all opened with "She named the [X]", your new post must break that shape — pick a question, a direct address, a brand list, a number-first math beat, an incredulous "Wait —", a POV meme opener, whatever fits the format you chose. The point is that a reader scrolling the Momfluence page should not be able to predict the next post's headline shape from the previous three.
+3. Prefer an image_bg that is NOT the most recent one shown in the user prompt. All six options are supported (coral, navy, cream, warm-gradient, navy-coral-gradient, white-coral-ring) — rotate them, don't default to warm-gradient every day.
+
 # DEAD PHRASES (auto-reject on use)
 
 - "Gate-kept" / "gatekept" — tried in v3/v4, founder vetoed
@@ -275,6 +292,9 @@ For every post you generate, verify ALL of these before output:
 5. Is "regular moms" used (not "everyday moms," not just "moms")?
 6. Does the format texture (anecdote/direct/math/brand-callout/objection-reframe) actually show up in the writing?
 7. NO dead phrases ("gate-kept," "rev share," "that's so 2025," etc.)?
+8. Does your content_format DIFFER from every one of the last 3 shown in the user prompt?
+9. Does your headline shape DIFFER structurally from the recent displays (no "She named the ___ at the ___" if that shape is already in the list)?
+10. Is your image_bg different from the most recent one shown?
 
 If any check fails, fix and try again.
 
@@ -304,10 +324,23 @@ Output ONLY valid JSON matching this exact schema (no commentary, no code fences
   "display_color": "white | navy | coral | null (null = auto-pick by bg)"
 }`;
 
-interface GeneratorInputs {
+export interface GeneratorInputs {
   recentAngleTags: string[];
   recentDisplays: string[];
+  /** Recent content_format values, newest first. Used to enforce format
+   *  rotation — a generation whose content_format matches any of the
+   *  first 3 entries will be rejected and retried. */
+  recentContentFormats: string[];
+  /** Recent image_bg values, newest first. Surfaced to the model so it
+   *  can rotate visual backgrounds instead of defaulting to whichever
+   *  one is easiest. */
+  recentImageBgs: string[];
 }
+
+/** How many recent content_formats block a new generation from
+ *  matching. Set to 3 so the model is forced through at least a
+ *  4-format rotation before repeating. */
+const FORMAT_ROTATION_WINDOW = 3;
 
 function buildUserPrompt(inputs: GeneratorInputs): string {
   const tagList = inputs.recentAngleTags.length > 0
@@ -316,13 +349,29 @@ function buildUserPrompt(inputs: GeneratorInputs): string {
   const displayList = inputs.recentDisplays.length > 0
     ? inputs.recentDisplays.slice(0, 12).map((d) => `- "${d.replace(/\n/g, " / ")}"`).join("\n")
     : "(none yet)";
+  const recentFormats = inputs.recentContentFormats.slice(0, 7);
+  const forbiddenFormats = recentFormats.slice(0, FORMAT_ROTATION_WINDOW);
+  const formatList = recentFormats.length > 0
+    ? recentFormats.map((f, i) => `- ${f}${i < FORMAT_ROTATION_WINDOW ? "  (FORBIDDEN — too recent)" : ""}`).join("\n")
+    : "(none yet)";
+  const bgList = inputs.recentImageBgs.slice(0, 7).length > 0
+    ? inputs.recentImageBgs.slice(0, 7).map((b, i) => `- ${b}${i === 0 ? "  (most recent — avoid)" : ""}`).join("\n")
+    : "(none yet)";
   return `# RECENT ANGLES (don't repeat or paraphrase these)
 ${tagList}
 
-# RECENT HEADLINES (so you can hear the visual rhythm and avoid repeating)
+# RECENT HEADLINES (avoid reusing their structural shape — e.g. don't open with "She named the ___ at the ___" if that shape appears below)
 ${displayList}
 
-Generate ONE new post per the system prompt. The angle must be distinct from everything above. Output ONLY the JSON.`;
+# RECENT CONTENT FORMATS (HARD CONSTRAINT — cannot match any of the first ${FORMAT_ROTATION_WINDOW})
+${formatList}
+
+Your content_format MUST NOT be one of: ${forbiddenFormats.length > 0 ? forbiddenFormats.join(", ") : "(any — first generations)"}. A generation that violates this will be rejected.
+
+# RECENT IMAGE BACKGROUNDS (rotate — pick a different one than the most recent)
+${bgList}
+
+Generate ONE new post per the system prompt. The angle, the format, the headline shape, and the image_bg must each break the recent pattern above. Output ONLY the JSON.`;
 }
 
 function failsBlocklist(post: GeneratedPost): string | null {
@@ -356,6 +405,9 @@ export async function generateDailyPost(
   maxAttempts = 3
 ): Promise<GenerateResult> {
   const recentTagsLower = new Set(inputs.recentAngleTags.map((t) => t.toLowerCase()));
+  const forbiddenFormats = new Set(
+    inputs.recentContentFormats.slice(0, FORMAT_ROTATION_WINDOW).map((f) => f.toLowerCase())
+  );
   let lastError = "no attempts";
   let lastRaw = "";
 
@@ -396,6 +448,11 @@ export async function generateDailyPost(
     const post = validated.data;
     if (recentTagsLower.has(post.angle_tag.toLowerCase())) {
       lastError = `angle_tag "${post.angle_tag}" matches a recent post`;
+      continue;
+    }
+
+    if (forbiddenFormats.has(post.content_format.toLowerCase())) {
+      lastError = `content_format "${post.content_format}" collides with one of the last ${FORMAT_ROTATION_WINDOW} formats (${[...forbiddenFormats].join(", ")}). Pick a different format.`;
       continue;
     }
 
