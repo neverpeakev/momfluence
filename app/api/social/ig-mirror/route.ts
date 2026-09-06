@@ -20,6 +20,12 @@
  * are marked ig_failed with the error message and will NOT be retried by
  * future runs (would need manual reset).
  *
+ * Global auth/config failures (missing env var, fetchPageContext throws —
+ * e.g. IG business account unlinked from the FB Page) apply the same
+ * per-row markFailed pass so the pending rows do not silently accumulate
+ * in `fb_published`, and the route returns 500 so Vercel Cron surfaces
+ * the failure to alerting instead of treating it as a healthy run.
+ *
  * Why daily and not faster: IG rate-limits media publishes to 25 per
  * 24-hour rolling window per account. Daily cron with ~1 mirror per day
  * is well under the limit.
@@ -32,6 +38,10 @@ import {
   markFailed,
   type GeneratedPostRow,
 } from "@/lib/social/db";
+
+async function markAllPendingIgFailed(rows: GeneratedPostRow[], message: string): Promise<void> {
+  await Promise.allSettled(rows.map((r) => markFailed(r.id, "ig", message)));
+}
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -151,14 +161,22 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set",
-    });
+    const msg = "META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set";
+    // No token means no Meta calls, but we can still surface the failure
+    // per-row so the backlog doesn't silently grow.
+    const pending = await listPendingIgMirror(10).catch(() => [] as GeneratedPostRow[]);
+    await markAllPendingIgFailed(pending, msg);
+    return NextResponse.json(
+      {
+        ok: false,
+        mirrored: 0,
+        failed: pending.length,
+        details: pending.map((r) => ({ slug: r.slug, error: msg })),
+        duration_ms: Date.now() - started,
+        message: msg,
+      },
+      { status: 500 }
+    );
   }
 
   const pending = await listPendingIgMirror(10);
@@ -180,15 +198,23 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     pageToken = ctx.pageToken;
     igId = ctx.igId;
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({
-      ok: false,
-      mirrored: 0,
-      failed: 0,
-      details: [],
-      duration_ms: Date.now() - started,
-      message: `auth/page-context: ${msg}`,
-    });
+    const msg = `auth/page-context: ${e instanceof Error ? e.message : String(e)}`;
+    // A global auth/context failure (e.g. IG business account unlinked
+    // from the FB Page, revoked token) is the same failure for every
+    // pending row. Mark them ig_failed so the pending list doesn't
+    // silently grow into a backlog that surprises us at re-link time.
+    await markAllPendingIgFailed(pending, msg);
+    return NextResponse.json(
+      {
+        ok: false,
+        mirrored: 0,
+        failed: pending.length,
+        details: pending.map((r) => ({ slug: r.slug, error: msg })),
+        duration_ms: Date.now() - started,
+        message: msg,
+      },
+      { status: 500 }
+    );
   }
 
   // Pre-warm the render endpoint for each pending slug. IG often fails
