@@ -249,9 +249,31 @@ authentic alternative.
 the eligibility puncture (no million followers / no celebrity), the
 CTA. Every post.
 
-The weekly audit (Sunday) rolls up by content_format to tell us which
-texture is producing the highest-quality posts and which is consistently
-weaker. The optimizer dashboard groups ad variants the same way.
+### Format rotation (mandatory, since v6 — 2026-09-06)
+
+Variety across formats is the *entire point* of the format taxonomy.
+The generator MUST NOT ship a post whose `content_format` matches any
+of the last 3 formats used. This is enforced at two places:
+
+1. **In the prompt** — the daily user prompt surfaces the last N
+   `content_format` values and marks the first 3 as "FORBIDDEN — too
+   recent". Same for the most recent `image_bg`.
+2. **In the retry validator** — `generateDailyPost` rejects a
+   generation whose `content_format` collides with any of the last 3,
+   and retries with the collision as feedback.
+
+Rotation applies to structural rhymes too: if the last several
+`display` headlines share a shape (e.g. "She named the [X] at the
+[Y]"), the new headline must break that shape. And `image_bg` rotates
+across the six supported backgrounds — don't default to whichever
+option was easiest yesterday.
+
+The Sunday audit rolls up posts by content_format to catch this
+category of failure. If one format ever accounts for 5+ of any 7-day
+window again, that's the audit's biggest surface finding, regardless
+of how good the individual posts read in isolation.
+
+The optimizer dashboard groups ad variants the same way.
 
 ---
 

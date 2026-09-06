@@ -16,6 +16,8 @@ async function main() {
       "How it works",
       "MomFluence is NOT an MLM.",
     ],
+    recentContentFormats: ["anecdote", "anecdote", "anecdote", "direct", "math"],
+    recentImageBgs: ["warm-gradient", "warm-gradient", "coral", "navy"],
   });
   console.log("✓ Generated successfully");
   console.log("  attempts:", result.attempts);
