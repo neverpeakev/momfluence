@@ -65,15 +65,20 @@ async function fetchPageContext(userToken: string, pageId: string): Promise<{ pa
   const accountsData = JSON.parse(accountsText) as { data?: Array<{ id: string; access_token: string }> };
   const page = (accountsData.data ?? []).find((p) => p.id === pageId);
   if (!page?.access_token) throw new Error(`Page ${pageId} access_token unavailable`);
-  // Linked IG account
+  // Linked IG account. Try both fields — a Page linked to a Creator or
+  // Personal IG account returns id via connected_instagram_account, not
+  // instagram_business_account. Ask for both in one call.
   const igRes = await fetch(
-    `${META_BASE}/${pageId}?fields=instagram_business_account&access_token=${encodeURIComponent(page.access_token)}`
+    `${META_BASE}/${pageId}?fields=instagram_business_account,connected_instagram_account&access_token=${encodeURIComponent(page.access_token)}`
   );
   const igText = await igRes.text();
   if (!igRes.ok) throw new Error(`/${pageId} ig lookup → ${igRes.status}: ${igText.slice(0, 300)}`);
-  const igData = JSON.parse(igText) as { instagram_business_account?: { id: string } };
-  const igId = igData.instagram_business_account?.id;
-  if (!igId) throw new Error(`No Instagram Business Account linked to FB Page ${pageId}`);
+  const igData = JSON.parse(igText) as {
+    instagram_business_account?: { id: string };
+    connected_instagram_account?: { id: string };
+  };
+  const igId = igData.instagram_business_account?.id ?? igData.connected_instagram_account?.id;
+  if (!igId) throw new Error(`No IG account linked to FB Page ${pageId} (got: ${igText.slice(0, 200)})`);
   return { pageToken: page.access_token, igId };
 }
 
@@ -151,6 +156,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   const userToken = process.env.META_MARKETING_API_TOKEN;
   const pageId = process.env.META_FB_PAGE_ID;
   if (!userToken || !pageId) {
+    console.error("[ig-mirror] META_MARKETING_API_TOKEN or META_FB_PAGE_ID not set");
     return NextResponse.json({
       ok: false,
       mirrored: 0,
@@ -162,6 +168,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
   }
 
   const pending = await listPendingIgMirror(10);
+  console.log(`[ig-mirror] listPendingIgMirror returned ${pending.length} rows`);
   if (pending.length === 0) {
     return NextResponse.json({
       ok: true,
@@ -181,6 +188,11 @@ export async function POST(req: NextRequest): Promise<NextResponse<MirrorResult>
     igId = ctx.igId;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // Batch-wide failure: log loudly so it shows in Vercel runtime logs.
+    // Do NOT mark rows ig_failed — that status is terminal (see file
+    // header). A transient token/lookup error would otherwise lose the
+    // batch permanently. Rows stay eligible for retry on the next cron.
+    console.error(`[ig-mirror] fetchPageContext failed, ${pending.length} rows deferred: ${msg}`);
     return NextResponse.json({
       ok: false,
       mirrored: 0,
